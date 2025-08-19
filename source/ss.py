@@ -79,35 +79,61 @@ def take_region_screenshot(save_folder="screenshots"):
             
         def _show_selector(self, root):
             root.deiconify()  # Show the window
-            
+
+            # Grab the current screen as a PIL Image
             screen = ImageGrab.grab()
-            screen_photo = ImageTk.PhotoImage(screen)
-            
+
+            # Create a dimmed version by compositing a semi-transparent grey overlay
+            screen_rgba = screen.convert('RGBA')
+            overlay = Image.new('RGBA', screen_rgba.size, (0, 0, 0, 500))  # semi-transparent black
+            dimmed = Image.alpha_composite(screen_rgba, overlay)
+
+            # PhotoImages for the canvas (keep references to avoid GC)
+            dimmed_photo = ImageTk.PhotoImage(dimmed)
+            original_photo = ImageTk.PhotoImage(screen)
+
             canvas = tk.Canvas(root, cursor="cross")
             canvas.pack(fill=tk.BOTH, expand=True)
-            canvas.create_image(0, 0, anchor=tk.NW, image=screen_photo)
-            
+
+            # Draw the dimmed full-screen image
+            canvas.create_image(0, 0, anchor=tk.NW, image=dimmed_photo, tags=("base",))
+            canvas.dimmed_photo = dimmed_photo
+            canvas.original_photo = original_photo
+
             def on_button_press(event):
                 self.start_x = event.x
                 self.start_y = event.y
-                
+
             def on_move_press(event):
-                if self.rect_id:
-                    canvas.delete(self.rect_id)
-                
+                # Remove previous reveal and outline
+                canvas.delete('reveal')
+                canvas.delete('outline')
+
                 self.end_x = event.x
                 self.end_y = event.y
-                
-                self.rect_id = canvas.create_rectangle(
-                    self.start_x, self.start_y, 
-                    self.end_x, self.end_y, 
-                    outline='red', width=2
-                )
+
+                # Compute normalized coordinates
+                x1 = min(self.start_x, self.end_x)
+                y1 = min(self.start_y, self.end_y)
+                x2 = max(self.start_x, self.end_x)
+                y2 = max(self.start_y, self.end_y)
+
+                # Only reveal if area is non-zero
+                if x2 > x1 and y2 > y1:
+                    region = screen.crop((x1, y1, x2, y2))
+                    region_photo = ImageTk.PhotoImage(region)
+
+                    # Place the revealed (original) region on top of dimmed image
+                    canvas.create_image(x1, y1, anchor=tk.NW, image=region_photo, tags=('reveal',))
+                    # Keep reference so it isn't garbage collected
+                    canvas._reveal_photo = region_photo
+
+                    # Draw a white outline around selection
+                    canvas.create_rectangle(x1, y1, x2, y2, outline='white', width=3, tags=('outline',))
                 
             def on_button_release(event):
                 self.end_x = event.x
                 self.end_y = event.y
-                
                 root.withdraw()
                 root.update()
                 
@@ -140,14 +166,14 @@ def take_region_screenshot(save_folder="screenshots"):
             instructions = tk.Label(
                 root, 
                 text="Click and drag to select region. Press ESC to cancel.",
-                bg="yellow", fg="black", font=("Arial", 12)
+                bg="grey", fg="black", font=("Roboto", 12)
             )
             instructions.pack(side=tk.TOP, fill=tk.X)
             
             canvas.focus_set()
             
             # Keep reference to prevent garbage collection
-            canvas.screen_photo = screen_photo
+            canvas.screen_photo = original_photo
     
     selector = RegionSelector()
     return selector.select_region()

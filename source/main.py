@@ -31,12 +31,14 @@ def process_screenshot(image_path):
                     'images': [image_path],
                 }
             ],
+            stream=True
         )
 
-        if 'message' in response and 'content' in response['message']:
-            print("Response: \n", response['message']['content'])
-        else:
-            print("Unexpected response format:", response)
+        print("Response: \n")
+        for chunk in response:
+            if 'message' in chunk and 'content' in chunk['message']:
+                print(chunk['message']['content'], end='', flush=True)
+        print()  # Add newline at the end
             
     except Exception as e:
         print(f"Error processing with AI: {e}")
@@ -100,12 +102,14 @@ def main():
                         'images': [path],
                     }
                 ],
+                stream=True
             )
 
-            if 'message' in response and 'content' in response['message']:
-                print("Response: \n", response['message']['content'])
-            else:
-                print("Unexpected response format:", response)
+            print("Response: \n")
+            for chunk in response:
+                if 'message' in chunk and 'content' in chunk['message']:
+                    print(chunk['message']['content'], end='', flush=True)
+            print()  # Add newline at the end
         else:
             print("Invalid path or file doesn't exist.")
 

@@ -1,6 +1,7 @@
 :root{
   margin: 0;
   padding: 0;
+  font-family: 'Montserrat', sans-serif;
 }
 
 /* Add this universal selector */
@@ -21,4 +22,11 @@
   color: white;
   -webkit-app-region: drag;
   /* box-shadow: 5px 5px 15px rgba(0, 0, 0, 0.3); */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+.response-area{
+  width: 97%;
+  height: 95%;
 }

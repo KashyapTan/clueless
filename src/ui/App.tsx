@@ -5,7 +5,9 @@ function App() {
   return (
     <>
     <div className="container">
-      hello
+      <div className="response-area">
+        Response will be displayed here
+      </div>
     </div>
     </>
   )

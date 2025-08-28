@@ -11,54 +11,74 @@ function App() {
   const [error, setError] = useState<string>('');
 
   useEffect(() => {
-    const ws = new WebSocket('ws://localhost:8000/ws');
+    let ws: WebSocket;
+    let connectInterval: number;
 
-    ws.onopen = () => {
-      setStatus('Waiting for screenshot...');
-    };
+    const connect = () => {
+      ws = new WebSocket('ws://localhost:8000/ws');
 
-    ws.onmessage = (event) => {
-      try {
-        const data = JSON.parse(event.data);
-
-        switch (data.type) {
-          case 'query':
-            setQuery(data.content);
-            setResponse('');
-            setError('');
-            setStatus('Receiving response...');
-            break;
-          case 'response_chunk':
-            setResponse(prev => prev + data.content);
-            break;
-          case 'response_complete':
-            setStatus('Response complete.');
-            break;
-          case 'error':
-            setError(data.content);
-            setQuery('');
-            setResponse('');
-            setStatus('An error occurred.');
-            break;
+      ws.onopen = () => {
+        setStatus('Waiting for screenshot...');
+        setError('');
+        if (connectInterval) {
+          clearInterval(connectInterval);
         }
-      } catch (e) {
-        console.error("Failed to parse WebSocket message:", e);
-        setError('Failed to parse message from server.');
-        setStatus('An error occurred.');
-      }
+      };
+
+      ws.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+
+          switch (data.type) {
+            case 'query':
+              setQuery(data.content);
+              setResponse('');
+              setError('');
+              setStatus('Receiving response...');
+              break;
+            case 'response_chunk':
+              setResponse(prev => prev + data.content);
+              break;
+            case 'response_complete':
+              setStatus('Response complete.');
+              break;
+            case 'error':
+              setError(data.content);
+              setQuery('');
+              setResponse('');
+              setStatus('An error occurred.');
+              break;
+          }
+        } catch (e) {
+          console.error("Failed to parse WebSocket message:", e);
+          setError('Failed to parse message from server.');
+          setStatus('An error occurred.');
+        }
+      };
+
+      ws.onclose = () => {
+        setStatus('Disconnected. Retrying connection...');
+        // Don't clear query/response here to preserve state during brief disconnects
+        setTimeout(connect, 2000); // Attempt to reconnect after 2 seconds
+      };
+
+      ws.onerror = (err) => {
+        console.error("WebSocket error:", err);
+        // The onclose event will be fired next, which will handle the retry.
+      };
     };
 
-    ws.onclose = () => {
-      setStatus('Disconnected from server.');
-    };
-
-    ws.onerror = () => {
-      setError('Could not connect to the WebSocket server. Is it running?');
-      setStatus('Connection error.');
-    }
+    connect(); // Initial connection attempt
 
     return () => {
-      ws.close();
+      if (connectInterval) {
+        clearInterval(connectInterval);
+      }
+      // Cleanly close the WebSocket connection when the component unmounts
+      if (ws) {
+        ws.onclose = null; // Prevent automatic reconnection on component unmount
+        ws.close();
+      }
     };
   }, []);
 

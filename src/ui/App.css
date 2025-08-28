@@ -21,7 +21,7 @@ html{
   position: relative;
   width: 100vw;
   height: 100vh;
-  background-color: rgba(0, 0, 0, 0.1);
+  background-color: rgba(0, 0, 0, 0.5);
   border-radius: 8px;
   border: 2px solid rgba(255, 255, 255, 0.5);
   overflow: hidden; 
@@ -49,11 +49,14 @@ html{
   display: flex;
   flex-direction: column;
   gap: 1rem;
+  scrollbar-width: none; /* For Firefox */
+  -ms-overflow-style: none;  /* For Internet Explorer and Edge */
 }
 
-/* .response-area::-webkit-scrollbar {
-  display: none;
-} */
+.response-area::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+}
 
 /* .query, .response, .error {
   padding: 10px;
@@ -73,7 +76,7 @@ html{
 }
 
 .response pre {
-  padding: 1em;
+  padding: 0.5em;
   border-radius: 5px;
   overflow-x: auto;
 }
@@ -81,7 +84,7 @@ html{
 .response code {
   font-family: 'Courier New', Courier, monospace;
   background-color: rgba(255, 255, 255, 0.2);
-  padding: 0.2em 0.4em;
+  padding: 1px 1px;
   border-radius: 3px;
 }
 
@@ -93,6 +96,9 @@ html{
 .response ul, .response ol {
   padding-left: 2em;
   margin-bottom: 1em;
+}
+.response li {
+  margin-bottom: 0.8em;
 }
 
 .error {

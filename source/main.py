@@ -1,5 +1,5 @@
 from ollama import chat
-from ss import take_region_screenshot, start_screenshot_service
+from .ss import take_region_screenshot, start_screenshot_service
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.responses import HTMLResponse
 import threading
@@ -10,10 +10,17 @@ import shutil
 import asyncio
 import uvicorn
 import json
-from typing import List
+from typing import List, Dict, Any
+from concurrent.futures import Future
 
 # FastAPI WebSocket setup
 app = FastAPI()
+
+# Holder for the running uvicorn event loop so worker threads can schedule
+# coroutine work (websocket broadcasts) onto the SAME loop instead of creating
+# their own loops. Creating separate loops then touching loop-bound objects
+# (WebSocket transports) causes assertion errors on Windows' Proactor.
+_server_loop_holder: Dict[str, Any] = {}
 
 class ConnectionManager:
     def __init__(self):
@@ -51,77 +58,6 @@ async def websocket_endpoint(websocket: WebSocket):
     except WebSocketDisconnect:
         manager.disconnect(websocket)
 
-@app.get("/")
-async def get():
-    return HTMLResponse("""
-<!DOCTYPE html>
-<html>
-    <head>
-        <title>Ollama Response Stream</title>
-        <style>
-            body { font-family: Arial, sans-serif; margin: 20px; }
-            #messages { max-height: 600px; overflow-y: auto; border: 1px solid #ccc; padding: 10px; }
-            .query { background: #e3f2fd; padding: 10px; margin: 5px 0; border-radius: 5px; }
-            .response { background: #f5f5f5; padding: 5px; margin: 2px 0; }
-            .complete { background: #c8e6c9; padding: 10px; margin: 5px 0; border-radius: 5px; }
-            .error { background: #ffcdd2; padding: 10px; margin: 5px 0; border-radius: 5px; }
-        </style>
-    </head>
-    <body>
-        <h1>Ollama Response Stream</h1>
-        <div id="messages"></div>
-        <script>
-            var ws = new WebSocket("ws://localhost:8000/ws");
-            var responseDiv = null;
-            
-            ws.onmessage = function(event) {
-                var messages = document.getElementById('messages');
-                var data = JSON.parse(event.data);
-                
-                if (data.type === 'query') {
-                    var queryDiv = document.createElement('div');
-                    queryDiv.className = 'query';
-                    queryDiv.innerHTML = '<strong>Query:</strong> ' + data.content;
-                    messages.appendChild(queryDiv);
-                    
-                    // Create response container
-                    responseDiv = document.createElement('div');
-                    responseDiv.className = 'response';
-                    responseDiv.innerHTML = '<strong>Response:</strong> ';
-                    messages.appendChild(responseDiv);
-                    
-                } else if (data.type === 'response_chunk' && responseDiv) {
-                    responseDiv.innerHTML += data.content;
-                    
-                } else if (data.type === 'response_complete') {
-                    var completeDiv = document.createElement('div');
-                    completeDiv.className = 'complete';
-                    completeDiv.innerHTML = '<strong>Response Complete</strong>';
-                    messages.appendChild(completeDiv);
-                    responseDiv = null;
-                    
-                } else if (data.type === 'error') {
-                    var errorDiv = document.createElement('div');
-                    errorDiv.className = 'error';
-                    errorDiv.innerHTML = '<strong>Error:</strong> ' + data.content;
-                    messages.appendChild(errorDiv);
-                }
-                
-                messages.scrollTop = messages.scrollHeight;
-            };
-            
-            ws.onopen = function(event) {
-                console.log("Connected to WebSocket");
-            };
-            
-            ws.onclose = function(event) {
-                console.log("Disconnected from WebSocket");
-            };
-        </script>
-    </body>
-</html>
-    """)
-
 # Function to broadcast messages
 async def broadcast_message(message_type: str, content: str):
     message = json.dumps({"type": message_type, "content": content})
@@ -137,75 +73,164 @@ def clear_screenshots_folder(folder_path="screenshots"):
     except Exception as e:
         print(f"Error clearing folder: {e}")
 
-async def process_screenshot_async(image_path):
-    """Process screenshot with AI and stream to WebSocket"""
-    user_query = input("Please enter your query for the screenshot: ")
-    print(f"\nProcessing screenshot + Query")
-    
-    # Send query to WebSocket clients
-    await broadcast_message("query", user_query)
-    
-    try:
-        response = chat(
-            model='qwen2.5vl:7b',
-            messages=[
-                {
+async def _stream_ollama_chat(user_query: str, image_path: str) -> str:
+    """Stream Ollama response without blocking the event loop.
+
+    A background thread iterates the blocking Ollama generator and schedules
+    WebSocket broadcasts for each incremental token. Returns the full output
+    once streaming completes.
+    """
+    loop = asyncio.get_running_loop()
+    done_future: asyncio.Future[str] = loop.create_future()
+
+    def safe_schedule(coro):
+        try:
+            loop.call_soon_threadsafe(asyncio.create_task, coro)
+        except RuntimeError:
+            pass
+
+    def extract_token(chunk) -> str | None:
+        """Attempt to pull an incremental token from a chunk.
+
+        Supports both dict (older client) and object (dataclass) shapes.
+        """
+        # Dict-based chunk
+        if isinstance(chunk, dict):
+            msg = chunk.get('message')
+            if isinstance(msg, dict):
+                tok = msg.get('content')
+                if isinstance(tok, str) and tok:
+                    return tok
+            for key in ('response', 'content', 'delta', 'text', 'token'):
+                tok = chunk.get(key)
+                if isinstance(tok, str) and tok:
+                    return tok
+            return None
+        # Object-based chunk
+        # Common attributes possibly present: response (stream token), message (final), done, created_at
+        for attr in ('response', 'content', 'delta', 'token'):
+            if hasattr(chunk, attr):
+                val = getattr(chunk, attr)
+                if isinstance(val, str) and val:
+                    return val
+        # message may itself be an object with .content
+        if hasattr(chunk, 'message'):
+            msg = getattr(chunk, 'message')
+            if msg is not None and hasattr(msg, 'content'):
+                val = getattr(msg, 'content')
+                if isinstance(val, str) and val:
+                    return val
+        return None
+
+    def producer():
+        accumulated: list[str] = []
+        final_message_content: str | None = None
+        try:
+            generator = chat(
+                model='qwen2.5vl:7b',
+                messages=[{
                     'role': 'user',
                     'content': user_query,
                     'images': [image_path],
-                }
-            ],
-            stream=True
-        )
+                }],
+                stream=True
+            )
+            for idx, chunk in enumerate(generator):
+                token = extract_token(chunk)
+                if token:
+                    accumulated.append(token)
+                    safe_schedule(broadcast_message("response_chunk", token))
+                # Track possible final assembled message (object style)
+                if hasattr(chunk, 'done') and getattr(chunk, 'done') and hasattr(chunk, 'message'):
+                    msg = getattr(chunk, 'message')
+                    if msg is not None and hasattr(msg, 'content'):
+                        mc = getattr(msg, 'content')
+                        if isinstance(mc, str) and mc:
+                            final_message_content = mc
+            # Fallback: if no incremental tokens but we have a final message content
+            if not accumulated and final_message_content:
+                accumulated.append(final_message_content)
+                safe_schedule(broadcast_message("response_chunk", final_message_content))
+            elif not accumulated:
+                # Nothing at all extracted
+                safe_schedule(broadcast_message("error", "No content tokens extracted from stream."))
+            safe_schedule(broadcast_message("response_complete", ""))
+            loop.call_soon_threadsafe(done_future.set_result, ''.join(accumulated))
+        except Exception as e:
+            err = f"Error streaming from Ollama: {e}"
+            print(err)
+            safe_schedule(broadcast_message("error", err))
+            if not done_future.done():
+                loop.call_soon_threadsafe(done_future.set_result, err)
 
-        # Stream the output to WebSocket clients
-        output = ""
-        for chunk in response:
-            if 'message' in chunk and 'content' in chunk['message']:
-                content = chunk['message']['content']
-                output += content
-                # Send each chunk to WebSocket clients
-                await broadcast_message("response_chunk", content)
-            
-        # Send completion message
-        await broadcast_message("response_complete", "")
-            
+    threading.Thread(target=producer, daemon=True).start()
+    return await done_future
+
+async def process_screenshot_async(image_path):
+    """Process screenshot with AI and stream to WebSocket (non-blocking)."""
+    user_query = await asyncio.to_thread(input, "Please enter your query for the screenshot: ")
+    print("\nProcessing screenshot + Query")
+
+    await broadcast_message("query", user_query)
+
+    try:
+        output = await _stream_ollama_chat(user_query, image_path)
     except Exception as e:
         error_msg = f"Error processing with AI: {e}"
         await broadcast_message("error", error_msg)
         output = error_msg
-    
-    # Clear the screenshots folder after processing
+
+    # Cleanup & logging
     folder_path = os.path.dirname(image_path)
     clear_screenshots_folder(folder_path)
     print("-" * 50)
     print("Screenshot processed. Check WebSocket clients for response.")
     print("The service continues running for more screenshots...")
-    
     return output
 
 def process_screenshot(image_path):
-    """Wrapper to run async function in event loop"""
-    # Create a new event loop for this thread
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
+    """Public sync hook invoked by screenshot service thread.
+
+    Instead of creating a NEW event loop (which then attempts to use
+    websocket objects bound to the uvicorn loop and crashes with
+    _ProactorBaseWritePipeTransport assertion errors on Windows), we submit
+    the coroutine to the existing server loop thread-safely.
+    """
+    server_loop = _server_loop_holder.get("loop")
+    if server_loop is None:
+        print("Server loop not ready yet. Skipping screenshot processing.")
+        return None
+    future: Future = asyncio.run_coroutine_threadsafe(
+        process_screenshot_async(image_path), server_loop
+    )
     try:
-        return loop.run_until_complete(process_screenshot_async(image_path))
-    finally:
-        loop.close()
+        return future.result()
+    except Exception as e:
+        print(f"Error awaiting screenshot processing: {e}")
+        return None
 
 def start_fastapi_server():
-    """Start FastAPI server in a separate thread"""
-    uvicorn.run(app, host="0.0.0.0", port=8000, log_level="warning")
+    """Start FastAPI server in a dedicated thread & store its loop."""
+    loop = asyncio.new_event_loop()
+    _server_loop_holder["loop"] = loop
+    asyncio.set_event_loop(loop)
+    config = uvicorn.Config(app, host="0.0.0.0", port=8000, log_level="warning", loop="asyncio")
+    server = uvicorn.Server(config)
+    loop.run_until_complete(server.serve())
 
 def main():
     print("Starting FastAPI WebSocket server...")
     # Start FastAPI server in background
     server_thread = threading.Thread(target=start_fastapi_server, daemon=True)
     server_thread.start()
-    
-    # Give server time to start
-    time.sleep(3)
+
+    # Wait until loop is available (startup barrier)
+    for _ in range(50):  # up to ~5 seconds
+        if _server_loop_holder.get("loop") is not None:
+            break
+        time.sleep(0.1)
+    else:
+        print("Warning: server loop not initialized; continuing anyway.")
     
     print("Starting screenshot service in background...")
     print("Press Ctrl+Shift+Alt+S anytime to take a screenshot")

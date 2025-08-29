@@ -12,7 +12,21 @@ app.on('ready', ()=>{
         frame: false,
         transparent: true,
         resizable: true,
+        // Added:
+        alwaysOnTop: true,
+        minimizable: false,
+        maximizable: false,
+        fullscreenable: false,
+        skipTaskbar: true,
+        // focusable: false, // uncomment if you want a click‑through style overlay (can't focus it)
     });
+
+    // Strengthen always-on-top level (optional):
+    mainWindow.setAlwaysOnTop(true, 'screen-saver'); // or 'floating'
+
+    // Show across virtual desktops / fullscreen spaces:
+    mainWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
+
     if (isDev()){
         mainWindow.loadURL('http://localhost:5123');
     }

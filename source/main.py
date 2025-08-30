@@ -41,7 +41,7 @@ class ConnectionManager:
                 await connection.send_text(message)
             except:
                 disconnected.append(connection)
-        
+
         # Remove disconnected clients
         for conn in disconnected:
             self.disconnect(conn)
@@ -50,11 +50,34 @@ manager = ConnectionManager()
 
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
+    """Bidirectional websocket.
+
+    Client -> Server messages (JSON):
+      {"type": "submit_query", "content": "<question>"}
+
+    Server -> Client broadcast messages (JSON):
+      screenshot_ready            : Screenshot captured, UI should enable query input
+      query                       : Echo of submitted query
+      response_chunk              : Streaming model token/content fragment
+      response_complete           : Model finished
+      error                       : Error message
+    """
     await manager.connect(websocket)
     try:
         while True:
-            # Keep connection alive
-            await websocket.receive_text()
+            raw = await websocket.receive_text()
+            try:
+                data = json.loads(raw)
+            except Exception:
+                continue  # Ignore malformed client messages
+            msg_type = data.get("type")
+            if msg_type == "submit_query":
+                query_text = data.get("content", "").strip()
+                if not query_text:
+                    await websocket.send_text(json.dumps({"type": "error", "content": "Empty query"}))
+                    continue
+                await handle_submit_query(query_text)
+            # else: silently ignore unknown types (could extend later)
     except WebSocketDisconnect:
         manager.disconnect(websocket)
 
@@ -166,48 +189,70 @@ async def _stream_ollama_chat(user_query: str, image_path: str) -> str:
     threading.Thread(target=producer, daemon=True).start()
     return await done_future
 
-async def process_screenshot_async(image_path):
-    """Process screenshot with AI and stream to WebSocket (non-blocking)."""
-    user_query = await asyncio.to_thread(input, "Please enter your query for the screenshot: ")
-    print("\nProcessing screenshot + Query")
+#############################################
+# Query submission & screenshot lifecycle   #
+#############################################
 
+# Track latest screenshot awaiting a query
+_latest_screenshot_path: str | None = None
+_is_streaming: bool = False
+_stream_lock = asyncio.Lock()
+
+async def handle_submit_query(user_query: str):
+    """Handle query submitted from a client for the most recent screenshot."""
+    global _latest_screenshot_path, _is_streaming
+    async with _stream_lock:
+        if _is_streaming:
+            await broadcast_message("error", "Already streaming a response. Please wait for completion.")
+            return
+        if not _latest_screenshot_path or not os.path.exists(_latest_screenshot_path):
+            await broadcast_message("error", "No screenshot available. Take a screenshot first (Ctrl+Shift+Alt+S).")
+            return
+        image_path = _latest_screenshot_path
+        _is_streaming = True
+
+    # Echo query to clients (outside lock to not block other ops)
     await broadcast_message("query", user_query)
 
     try:
-        output = await _stream_ollama_chat(user_query, image_path)
+        await _stream_ollama_chat(user_query, image_path)
     except Exception as e:
-        error_msg = f"Error processing with AI: {e}"
-        await broadcast_message("error", error_msg)
-        output = error_msg
+        await broadcast_message("error", f"Error processing with AI: {e}")
+    finally:
+        # Cleanup after completion
+        folder_path = os.path.dirname(image_path)
+        clear_screenshots_folder(folder_path)
+        async with _stream_lock:
+            _latest_screenshot_path = None
+            _is_streaming = False
+        print("Screenshot processed & cleaned up. Ready for next capture.")
 
-    # Cleanup & logging
-    folder_path = os.path.dirname(image_path)
-    clear_screenshots_folder(folder_path)
-    print("-" * 50)
-    print("Screenshot processed. Check WebSocket clients for response.")
-    print("The service continues running for more screenshots...")
-    return output
+async def _on_screenshot_captured(image_path: str):
+    """Called when a screenshot is captured; notify clients to ask for query."""
+    global _latest_screenshot_path
+    _latest_screenshot_path = image_path
+    print(f"Screenshot ready for query: {image_path}")
+    await broadcast_message("screenshot_ready", "Screenshot captured. Enter your query and press Enter.")
 
 def process_screenshot(image_path):
-    """Public sync hook invoked by screenshot service thread.
+    """Hook invoked by screenshot service thread when a screenshot is taken.
 
-    Instead of creating a NEW event loop (which then attempts to use
-    websocket objects bound to the uvicorn loop and crashes with
-    _ProactorBaseWritePipeTransport assertion errors on Windows), we submit
-    the coroutine to the existing server loop thread-safely.
+    Schedules a coroutine on the running server loop to broadcast that a
+    screenshot is ready and store its path. Does NOT ask for terminal input.
     """
     server_loop = _server_loop_holder.get("loop")
     if server_loop is None:
         print("Server loop not ready yet. Skipping screenshot processing.")
         return None
-    future: Future = asyncio.run_coroutine_threadsafe(
-        process_screenshot_async(image_path), server_loop
-    )
+
+    def schedule():
+        asyncio.create_task(_on_screenshot_captured(image_path))
+
     try:
-        return future.result()
+        server_loop.call_soon_threadsafe(schedule)
     except Exception as e:
-        print(f"Error awaiting screenshot processing: {e}")
-        return None
+        print(f"Failed to schedule screenshot handling: {e}")
+    return None
 
 def start_fastapi_server():
     """Start FastAPI server in a dedicated thread & store its loop."""

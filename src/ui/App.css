@@ -112,3 +112,16 @@ html{
   text-align: center;
   color: rgba(255, 255, 255, 0.7);
 }
+
+.query-input {
+  width: 100%;
+  padding: 0.5rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  background-color: transparent;
+  font-family: 'Montserrat', sans-serif;
+  color: white;
+}
+.query-input:focus {
+  outline: none;
+}

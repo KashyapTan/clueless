@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import type { FormEvent } from 'react';
 import ReactMarkdown from 'react-markdown';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
@@ -9,20 +10,20 @@ function App() {
   const [response, setResponse] = useState<string>('');
   const [status, setStatus] = useState<string>('Connecting to server...');
   const [error, setError] = useState<string>('');
+  const [canSubmit, setCanSubmit] = useState<boolean>(false);
+  const wsRef = useRef<WebSocket | null>(null);
+  const inputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
-    let ws: WebSocket;
-    let connectInterval: number;
+  let ws: WebSocket | null = null;
 
     const connect = () => {
-      ws = new WebSocket('ws://localhost:8000/ws');
+  ws = new WebSocket('ws://localhost:8000/ws');
+  wsRef.current = ws;
 
       ws.onopen = () => {
         setStatus('Waiting for screenshot...');
         setError('');
-        if (connectInterval) {
-          clearInterval(connectInterval);
-        }
       };
 
       ws.onmessage = (event) => {
@@ -30,23 +31,32 @@ function App() {
           const data = JSON.parse(event.data);
 
           switch (data.type) {
-            case 'query':
-              setQuery(data.content);
+            case 'screenshot_ready':
+              setStatus(data.content || 'Screenshot captured. Enter your query.');
               setResponse('');
               setError('');
+              setQuery('');
+              setCanSubmit(true);
+              break;
+            case 'query':
+              // Server echoes the submitted query
+              setQuery(data.content);
+              setError('');
               setStatus('Receiving response...');
+              setCanSubmit(false);
               break;
             case 'response_chunk':
               setResponse(prev => prev + data.content);
               break;
             case 'response_complete':
               setStatus('Response complete.');
+              setCanSubmit(false);
               break;
             case 'error':
               setError(data.content);
-              setQuery('');
               setResponse('');
               setStatus('An error occurred.');
+              setCanSubmit(false);
               break;
           }
         } catch (e) {
@@ -71,16 +81,59 @@ function App() {
     connect(); // Initial connection attempt
 
     return () => {
-      if (connectInterval) {
-        clearInterval(connectInterval);
-      }
       // Cleanly close the WebSocket connection when the component unmounts
-      if (ws) {
-        ws.onclose = null; // Prevent automatic reconnection on component unmount
-        ws.close();
-      }
-    };
-  }, []);
+    if (ws) {
+          ws.onclose = null; // Prevent automatic reconnection on component unmount
+          ws.close();
+        }
+      };
+    }, []);
+
+  // Focus the input field whenever canSubmit becomes true (new screenshot taken)
+  useEffect(() => {
+    if (canSubmit && inputRef.current) {
+      // For Electron apps, use the electronAPI to focus the window
+      const focusInput = async () => {
+        try {
+          console.log('Attempting to focus window...', { electronAPI: window.electronAPI });
+          if (window.electronAPI) {
+            console.log('Calling electronAPI.focusWindow()');
+            await window.electronAPI.focusWindow();
+            console.log('electronAPI.focusWindow() completed');
+          } else {
+            console.log('electronAPI not available, using fallback');
+            window.focus();
+          }
+          // Small delay to ensure window focus happens first
+          setTimeout(() => {
+            if (inputRef.current) {
+              inputRef.current.focus();
+              console.log('Input focused');
+            }
+          }, 50);
+        } catch (error) {
+          console.error('Failed to focus window:', error);
+          // Fallback to just focusing the input
+          if (inputRef.current) {
+            inputRef.current.focus();
+          }
+        }
+      };
+      
+      focusInput();
+    }
+  }, [canSubmit]);
+
+  const handleSubmit = (e: FormEvent) => {
+    e.preventDefault();
+    if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) return;
+
+    const PROMPT = "Analyze the following image in detail. Then predict what the users follow up questions/tasks could be. Based on the prediction/tasks, answer the question(s) or do the task(s). You are responding directly to the user, so do not include the actual follow-up questions or any internal thought/information that is not useful to the user in your response.";
+    // Use a default prompt if query is empty
+    const queryToSend = query.trim() || PROMPT;
+    setResponse('');
+    wsRef.current.send(JSON.stringify({ type: 'submit_query', content: queryToSend }));
+  };
 
   return (
     <>
@@ -88,28 +141,49 @@ function App() {
       <div className="title-bar" />
       <div className="response-area">
         {error && <div className="error"><strong>Error:</strong> {error}</div>}
-        {!error && query && <div className="query"><strong>Query:</strong><p>{query}</p></div>}
+        {!error && query && !canSubmit && (
+          <div className="query">
+            <strong>Query:</strong>
+            <p>{query}</p>
+          </div>
+        )}
+        {!error && canSubmit && (
+          <div className="query-input-section">
+            <strong>Query:</strong>
+            <form onSubmit={handleSubmit} style={{ marginTop: '0.5rem' }}>
+              <input
+                ref={inputRef}
+                className="query-input"
+                type="text"
+                placeholder="Enter query or press enter to describe "
+                value={query}
+                onChange={e => setQuery(e.target.value)}
+              />
+            </form>
+          </div>
+        )}
         {!error && response && (
           <div className="response">
-            <strong>Response:</strong>
+            {/* <strong>Response:</strong> */}
             <ReactMarkdown
               components={{
-                code({ node, inline, className, children, ...props }) {
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                code({ inline, className, children, ...props }: any) {
                   const match = /language-(\w+)/.exec(className || '');
-                  return !inline && match ? (
-                    <SyntaxHighlighter
-                      style={vscDarkPlus}
-                      language={match[1]}
-                      PreTag="div"
-                      {...props}
-                    >
-                      {String(children).replace(/\n$/, '')}
-                    </SyntaxHighlighter>
-                  ) : (
-                    <code className={className} {...props}>
-                      {children}
-                    </code>
-                  );
+                  if (!inline && match) {
+                    return (
+                      <SyntaxHighlighter
+                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                        style={vscDarkPlus as any}
+                        language={match[1]}
+                        PreTag="div"
+                        {...props}
+                      >
+                        {String(children).replace(/\n$/, '')}
+                      </SyntaxHighlighter>
+                    );
+                  }
+                  return <code className={className} {...props}>{children}</code>;
                 },
               }}
             >{response}</ReactMarkdown>

@@ -11,7 +11,6 @@
     "dev:electron": "npm run transpile:electron && cross-env NODE_ENV=development electron .",
     "dev:pyserver": ".venv\\Scripts\\activate && python -m source.main",
     "dev:ollama": "powershell -NoProfile -ExecutionPolicy Bypass -Command \"& { $port=11434; try { (Invoke-RestMethod -Uri http://127.0.0.1:$port/api/tags -TimeoutSec 2) | Out-Null; Write-Host 'Ollama already running on port' $port; while (Get-Process -Name ollama -ErrorAction SilentlyContinue) { Start-Sleep -Seconds 30 } } catch { Write-Host 'Starting Ollama server...'; Get-Process -Name ollama -ErrorAction SilentlyContinue | Stop-Process -Force; Start-Sleep -Seconds 2; ollama serve } }\"",
-    "pull:model": "ollama pull qwen2.5vl:7b",
     "test:ollama": "curl http://localhost:11434/api/tags",
     "build": "tsc -b && vite build",
     "lint": "eslint .",

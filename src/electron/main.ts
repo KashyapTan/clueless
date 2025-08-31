@@ -16,7 +16,7 @@ app.on('ready', ()=>{
         // minimizable: false,
         maximizable: false,
         fullscreenable: false,
-        // skipTaskbar: true,
+        skipTaskbar: true,
     });
 
     // Strengthen always-on-top level (optional):

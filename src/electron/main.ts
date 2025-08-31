@@ -12,13 +12,11 @@ app.on('ready', ()=>{
         frame: false,
         transparent: true,
         resizable: true,
-        // Added:
         alwaysOnTop: true,
-        minimizable: false,
+        // minimizable: false,
         maximizable: false,
         fullscreenable: false,
-        skipTaskbar: true,
-        // focusable: false, // uncomment if you want a click‑through style overlay (can't focus it)
+        // skipTaskbar: true,
     });
 
     // Strengthen always-on-top level (optional):

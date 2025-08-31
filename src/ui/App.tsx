@@ -128,7 +128,7 @@ function App() {
     e.preventDefault();
     if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) return;
 
-    const PROMPT = "Analyze the following image in detail. Then predict what the users follow up questions/tasks could be. Based on the prediction/tasks, answer the question(s) or do the task(s). You are responding directly to the user, so do not include the actual follow-up questions or any internal thought/information that is not useful to the user in your response.";
+    const PROMPT = "Analyze the following image in detail. Then predict what the users follow up questions/tasks could be. Based on the prediction/tasks, answer the question(s) or do the task(s). MAKE SURE YOU LIST AND ANSWER THE FOLLOW-UP QUESTIONS.";
     // Use a default prompt if query is empty
     const queryToSend = query.trim() || PROMPT;
     setResponse('');

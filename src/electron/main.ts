@@ -1,4 +1,4 @@
-import {app, BrowserWindow} from 'electron';
+import {app, BrowserWindow, ipcMain} from 'electron';
 import path from 'path';
 import {isDev} from './utils.js';
 
@@ -13,10 +13,10 @@ app.on('ready', ()=>{
         transparent: true,
         resizable: true,
         alwaysOnTop: true,
-        // minimizable: false,
+        minimizable: false,
         maximizable: false,
         fullscreenable: false,
-        skipTaskbar: true,
+        // skipTaskbar: true,
     });
 
     // Strengthen always-on-top level (optional):

@@ -16,8 +16,17 @@ Take a screen shot of anything on your screen and start talking with or about it
 Developer Version (User Version Beta) out now. Check release v0.0.1 for details.
 # Demo(s)
 ## Video Demo
-[🎥 Watch the video demo](./assets/clueless-video-demo-edited.mp4)
-![Clueless Demo](./assets/clueless-demo.gif)
+
+<div align="center">
+  <img src="./assets/clueless-demo.gif" alt="Clueless Demo - Animated Preview" width="720">
+</div>
+
+### 🎥 Watch Full Demo on YouTube
+<div>
+  <a href="https://www.youtube.com/watch?v=wrrfFeGoSt0">
+    <img src="https://img.youtube.com/vi/wrrfFeGoSt0/maxresdefault.jpg" alt="Watch Full Demo on YouTube" width="200">
+  </a>
+</div>
 
 ## 1. Launch Clueless and take a screenshot
 <div align="center">

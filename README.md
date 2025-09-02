@@ -1,24 +1,7 @@
-# App In Progress...
+# Developer Version (User Version Beta) out now. Check release v0.0.1 for details.
 
-## Run UV Python Virtual Environment
-```py
-.venv\Scripts\activate
-```
-
-## Run Electron and React Server for Development \
-```js
-npm run dev
-```
-
-### Get Distributionf for Windows
-```js
-npm run dist:win
-```
-### Get Distributionf for Mac
-```js
-npm run dist:mac
-```
-### Get Distributionf for Linux
-```js
-npm run dist:linux
-```
+<div align="center">
+  <a href="https://github.com/KashyapTan/clueless">
+    <img alt="clueless" width="240" src="https://github.com/KashyapTan/clueless/clueless-logo.jpg">
+  </a>
+</div>

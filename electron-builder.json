@@ -1,7 +1,7 @@
 {
     "appId": "com.kashyap-tanuku.clueless",
     "files": ["dist-electron", "dist-react"],
-    "icon": "./clueless-logo.jpg",
+    "icon": "./assets/clueless-logo.jpg",
     "mac": {
         "target": "dmg"
     },

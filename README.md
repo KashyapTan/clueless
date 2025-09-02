@@ -1,6 +1,6 @@
 <div align="center">
   <a href="https://github.com/KashyapTan/clueless">
-    <img alt="clueless" width="240" src="clueless-logo.jpg">
+    <img alt="clueless" width="240" src="clueless-logo-github-color.png">
   </a>
 </div>
 

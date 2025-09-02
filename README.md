@@ -14,7 +14,7 @@ Talk to anything on your screen.
 Take a screen shot of anything on your screen and start talking with or about it in real-time. 
 # Getting Started 
 Developer Version (User Version Beta) out now. Check release v0.0.1 for details.
-# Demos
+# Demo(s)
 ## 1. Launch Clueless and take a screenshot
 <div align="center">
   <img alt="clueless"  src="./assets/demo-1.png">

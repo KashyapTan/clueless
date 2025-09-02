@@ -15,6 +15,12 @@ Take a screen shot of anything on your screen and start talking with or about it
 # Getting Started 
 Developer Version (User Version Beta) out now. Check release v0.0.1 for details.
 # Demo(s)
+## Video Demo
+<video controls>
+  <source src="./assets/clueless-video-demo-edited.mp4" type="video/mp4">
+  Your browser does not support the video tag.
+</video>
+
 ## 1. Launch Clueless and take a screenshot
 <div align="center">
   <img alt="clueless"  src="./assets/demo-1.png">

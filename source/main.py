@@ -1,6 +1,7 @@
 from ollama import chat
 import sys
 import os
+import socket
 
 # Add current directory to path for imports when run as script
 if __name__ == "__main__":
@@ -35,6 +36,17 @@ app = FastAPI()
 # their own loops. Creating separate loops then touching loop-bound objects
 # (WebSocket transports) causes assertion errors on Windows' Proactor.
 _server_loop_holder: Dict[str, Any] = {}
+
+def find_available_port(start_port: int = 8000, max_attempts: int = 10) -> int:
+    """Find an available port starting from start_port."""
+    for port in range(start_port, start_port + max_attempts):
+        try:
+            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+                s.bind(('', port))
+                return port
+        except OSError:
+            continue
+    raise RuntimeError(f"Could not find an available port in range {start_port}-{start_port + max_attempts - 1}")
 
 class ConnectionManager:
     def __init__(self):
@@ -270,10 +282,19 @@ def process_screenshot(image_path):
 
 def start_fastapi_server():
     """Start FastAPI server in a dedicated thread & store its loop."""
+    # Find an available port
+    try:
+        port = find_available_port(8000)
+        print(f"Starting server on port {port}")
+    except RuntimeError as e:
+        print(f"Error finding available port: {e}")
+        return
+    
     loop = asyncio.new_event_loop()
     _server_loop_holder["loop"] = loop
+    _server_loop_holder["port"] = port  # Store the port for reference
     asyncio.set_event_loop(loop)
-    config = uvicorn.Config(app, host="0.0.0.0", port=8000, log_level="warning", loop="asyncio")
+    config = uvicorn.Config(app, host="0.0.0.0", port=port, log_level="warning", loop="asyncio")
     server = uvicorn.Server(config)
     loop.run_until_complete(server.serve())
 
@@ -291,10 +312,13 @@ def main():
     else:
         print("Warning: server loop not initialized; continuing anyway.")
     
+    # Get the actual port being used
+    port = _server_loop_holder.get("port", 8000)
+    
     print("Starting screenshot service in background...")
     print("Press Ctrl+Shift+Alt+S anytime to take a screenshot")
     print("Screenshots will be processed and streamed via WebSocket")
-    print("Visit http://localhost:8000 to see responses in real-time")
+    print(f"Visit http://localhost:{port} to see responses in real-time")
     print("The service will run until you close this program")
     
     # Start the service in a separate thread with AI callback

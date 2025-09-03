@@ -4,12 +4,17 @@ import {isDev} from './utils.js';
 import { startPythonServer } from './pythonApi.js';
 
 app.on('ready', async ()=>{
-    // Start Python server first
-    try {
-        await startPythonServer();
-        console.log('Python server started successfully');
-    } catch (error) {
-        console.error('Failed to start Python server:', error);
+    // Only start Python server in production mode
+    // In development, the dev:pyserver script handles this
+    if (!isDev()) {
+        try {
+            await startPythonServer();
+            console.log('Python server started successfully');
+        } catch (error) {
+            console.error('Failed to start Python server:', error);
+        }
+    } else {
+        console.log('Development mode: Python server should be started by dev:pyserver script');
     }
 
     const mainWindow = new BrowserWindow({

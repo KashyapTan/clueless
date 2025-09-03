@@ -1,8 +1,17 @@
-import {app, BrowserWindow, ipcMain} from 'electron';
+import {app, BrowserWindow} from 'electron';
 import path from 'path';
 import {isDev} from './utils.js';
+import { startPythonServer } from './pythonApi.js';
 
-app.on('ready', ()=>{
+app.on('ready', async ()=>{
+    // Start Python server first
+    try {
+        await startPythonServer();
+        console.log('Python server started successfully');
+    } catch (error) {
+        console.error('Failed to start Python server:', error);
+    }
+
     const mainWindow = new BrowserWindow({
         width: 800,
         height: 500,
@@ -17,6 +26,10 @@ app.on('ready', ()=>{
         maximizable: false,
         fullscreenable: false,
         // skipTaskbar: true,
+        webPreferences: {
+            nodeIntegration: false,
+            contextIsolation: true,
+        }
     });
 
     // Strengthen always-on-top level (optional):

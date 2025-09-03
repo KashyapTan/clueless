@@ -1,5 +1,19 @@
 from ollama import chat
-from .ss import take_region_screenshot, start_screenshot_service
+import sys
+import os
+
+# Add current directory to path for imports when run as script
+if __name__ == "__main__":
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    if current_dir not in sys.path:
+        sys.path.insert(0, current_dir)
+
+# Now import ss module
+try:
+    from .ss import take_region_screenshot, start_screenshot_service
+except ImportError:
+    # Fallback for when run as script
+    from ss import take_region_screenshot, start_screenshot_service
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.responses import HTMLResponse
 import threading

@@ -1,6 +1,47 @@
 {
     "appId": "com.kashyap-tanuku.clueless",
-    "files": ["dist-electron", "dist-react"],
+    "files": [
+        "dist-electron", 
+        "dist-react",
+        {
+            "from": ".venv",
+            "to": "resources/python",
+            "filter": [
+                "**/*",
+                "!**/__pycache__/**/*",
+                "!**/test*/**/*",
+                "!**/tests/**/*"
+            ]
+        },
+        {
+            "from": "source",
+            "to": "resources/python/source",
+            "filter": [
+                "**/*",
+                "!**/__pycache__/**/*"
+            ]
+        }
+    ],
+    "extraResources": [
+        {
+            "from": ".venv",
+            "to": "python",
+            "filter": [
+                "**/*",
+                "!**/__pycache__/**/*",
+                "!**/test*/**/*",
+                "!**/tests/**/*"
+            ]
+        },
+        {
+            "from": "source",
+            "to": "python/source",
+            "filter": [
+                "**/*",
+                "!**/__pycache__/**/*"
+            ]
+        }
+    ],
     "icon": "./assets/clueless-logo.jpg",
     "mac": {
         "target": "dmg"
@@ -10,6 +51,22 @@
         "category": "Utility"
     },
     "win": {
-        "target": ["portable", "msi"]
+        "target": [
+            {
+                "target": "nsis",
+                "arch": ["x64"]
+            },
+            {
+                "target": "portable",
+                "arch": ["x64"]
+            }
+        ],
+        "icon": "./assets/clueless-logo.jpg"
+    },
+    "nsis": {
+        "oneClick": false,
+        "allowToChangeInstallationDirectory": true,
+        "createDesktopShortcut": true,
+        "createStartMenuShortcut": true
     }
 }

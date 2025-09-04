@@ -39,22 +39,23 @@ function findPythonExecutable(): string {
         // Fallback to system Python
         return 'python';
     } else {
-        // In production, also try virtual environment first since we're likely distributing with it
-        const venvPython = path.join(process.cwd(), '.venv', 'Scripts', 'python.exe');
-        if (fs.existsSync(venvPython)) {
-            return venvPython;
-        }
-        
-        // Try bundled Python
+        // In production, use the PyInstaller-generated executable
         const resourcesPath = process.resourcesPath;
-        const bundledPython = path.join(resourcesPath, 'python', 'Scripts', 'python.exe');
+        const serverExecutable = path.join(resourcesPath, 'python-server', 'clueless-server.exe');
         
-        if (fs.existsSync(bundledPython)) {
-            return bundledPython;
+        if (fs.existsSync(serverExecutable)) {
+            return serverExecutable;
         }
         
-        // Fallback to system Python
-        return 'python';
+        // Fallback: try in app directory
+        const appPath = path.dirname(process.execPath);
+        const fallbackExecutable = path.join(appPath, 'resources', 'python-server', 'clueless-server.exe');
+        
+        if (fs.existsSync(fallbackExecutable)) {
+            return fallbackExecutable;
+        }
+        
+        throw new Error(`Python server executable not found at: ${serverExecutable} or ${fallbackExecutable}`);
     }
 }
 
@@ -63,16 +64,9 @@ function getPythonServerArgs(): string[] {
         // In development, run as module
         return ['-m', 'source.main'];
     } else {
-        // In production, check if we have bundled source
-        const resourcesPath = process.resourcesPath;
-        const bundledMain = path.join(resourcesPath, 'python', 'source', 'main.py');
-        
-        if (fs.existsSync(bundledMain)) {
-            return [bundledMain];
-        }
-        
-        // Fallback to module approach
-        return ['-m', 'source.main'];
+        // In production, the PyInstaller executable doesn't need arguments
+        // as it's a standalone executable
+        return [];
     }
 }
 
@@ -121,7 +115,7 @@ export async function startPythonServer(): Promise<void> {
         const args = getPythonServerArgs();
         
         console.log(`Starting Python server...`);
-        console.log(`Python path: ${pythonPath}`);
+        console.log(`Python executable: ${pythonPath}`);
         console.log(`Args: ${args.join(' ')}`);
 
         const options: SpawnOptions = {
@@ -132,11 +126,9 @@ export async function startPythonServer(): Promise<void> {
         if (isDev()) {
             options.cwd = process.cwd();
         } else {
-            const resourcesPath = process.resourcesPath;
-            const pythonDir = path.join(resourcesPath, 'python');
-            if (fs.existsSync(pythonDir)) {
-                options.cwd = pythonDir;
-            }
+            // For PyInstaller executable, we can use the directory where the executable is located
+            const executableDir = path.dirname(pythonPath);
+            options.cwd = executableDir;
         }
 
         pythonProcess = spawn(pythonPath, args, options);

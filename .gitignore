@@ -11,6 +11,8 @@ node_modules
 dist
 dist-react
 dist-electron
+dist-python
+build-temp
 *.local
 
 # Editor directories and files

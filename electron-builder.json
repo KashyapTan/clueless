@@ -2,43 +2,14 @@
     "appId": "com.kashyap-tanuku.clueless",
     "files": [
         "dist-electron", 
-        "dist-react",
-        {
-            "from": ".venv",
-            "to": "resources/python",
-            "filter": [
-                "**/*",
-                "!**/__pycache__/**/*",
-                "!**/test*/**/*",
-                "!**/tests/**/*"
-            ]
-        },
-        {
-            "from": "source",
-            "to": "resources/python/source",
-            "filter": [
-                "**/*",
-                "!**/__pycache__/**/*"
-            ]
-        }
+        "dist-react"
     ],
     "extraResources": [
         {
-            "from": ".venv",
-            "to": "python",
+            "from": "dist-python",
+            "to": "python-server",
             "filter": [
-                "**/*",
-                "!**/__pycache__/**/*",
-                "!**/test*/**/*",
-                "!**/tests/**/*"
-            ]
-        },
-        {
-            "from": "source",
-            "to": "python/source",
-            "filter": [
-                "**/*",
-                "!**/__pycache__/**/*"
+                "**/*"
             ]
         }
     ],

@@ -9,11 +9,39 @@
 ---
 
 # Clueless
-Talk to anything on your screen. 
-
 Take a screen shot of anything on your screen and start talking with or about it in real-time. 
 # Getting Started 
-Developer Version (User Version Beta) out now. Check release v0.0.1 for details.
+## Prerequisites
+- **Ollama**: You need to install Ollama and run a model
+  - Download from [ollama.com](https://ollama.ai/)
+  - Pull a vision model: `ollama run qwen2.5vl:7b` (this is the default model)
+  - Currently, the only model you can use with Clueless is `qwen2.5vl:7b`
+    - I am working on creating compatibality with all vision models
+
+## Installation
+
+### Quick Download
+<div>
+  <a href="https://github.com/KashyapTan/clueless/releases/latest/download/CluelessSetup.exe">
+    <img src="https://img.shields.io/badge/Download Clueless-blue?style=for-the-badge&logo=windows&logoColor=white" alt="Download Clueless Setup">
+  </a>
+</div>
+
+**Alternative:** Download from the [Releases](https://github.com/KashyapTan/clueless/releases) page
+
+#### Windows Security Notice
+You may see a Windows Defender SmartScreen warning:
+- This appears because the app is not yet code-signed with a commercial certificate
+- The app is safe to install - click "More info" then "Run anyway"
+- I am working on obtaining a code signing certificate to eliminate this warning
+
+# Usage
+1. Launch Clueless
+2. Take a screenshot with `ctrl + shift + alt + s`
+3. Enter a prompt or just click enter in textbox
+4. Response generated in real-time
+
+
 # Demo(s)
 ## Video Demo
 
@@ -50,10 +78,10 @@ Developer Version (User Version Beta) out now. Check release v0.0.1 for details.
 
 
 # Upcoming features
-- User Desktop Application In Progress
+- ~~User Desktop Application In Progress~~
 - Make window  & screenshot undetectable to screen share
 - Chat without image
 - Chat with message history
-- Model selector on UI (currently need to manual change model in `source/main.py`)
+- Model selector on UI (currently need to manual change model in `source/main.py` and rebuild the dist)
 - Web search integration
 - macOS compatability

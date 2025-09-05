@@ -1,5 +1,7 @@
 {
     "appId": "com.kashyap-tanuku.clueless",
+    "productName": "Clueless",
+    "copyright": "Copyright © 2025 Kashyap Tanuku",
     "files": [
         "dist-electron", 
         "dist-react"

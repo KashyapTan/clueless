@@ -6,6 +6,66 @@ import os
 import datetime
 from pynput import keyboard
 import threading
+import sys
+import platform
+
+# Fix for high DPI displays on Windows
+if platform.system() == "Windows":
+    try:
+        import ctypes
+        from ctypes import wintypes
+        
+        # Set DPI awareness for the process - try multiple methods for better compatibility
+        try:
+            # Windows 10, version 1703 and later (best option)
+            ctypes.windll.shcore.SetProcessDpiAwarenessContext(-4)  # DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2
+        except:
+            try:
+                # Windows 10, version 1607 and later  
+                ctypes.windll.shcore.SetProcessDpiAwareness(2)  # PROCESS_PER_MONITOR_DPI_AWARE
+            except:
+                try:
+                    # Windows Vista and later (fallback)
+                    ctypes.windll.user32.SetProcessDPIAware()
+                except:
+                    pass  # Fallback: do nothing if DPI functions aren't available
+                
+        def get_dpi_scale():
+            """Get the DPI scaling factor for the primary monitor"""
+            try:
+                # Try to get DPI for the monitor containing the cursor
+                try:
+                    # Get cursor position
+                    cursor_pos = wintypes.POINT()
+                    ctypes.windll.user32.GetCursorPos(ctypes.byref(cursor_pos))
+                    
+                    # Get monitor handle for the cursor position
+                    monitor = ctypes.windll.user32.MonitorFromPoint(
+                        cursor_pos, 1  # MONITOR_DEFAULTTOPRIMARY
+                    )
+                    
+                    # Get DPI for this specific monitor (Windows 10+)
+                    dpi_x = ctypes.c_uint()
+                    dpi_y = ctypes.c_uint()
+                    ctypes.windll.shcore.GetDpiForMonitor(
+                        monitor, 0, ctypes.byref(dpi_x), ctypes.byref(dpi_y)  # MDT_EFFECTIVE_DPI
+                    )
+                    return dpi_x.value / 96.0
+                except:
+                    # Fallback to system DPI
+                    hdc = ctypes.windll.user32.GetDC(0)
+                    dpi = ctypes.windll.gdi32.GetDeviceCaps(hdc, 88)  # LOGPIXELSX
+                    ctypes.windll.user32.ReleaseDC(0, hdc)
+                    return dpi / 96.0
+            except:
+                return 1.0
+                
+    except ImportError:
+        def get_dpi_scale():
+            return 1.0
+else:
+    def get_dpi_scale():
+        return 1.0
 
 class ScreenshotService:
     def __init__(self, callback=None):
@@ -67,7 +127,7 @@ class ScreenshotService:
             self.listener.stop()
             self.running = False
 
-def take_region_screenshot(save_folder="screenshots"):
+def take_region_screenshot(save_folder="screenshots", debug=False):
     """
     Opens a region selection tool and returns the path to the saved screenshot
     """
@@ -75,16 +135,26 @@ def take_region_screenshot(save_folder="screenshots"):
         os.makedirs(save_folder)
     
     class RegionSelector:
-        def __init__(self):
+        def __init__(self, debug=False):
             self.start_x = 0
             self.start_y = 0
             self.end_x = 0
             self.end_y = 0
             self.rect_id = None
             self.result_path = None
+            self.dpi_scale = get_dpi_scale()
+            self.debug = debug
             
         def select_region(self):
             root = tk.Tk()
+            
+            # Configure Tkinter for high DPI on Windows
+            if platform.system() == "Windows":
+                try:
+                    root.tk.call('tk', 'scaling', self.dpi_scale)
+                except:
+                    pass
+            
             root.attributes('-fullscreen', True)
             root.attributes('-alpha', 0.3)
             root.configure(bg='grey')
@@ -97,17 +167,47 @@ def take_region_screenshot(save_folder="screenshots"):
             
         def _show_selector(self, root):
             root.deiconify()
+            
+            # Capture the screen at full resolution first
             screen = ImageGrab.grab()
-            screen_rgba = screen.convert('RGBA')
+            screen_width, screen_height = screen.size
+            
+            # Get Tkinter's view of screen dimensions
+            root.update_idletasks()
+            tk_width = root.winfo_screenwidth()
+            tk_height = root.winfo_screenheight()
+            
+            # Calculate coordinate transformation ratios
+            # These handle the case where Tkinter coordinates != actual pixels
+            scale_x = screen_width / tk_width
+            scale_y = screen_height / tk_height
+            
+            if self.debug:
+                print(f"Debug: Screen resolution: {screen_width}x{screen_height}")
+                print(f"Debug: Tkinter resolution: {tk_width}x{tk_height}")
+                print(f"Debug: Scale factors: {scale_x:.3f}x, {scale_y:.3f}y")
+                print(f"Debug: DPI scale: {self.dpi_scale:.3f}")
+            
+            # Create display version - scale down screen capture to match Tkinter's coordinate system
+            # This ensures the preview matches what the user will select
+            if scale_x != 1.0 or scale_y != 1.0:
+                display_screen = screen.resize((tk_width, tk_height), Image.Resampling.LANCZOS)
+            else:
+                display_screen = screen
+            # Create dimmed overlay for the display
+            screen_rgba = display_screen.convert('RGBA')
             overlay = Image.new('RGBA', screen_rgba.size, (0, 0, 0, 500))
             dimmed = Image.alpha_composite(screen_rgba, overlay)
             dimmed_photo = ImageTk.PhotoImage(dimmed)
-            original_photo = ImageTk.PhotoImage(screen)
+            original_photo = ImageTk.PhotoImage(display_screen)
+            
             canvas = tk.Canvas(root, cursor="cross")
             canvas.pack(fill=tk.BOTH, expand=True)
             canvas.create_image(0, 0, anchor=tk.NW, image=dimmed_photo, tags=("base",))
-            canvas.dimmed_photo = dimmed_photo
-            canvas.original_photo = original_photo
+            
+            # Store references to prevent garbage collection
+            canvas.dimmed_photo = dimmed_photo  # type: ignore
+            canvas.original_photo = original_photo  # type: ignore
 
             def on_button_press(event):
                 self.start_x = event.x
@@ -123,10 +223,11 @@ def take_region_screenshot(save_folder="screenshots"):
                 x2 = max(self.start_x, self.end_x)
                 y2 = max(self.start_y, self.end_y)
                 if x2 > x1 and y2 > y1:
-                    region = screen.crop((x1, y1, x2, y2))
+                    # Use display coordinates for the preview
+                    region = display_screen.crop((x1, y1, x2, y2))
                     region_photo = ImageTk.PhotoImage(region)
                     canvas.create_image(x1, y1, anchor=tk.NW, image=region_photo, tags=('reveal',))
-                    canvas._reveal_photo = region_photo
+                    canvas._reveal_photo = region_photo  # type: ignore
                     canvas.create_rectangle(x1, y1, x2, y2, outline='white', width=3, tags=('outline',))
                 
             def on_button_release(event):
@@ -139,12 +240,32 @@ def take_region_screenshot(save_folder="screenshots"):
                 x2 = max(self.start_x, self.end_x)
                 y2 = max(self.start_y, self.end_y)
                 if x2 > x1 and y2 > y1:
-                    region_screenshot = screen.crop((x1, y1, x2, y2))
+                    # Convert Tkinter coordinates to actual screen pixel coordinates
+                    actual_x1 = int(x1 * scale_x)
+                    actual_y1 = int(y1 * scale_y)
+                    actual_x2 = int(x2 * scale_x)
+                    actual_y2 = int(y2 * scale_y)
+                    
+                    # Ensure coordinates are within screen bounds
+                    actual_x1 = max(0, min(actual_x1, screen_width))
+                    actual_y1 = max(0, min(actual_y1, screen_height))
+                    actual_x2 = max(0, min(actual_x2, screen_width))
+                    actual_y2 = max(0, min(actual_y2, screen_height))
+                    
+                    if self.debug:
+                        print(f"Debug: Tkinter coords: ({x1},{y1}) to ({x2},{y2})")
+                        print(f"Debug: Actual coords: ({actual_x1},{actual_y1}) to ({actual_x2},{actual_y2})")
+                    
+                    # Crop from the original full-resolution screen capture
+                    region_screenshot = screen.crop((actual_x1, actual_y1, actual_x2, actual_y2))
                     timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
                     filename = f"screenshot_{timestamp}.png"
                     filepath = os.path.join(save_folder, filename)
                     region_screenshot.save(filepath)
                     self.result_path = filepath
+                    
+                    if self.debug:
+                        print(f"Debug: Saved {region_screenshot.size[0]}x{region_screenshot.size[1]} screenshot")
                 root.destroy()
                 
             def on_escape(event):
@@ -162,10 +283,16 @@ def take_region_screenshot(save_folder="screenshots"):
             )
             instructions.pack(side=tk.TOP, fill=tk.X)
             canvas.focus_set()
-            canvas.screen_photo = original_photo
+            canvas.screen_photo = original_photo  # type: ignore
     
-    selector = RegionSelector()
+    selector = RegionSelector(debug)
     return selector.select_region()
+
+def take_region_screenshot_debug(save_folder="screenshots"):
+    """
+    Debug version of take_region_screenshot that shows coordinate mapping info
+    """
+    return take_region_screenshot(save_folder, debug=True)
 
 def start_screenshot_service(save_folder="screenshots", callback=None):
     """Start the screenshot service with keyboard shortcut"""

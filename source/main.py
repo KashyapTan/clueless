@@ -2,6 +2,8 @@ from ollama import chat
 import sys
 import os
 import socket
+import signal
+import atexit
 
 # Add current directory to path for imports when run as script
 if __name__ == "__main__":
@@ -30,6 +32,47 @@ from concurrent.futures import Future
 
 # FastAPI WebSocket setup
 app = FastAPI()
+
+# Global variables for cleanup
+_screenshot_service = None
+_server_thread = None
+_service_thread = None
+
+def cleanup_resources():
+    """Clean up all resources when shutting down."""
+    global _screenshot_service, _server_thread, _service_thread
+    print("Cleaning up resources...")
+    
+    # Stop screenshot service
+    if _screenshot_service:
+        try:
+            _screenshot_service.stop_listener()
+            print("Screenshot service stopped")
+        except Exception as e:
+            print(f"Error stopping screenshot service: {e}")
+    
+    # Clean up screenshot folder
+    try:
+        if os.path.exists("screenshots"):
+            clear_screenshots_folder("screenshots")
+            print("Screenshots folder cleaned")
+    except Exception as e:
+        print(f"Error cleaning screenshots folder: {e}")
+    
+    print("Cleanup completed")
+
+def signal_handler(signum, frame):
+    """Handle shutdown signals."""
+    print(f"Received signal {signum}, shutting down...")
+    cleanup_resources()
+    sys.exit(0)
+
+# Register signal handlers
+signal.signal(signal.SIGINT, signal_handler)
+signal.signal(signal.SIGTERM, signal_handler)
+
+# Register cleanup function to run at exit
+atexit.register(cleanup_resources)
 
 # Holder for the running uvicorn event loop so worker threads can schedule
 # coroutine work (websocket broadcasts) onto the SAME loop instead of creating
@@ -299,10 +342,12 @@ def start_fastapi_server():
     loop.run_until_complete(server.serve())
 
 def main():
+    global _screenshot_service, _server_thread, _service_thread
+    
     print("Starting FastAPI WebSocket server...")
     # Start FastAPI server in background
-    server_thread = threading.Thread(target=start_fastapi_server, daemon=True)
-    server_thread.start()
+    _server_thread = threading.Thread(target=start_fastapi_server, daemon=True)
+    _server_thread.start()
 
     # Wait until loop is available (startup barrier)
     for _ in range(50):  # up to ~5 seconds
@@ -322,12 +367,18 @@ def main():
     print("The service will run until you close this program")
     
     # Start the service in a separate thread with AI callback
-    service_thread = threading.Thread(
-        target=start_screenshot_service, 
-        args=("screenshots", process_screenshot),
-        daemon=True
-    )
-    service_thread.start()
+    # Import and create the screenshot service
+    try:
+        from ss import ScreenshotService
+        _screenshot_service = ScreenshotService(process_screenshot)
+        _service_thread = threading.Thread(
+            target=_screenshot_service.start_listener, 
+            args=("screenshots",),
+            daemon=True
+        )
+        _service_thread.start()
+    except Exception as e:
+        print(f"Error starting screenshot service: {e}")
     
     # Keep the main thread alive
     try:
@@ -335,6 +386,7 @@ def main():
             time.sleep(1)
     except KeyboardInterrupt:
         print("\nExiting...")
+        cleanup_resources()
         return
 
 if __name__ == "__main__":

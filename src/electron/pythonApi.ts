@@ -77,6 +77,8 @@ async function killProcessesOnPorts(ports: number[]): Promise<void> {
     
     for (const port of ports) {
         try {
+            console.log(`Checking for processes on port ${port}...`);
+            
             // Find processes using the port on Windows
             const { stdout } = await execAsync(`netstat -ano | findstr :${port}`);
             const lines = stdout.split('\n').filter(line => line.includes('LISTENING'));
@@ -86,29 +88,82 @@ async function killProcessesOnPorts(ports: number[]): Promise<void> {
                 const pid = parts[parts.length - 1];
                 if (pid && !isNaN(parseInt(pid))) {
                     try {
-                        // Check if it's a Python process before killing
-                        const { stdout: processInfo } = await execAsync(`tasklist /FI "PID eq ${pid}" /NH`);
-                        if (processInfo.toLowerCase().includes('python')) {
-                            console.log(`Terminating Python process ${pid} on port ${port}`);
-                            await execAsync(`taskkill /F /PID ${pid}`);
+                        // Check if process exists and get its name
+                        const { stdout: processInfo } = await execAsync(`tasklist /FI "PID eq ${pid}" /NH /FO CSV`);
+                        const processLines = processInfo.split('\n').filter(line => line.trim());
+                        
+                        for (const processLine of processLines) {
+                            if (processLine.includes(pid)) {
+                                const processName = processLine.split(',')[0].replace(/"/g, '').toLowerCase();
+                                
+                                // Kill if it's Python, our app, or related processes
+                                if (processName.includes('python') || 
+                                    processName.includes('clueless') ||
+                                    processName.includes('uvicorn') ||
+                                    processName.includes('fastapi')) {
+                                    console.log(`Terminating process ${processName} (PID: ${pid}) on port ${port}`);
+                                    await execAsync(`taskkill /F /PID ${pid}`);
+                                } else {
+                                    console.log(`Found process ${processName} on port ${port}, but not terminating (not our process)`);
+                                }
+                            }
                         }
                     } catch {
-                        // Ignore errors when checking/killing processes
+                        // Process might have already exited, try to kill anyway
+                        try {
+                            await execAsync(`taskkill /F /PID ${pid}`);
+                            console.log(`Force killed process ${pid} on port ${port}`);
+                        } catch {
+                            // Ignore if we can't kill it
+                        }
                     }
                 }
             }
-        } catch {
+        } catch (error) {
             // Port not in use or other error, continue
+            console.log(`No processes found on port ${port} or error checking: ${error instanceof Error ? error.message : 'Unknown error'}`);
         }
+    }
+    
+    // Also try to kill any remaining Python processes that might be our server
+    try {
+        console.log('Checking for any remaining Python processes...');
+        const { stdout: allPythonProcesses } = await execAsync(`tasklist /FI "IMAGENAME eq python.exe" /NH /FO CSV`);
+        const pythonLines = allPythonProcesses.split('\n').filter(line => line.trim() && line.includes('python.exe'));
+        
+        for (const line of pythonLines) {
+            const parts = line.split(',');
+            if (parts.length >= 2) {
+                const pid = parts[1].replace(/"/g, '');
+                if (pid && !isNaN(parseInt(pid))) {
+                    try {
+                        // Check command line to see if it's our server
+                        const { stdout: cmdLine } = await execAsync(`wmic process where "ProcessId=${pid}" get CommandLine /value`);
+                        if (cmdLine.includes('clueless-server') || 
+                            cmdLine.includes('source.main') || 
+                            cmdLine.includes('uvicorn') ||
+                            cmdLine.includes('fastapi')) {
+                            console.log(`Terminating Python server process (PID: ${pid})`);
+                            await execAsync(`taskkill /F /PID ${pid}`);
+                        }
+                    } catch {
+                        // Ignore errors when checking command line
+                    }
+                }
+            }
+        }
+    } catch (error) {
+        console.log(`Error checking for Python processes: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
 }
 
 export async function startPythonServer(): Promise<void> {
-    // Only clean up existing processes in production, not in development
-    if (!isDev()) {
-        console.log('Checking for existing Python processes on ports 8000-8004...');
-        await killProcessesOnPorts([8000, 8001, 8002, 8003, 8004]);
-    }
+    // Clean up any existing processes on startup (both dev and production)
+    console.log('Cleaning up any existing processes before starting...');
+    await killProcessesOnPorts([8000, 8001, 8002, 8003, 8004]);
+    
+    // Wait a moment for cleanup to complete
+    await new Promise(resolve => setTimeout(resolve, 1000));
     
     return new Promise((resolve, reject) => {
         const pythonPath = findPythonExecutable();
@@ -240,12 +295,35 @@ export async function startPythonServer(): Promise<void> {
     });
 }
 
-export function stopPythonServer(): void {
+export async function stopPythonServer(): Promise<void> {
+    console.log('Stopping Python server...');
+    
+    // First try to gracefully stop the process
     if (pythonProcess) {
-        console.log('Stopping Python server...');
-        pythonProcess.kill();
+        try {
+            pythonProcess.kill('SIGTERM');
+            
+            // Wait a bit for graceful shutdown
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            
+            // If still running, force kill
+            if (!pythonProcess.killed) {
+                pythonProcess.kill('SIGKILL');
+            }
+        } catch (error) {
+            console.error('Error stopping Python process:', error);
+        }
         pythonProcess = null;
     }
+    
+    // Also kill any remaining Python processes on the known ports
+    try {
+        await killProcessesOnPorts([8000, 8001, 8002, 8003, 8004]);
+    } catch (error) {
+        console.error('Error killing processes on ports:', error);
+    }
+    
+    console.log('Python server cleanup completed');
 }
 
 export function getServerPort(): number {
@@ -253,10 +331,10 @@ export function getServerPort(): number {
 }
 
 // Cleanup on app quit
-app.on('before-quit', () => {
-    stopPythonServer();
+app.on('before-quit', async () => {
+    await stopPythonServer();
 });
 
-app.on('window-all-closed', () => {
-    stopPythonServer();
+app.on('window-all-closed', async () => {
+    await stopPythonServer();
 });

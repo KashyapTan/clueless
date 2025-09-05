@@ -8,6 +8,7 @@ from pynput import keyboard
 import threading
 import sys
 import platform
+import time
 
 # Fix for high DPI displays on Windows
 if platform.system() == "Windows":
@@ -96,6 +97,8 @@ class ScreenshotService:
 
         def on_activate():
             with self._lock:
+                if not self.running:  # Check if service is still running
+                    return
                 if self.capturing:
                     return
                 self.capturing = True
@@ -107,25 +110,37 @@ class ScreenshotService:
             on_activate
         )
 
-        def for_canonical(f):
-            return lambda k: f(self.listener.canonical(k))
+        def on_press(key):
+            if self.listener and self.running:
+                hotkey.press(self.listener.canonical(key))
+        
+        def on_release(key):
+            if self.listener and self.running:
+                hotkey.release(self.listener.canonical(key))
 
         self.listener = keyboard.Listener(
-            on_press=for_canonical(hotkey.press),
-            on_release=for_canonical(hotkey.release)
+            on_press=on_press,
+            on_release=on_release
         )
         self.listener.start()
         try:
-            self.listener.join()
+            while self.running:
+                time.sleep(0.1)
         except KeyboardInterrupt:
             print("\nScreenshot service stopped.")
-            self.running = False
+        finally:
+            self.stop_listener()
 
     def stop_listener(self):
         """Stop the keyboard listener."""
+        self.running = False
         if self.listener:
-            self.listener.stop()
-            self.running = False
+            try:
+                self.listener.stop()
+                print("Keyboard listener stopped")
+            except Exception as e:
+                print(f"Error stopping keyboard listener: {e}")
+            self.listener = None
 
 def take_region_screenshot(save_folder="screenshots", debug=False):
     """

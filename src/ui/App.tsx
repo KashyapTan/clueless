@@ -20,6 +20,7 @@ function App() {
   const [status, setStatus] = useState<string>('Connecting to server...');
   const [error, setError] = useState<string>('');
   const [canSubmit, setCanSubmit] = useState<boolean>(false);
+  const [isHidden, setIsHidden] = useState<boolean>(false);
   const wsRef = useRef<WebSocket | null>(null);
   const inputRef = useRef<HTMLInputElement | null>(null);
 
@@ -40,12 +41,16 @@ function App() {
           const data = JSON.parse(event.data);
 
           switch (data.type) {
+            case 'screenshot_start':
+              setIsHidden(true);
+              break;
             case 'screenshot_ready':
               setStatus(data.content || 'Screenshot captured. Enter your query.');
               setResponse('');
               setError('');
               setQuery('');
               setCanSubmit(true);
+              setIsHidden(false);
               break;
             case 'query':
               // Server echoes the submitted query
@@ -146,7 +151,7 @@ function App() {
 
   return (
     <>
-    <div className="container">
+    <div className="container" style={{ opacity: isHidden ? 0 : 1 }}>
       <div className="title-bar" />
       <div className="response-area">
         {error && <div className="error"><strong>Error:</strong> {error}</div>}

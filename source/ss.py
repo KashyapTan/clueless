@@ -69,10 +69,11 @@ else:
         return 1.0
 
 class ScreenshotService:
-    def __init__(self, callback=None):
+    def __init__(self, callback=None, start_callback=None):
         self.listener = None
         self.running = False
         self.callback = callback  # Function to call when screenshot is taken
+        self.start_callback = start_callback  # Function to call when screenshot capture starts
         self.capturing = False
         self._lock = threading.Lock()
 
@@ -103,6 +104,11 @@ class ScreenshotService:
                     return
                 self.capturing = True
             print("Hotkey detected! Starting region selection...")
+            
+            # Call the start callback if provided
+            if self.start_callback:
+                threading.Thread(target=self.start_callback, daemon=True).start()
+                
             threading.Thread(target=self._do_capture, args=(save_folder,), daemon=True).start()
 
         hotkey = keyboard.HotKey(

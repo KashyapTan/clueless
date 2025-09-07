@@ -296,6 +296,31 @@ async def handle_submit_query(user_query: str):
             _is_streaming = False
         print("Screenshot processed & cleaned up. Ready for next capture.")
 
+async def _on_screenshot_start():
+    """Called when screenshot capture starts; notify clients to hide window."""
+    print("Screenshot capture starting - hiding window")
+    await broadcast_message("screenshot_start", "Screenshot capture starting")
+
+def process_screenshot_start():
+    """Hook invoked by screenshot service thread when screenshot capture starts.
+    
+    Schedules a coroutine on the running server loop to broadcast that
+    screenshot capture is starting so the UI can hide the window.
+    """
+    server_loop = _server_loop_holder.get("loop")
+    if server_loop is None:
+        print("Server loop not ready yet. Skipping screenshot start processing.")
+        return None
+
+    def schedule():
+        asyncio.create_task(_on_screenshot_start())
+
+    try:
+        server_loop.call_soon_threadsafe(schedule)
+    except Exception as e:
+        print(f"Failed to schedule screenshot start handling: {e}")
+    return None
+
 async def _on_screenshot_captured(image_path: str):
     """Called when a screenshot is captured; notify clients to ask for query."""
     global _latest_screenshot_path
@@ -370,7 +395,7 @@ def main():
     # Import and create the screenshot service
     try:
         from ss import ScreenshotService
-        _screenshot_service = ScreenshotService(process_screenshot)
+        _screenshot_service = ScreenshotService(process_screenshot, process_screenshot_start)
         _service_thread = threading.Thread(
             target=_screenshot_service.start_listener, 
             args=("screenshots",),

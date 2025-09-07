@@ -125,3 +125,33 @@ html{
 .query-input:focus {
   outline: none;
 }
+
+.code-block-container {
+  position: relative;
+}
+
+.copy-button {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+  color: white;
+  padding: 4px;
+  cursor: pointer;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.2s ease;
+}
+
+.copy-button:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.copy-button:active {
+  background: rgba(255, 255, 255, 0.3);
+  transform: scale(0.95);
+}

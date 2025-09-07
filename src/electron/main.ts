@@ -20,10 +20,10 @@ app.on('ready', async ()=>{
     }
 
     mainWindow = new BrowserWindow({
-        width: 800,
-        height: 500,
-        minWidth: 400,
-        minHeight: 300,
+        width: 400,
+        height: 400,
+        minWidth: 300,
+        minHeight: 200,
         title: 'Clueless',
         frame: false,
         transparent: true,

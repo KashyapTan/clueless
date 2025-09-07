@@ -5,6 +5,15 @@ import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import './App.css'
 
+// Extend the Window interface to include electronAPI
+declare global {
+  interface Window {
+    electronAPI?: {
+      focusWindow: () => Promise<void>;
+    };
+  }
+}
+
 function App() {
   const [query, setQuery] = useState<string>('');
   const [response, setResponse] = useState<string>('');

@@ -8,7 +8,7 @@
 
 ---
 
-# Clueless | Now an official Ollama Community Integration 🎉
+# Clueless | Official Ollama Community Integration 🎉
 Take a screen shot of anything on your screen and start talking with or about it in real-time.
 # Getting Started 
 ## Prerequisites

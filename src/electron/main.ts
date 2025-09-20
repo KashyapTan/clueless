@@ -22,8 +22,8 @@ app.on('ready', async ()=>{
     mainWindow = new BrowserWindow({
         width: 400,
         height: 400,
-        minWidth: 300,
-        minHeight: 200,
+        minWidth: 30,
+        minHeight: 20,
         title: 'Clueless',
         frame: false,
         transparent: true,
@@ -32,7 +32,7 @@ app.on('ready', async ()=>{
         minimizable: false,
         maximizable: false,
         fullscreenable: false,
-        // skipTaskbar: true,
+        skipTaskbar: true,
         webPreferences: {
             nodeIntegration: false,
             contextIsolation: true,
@@ -41,9 +41,10 @@ app.on('ready', async ()=>{
 
     // Strengthen always-on-top level (optional):
     mainWindow.setAlwaysOnTop(true, 'screen-saver'); // or 'floating'
+    mainWindow.setContentProtection(true); // Prevent screen capture on some OSes
 
     // Show across virtual desktops / fullscreen spaces:
-    mainWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
+    // mainWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
 
     // Handle window closed event
     mainWindow.on('closed', async () => {

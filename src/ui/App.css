@@ -155,3 +155,56 @@ html{
   background: rgba(255, 255, 255, 0.3);
   transform: scale(0.95);
 }
+
+/* Thinking section styles */
+.thinking-section {
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 6px;
+  background-color: rgba(255, 255, 255, 0.05);
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.thinking-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  cursor: pointer;
+  user-select: none;
+  background-color: rgba(255, 255, 255, 0.05);
+  transition: background-color 0.2s ease;
+}
+
+.thinking-header:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.thinking-arrow {
+  font-size: 0.7rem;
+  transition: transform 0.2s ease;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.thinking-arrow.expanded {
+  transform: rotate(90deg);
+}
+
+.thinking-label {
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.7);
+  font-style: italic;
+}
+
+.thinking-content {
+  padding: 0.75rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  font-size: 0.9rem;
+  color: rgba(255, 255, 255, 0.6);
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.thinking-content p {
+  margin-bottom: 0.5em;
+}

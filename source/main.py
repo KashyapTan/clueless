@@ -181,64 +181,97 @@ async def _stream_ollama_chat(user_query: str, image_path: str) -> str:
         except RuntimeError:
             pass
 
-    def extract_token(chunk) -> str | None:
-        """Attempt to pull an incremental token from a chunk.
+    def extract_token(chunk) -> tuple[str | None, str | None]:
+        """Attempt to pull content and thinking tokens from a chunk.
 
         Supports both dict (older client) and object (dataclass) shapes.
+        Returns (content_token, thinking_token).
         """
+        content_token = None
+        thinking_token = None
+        
         # Dict-based chunk
         if isinstance(chunk, dict):
             msg = chunk.get('message')
             if isinstance(msg, dict):
-                tok = msg.get('content')
-                if isinstance(tok, str) and tok:
-                    return tok
-            for key in ('response', 'content', 'delta', 'text', 'token'):
-                tok = chunk.get(key)
-                if isinstance(tok, str) and tok:
-                    return tok
-            return None
-        # Object-based chunk
-        # Common attributes possibly present: response (stream token), message (final), done, created_at
-        for attr in ('response', 'content', 'delta', 'token'):
-            if hasattr(chunk, attr):
-                val = getattr(chunk, attr)
-                if isinstance(val, str) and val:
-                    return val
-        # message may itself be an object with .content
+                content_token = msg.get('content') if isinstance(msg.get('content'), str) and msg.get('content') else None
+                thinking_token = msg.get('thinking') if isinstance(msg.get('thinking'), str) and msg.get('thinking') else None
+            if not content_token:
+                for key in ('response', 'content', 'delta', 'text', 'token'):
+                    tok = chunk.get(key)
+                    if isinstance(tok, str) and tok:
+                        content_token = tok
+                        break
+            return (content_token, thinking_token)
+        
+        # Object-based chunk - check for message.thinking first
         if hasattr(chunk, 'message'):
             msg = getattr(chunk, 'message')
-            if msg is not None and hasattr(msg, 'content'):
-                val = getattr(msg, 'content')
-                if isinstance(val, str) and val:
-                    return val
-        return None
+            if msg is not None:
+                if hasattr(msg, 'thinking'):
+                    val = getattr(msg, 'thinking')
+                    if isinstance(val, str) and val:
+                        thinking_token = val
+                if hasattr(msg, 'content'):
+                    val = getattr(msg, 'content')
+                    if isinstance(val, str) and val:
+                        content_token = val
+        
+        # Fallback for content if not found in message
+        if not content_token:
+            for attr in ('response', 'content', 'delta', 'token'):
+                if hasattr(chunk, attr):
+                    val = getattr(chunk, attr)
+                    if isinstance(val, str) and val:
+                        content_token = val
+                        break
+        
+        return (content_token, thinking_token)
 
     def producer():
         accumulated: list[str] = []
+        thinking_tokens: list[str] = []
         final_message_content: str | None = None
+        
         try:
             generator = chat(
-                model='qwen2.5vl:7b',
+                model='qwen3-vl:8b',
                 messages=[{
                     'role': 'user',
                     'content': user_query,
                     'images': [image_path],
                 }],
-                stream=True
+                stream=True,
             )
             for idx, chunk in enumerate(generator):
-                token = extract_token(chunk)
-                if token:
-                    accumulated.append(token)
-                    safe_schedule(broadcast_message("response_chunk", token))
-                # Track possible final assembled message (object style)
+                content_token, thinking_token = extract_token(chunk)
+                
+                # Handle thinking tokens - they come one at a time
+                if thinking_token:
+                    thinking_tokens.append(thinking_token)
+                    safe_schedule(broadcast_message("thinking_chunk", thinking_token))
+                
+                # Handle regular content - when we start getting content, thinking is done
+                if content_token:
+                    # If this is first content and we had thinking, send thinking_complete
+                    if thinking_tokens and not accumulated:
+                        safe_schedule(broadcast_message("thinking_complete", ""))
+                    accumulated.append(content_token)
+                    safe_schedule(broadcast_message("response_chunk", content_token))
+                    
+                # Track final message from done chunk
                 if hasattr(chunk, 'done') and getattr(chunk, 'done') and hasattr(chunk, 'message'):
                     msg = getattr(chunk, 'message')
-                    if msg is not None and hasattr(msg, 'content'):
-                        mc = getattr(msg, 'content')
-                        if isinstance(mc, str) and mc:
-                            final_message_content = mc
+                    if msg is not None:
+                        if hasattr(msg, 'content'):
+                            mc = getattr(msg, 'content')
+                            if isinstance(mc, str) and mc:
+                                final_message_content = mc
+            
+            # If we had thinking but never sent complete (e.g., no content followed)
+            if thinking_tokens and not accumulated:
+                safe_schedule(broadcast_message("thinking_complete", ""))
+            
             # Fallback: if no incremental tokens but we have a final message content
             if not accumulated and final_message_content:
                 accumulated.append(final_message_content)

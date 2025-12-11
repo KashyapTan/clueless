@@ -17,6 +17,9 @@ declare global {
 function App() {
   const [query, setQuery] = useState<string>('');
   const [response, setResponse] = useState<string>('');
+  const [thinking, setThinking] = useState<string>('');
+  const [isThinking, setIsThinking] = useState<boolean>(false);
+  const [thinkingCollapsed, setThinkingCollapsed] = useState<boolean>(true);
   const [status, setStatus] = useState<string>('Connecting to server...');
   const [error, setError] = useState<string>('');
   const [canSubmit, setCanSubmit] = useState<boolean>(false);
@@ -67,6 +70,9 @@ function App() {
             case 'screenshot_ready':
               setStatus(data.content || 'Screenshot captured. Enter your query.');
               setResponse('');
+              setThinking('');
+              setIsThinking(false);
+              setThinkingCollapsed(true);
               setError('');
               setQuery('');
               setCanSubmit(true);
@@ -76,8 +82,16 @@ function App() {
               // Server echoes the submitted query
               setQuery(data.content);
               setError('');
-              setStatus('Receiving response...');
+              setStatus('Thinking...');
+              setIsThinking(true);
               setCanSubmit(false);
+              break;
+            case 'thinking_chunk':
+              setThinking(prev => prev + data.content);
+              break;
+            case 'thinking_complete':
+              setIsThinking(false);
+              setStatus('Receiving response...');
               break;
             case 'response_chunk':
               setResponse(prev => prev + data.content);
@@ -194,6 +208,24 @@ function App() {
                 onChange={e => setQuery(e.target.value)}
               />
             </form>
+          </div>
+        )}
+        {!error && thinking && (
+          <div className="thinking-section">
+            <div 
+              className="thinking-header" 
+              onClick={() => setThinkingCollapsed(!thinkingCollapsed)}
+            >
+              <span className={`thinking-arrow ${thinkingCollapsed ? '' : 'expanded'}`}>▶</span>
+              <span className="thinking-label">
+                {isThinking ? 'Thinking...' : 'Thought process'}
+              </span>
+            </div>
+            {!thinkingCollapsed && (
+              <div className="thinking-content">
+                <ReactMarkdown>{thinking}</ReactMarkdown>
+              </div>
+            )}
           </div>
         )}
         {!error && response && (

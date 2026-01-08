@@ -79,7 +79,6 @@ You may see a Windows Defender SmartScreen warning:
 
 # Upcoming features
 - ~~User Desktop Application In Progress~~
-- ~~Make window  & screenshot undetectable to screen share~~
 - Chat without image
 - Chat with message history
 - Model selector on UI (currently need to manual change model in `source/main.py` and rebuild the dist)

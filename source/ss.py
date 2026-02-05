@@ -177,7 +177,7 @@ def take_region_screenshot(save_folder="screenshots", debug=False):
                     pass
             
             root.attributes('-fullscreen', True)
-            root.attributes('-alpha', 0.01)  # Nearly invisible - was 0.3
+            root.attributes('-alpha', 1.0)  # Fully visible for region selection UI
             root.configure(bg='grey')
             root.attributes('-topmost', True)
             root.withdraw()  # Hide initially
@@ -215,19 +215,19 @@ def take_region_screenshot(save_folder="screenshots", debug=False):
                 display_screen = screen.resize((tk_width, tk_height), Image.Resampling.LANCZOS)
             else:
                 display_screen = screen
-            # Create dimmed overlay for the display - COMMENTED OUT for invisible mode
-            # screen_rgba = display_screen.convert('RGBA')
-            # overlay = Image.new('RGBA', screen_rgba.size, (0, 0, 0, 500))
-            # dimmed = Image.alpha_composite(screen_rgba, overlay)
-            # dimmed_photo = ImageTk.PhotoImage(dimmed)
+            # Create dimmed overlay for the display
+            screen_rgba = display_screen.convert('RGBA')
+            overlay = Image.new('RGBA', screen_rgba.size, (0, 0, 0, 100))
+            dimmed = Image.alpha_composite(screen_rgba, overlay)
+            dimmed_photo = ImageTk.PhotoImage(dimmed)
             original_photo = ImageTk.PhotoImage(display_screen)
             
-            canvas = tk.Canvas(root)  # Removed cursor="cross" for invisible mode
+            canvas = tk.Canvas(root, cursor="cross")
             canvas.pack(fill=tk.BOTH, expand=True)
-            # canvas.create_image(0, 0, anchor=tk.NW, image=dimmed_photo, tags=("base",))  # COMMENTED OUT
+            canvas.create_image(0, 0, anchor=tk.NW, image=dimmed_photo, tags=("base",))
             
             # Store references to prevent garbage collection
-            # canvas.dimmed_photo = dimmed_photo  # type: ignore  # COMMENTED OUT
+            canvas.dimmed_photo = dimmed_photo  # type: ignore
             canvas.original_photo = original_photo  # type: ignore
 
             def on_button_press(event):
@@ -235,23 +235,21 @@ def take_region_screenshot(save_folder="screenshots", debug=False):
                 self.start_y = event.y
 
             def on_move_press(event):
-                # COMMENTED OUT visual feedback for invisible mode
-                # canvas.delete('reveal')
-                # canvas.delete('outline')
+                canvas.delete('reveal')
+                canvas.delete('outline')
                 self.end_x = event.x
                 self.end_y = event.y
-                # x1 = min(self.start_x, self.end_x)
-                # y1 = min(self.start_y, self.end_y)
-                # x2 = max(self.start_x, self.end_x)
-                # y2 = max(self.start_y, self.end_y)
-                # if x2 > x1 and y2 > y1:
-                #     # Use display coordinates for the preview
-                #     region = display_screen.crop((x1, y1, x2, y2))
-                #     region_photo = ImageTk.PhotoImage(region)
-                #     canvas.create_image(x1, y1, anchor=tk.NW, image=region_photo, tags=('reveal',))
-                #     canvas._reveal_photo = region_photo  # type: ignore
-                #     canvas.create_rectangle(x1, y1, x2, y2, outline='white', width=3, tags=('outline',))
-                pass  # Keep tracking coordinates without visual feedback
+                x1 = min(self.start_x, self.end_x)
+                y1 = min(self.start_y, self.end_y)
+                x2 = max(self.start_x, self.end_x)
+                y2 = max(self.start_y, self.end_y)
+                if x2 > x1 and y2 > y1:
+                    # Use display coordinates for the preview
+                    region = display_screen.crop((x1, y1, x2, y2))
+                    region_photo = ImageTk.PhotoImage(region)
+                    canvas.create_image(x1, y1, anchor=tk.NW, image=region_photo, tags=('reveal',))
+                    canvas._reveal_photo = region_photo  # type: ignore
+                    canvas.create_rectangle(x1, y1, x2, y2, outline='white', width=2, tags=('outline',))
                 
             def on_button_release(event):
                 self.end_x = event.x
@@ -299,13 +297,12 @@ def take_region_screenshot(save_folder="screenshots", debug=False):
             canvas.bind("<ButtonRelease-1>", on_button_release)
             canvas.bind("<Escape>", on_escape)
             root.bind("<Escape>", on_escape)
-            # COMMENTED OUT instructions label for invisible mode
-            # instructions = tk.Label(
-            #     root, 
-            #     text="Click & drag to select region. Press ESC to cancel.",
-            #     bg="grey", fg="black", font=("Roboto", 12)
-            # )
-            # instructions.pack(side=tk.TOP, fill=tk.X)
+            instructions = tk.Label(
+                root, 
+                text="Click & drag to select region. Press ESC to cancel.",
+                bg="black", fg="white", font=("Arial", 12)
+            )
+            instructions.place(relx=0.5, rely=0.02, anchor=tk.N)
             canvas.focus_set()
             canvas.screen_photo = original_photo  # type: ignore
     

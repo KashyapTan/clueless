@@ -165,7 +165,7 @@ def clear_screenshots_folder(folder_path="screenshots"):
     except Exception as e:
         print(f"Error clearing folder: {e}")
 
-async def _stream_ollama_chat(user_query: str, image_path: str) -> str:
+async def _stream_ollama_chat(user_query: str, image_path: str, chat_history: List[Dict[str, Any]]) -> str:
     """Stream Ollama response without blocking the event loop.
 
     A background thread iterates the blocking Ollama generator and schedules
@@ -233,14 +233,42 @@ async def _stream_ollama_chat(user_query: str, image_path: str) -> str:
         thinking_tokens: list[str] = []
         final_message_content: str | None = None
         
+        # Build messages list from chat history
+        # First message includes the image, follow-ups are text-only
+        messages = []
+        for i, msg in enumerate(chat_history):
+            if i == 0:
+                # First user message includes the image
+                messages.append({
+                    'role': msg['role'],
+                    'content': msg['content'],
+                    'images': [image_path],
+                })
+            else:
+                messages.append({
+                    'role': msg['role'],
+                    'content': msg['content'],
+                })
+        
+        # Add current user query
+        if len(messages) == 0:
+            # First message - include image
+            messages.append({
+                'role': 'user',
+                'content': user_query,
+                'images': [image_path],
+            })
+        else:
+            # Follow-up message - no image needed
+            messages.append({
+                'role': 'user',
+                'content': user_query,
+            })
+        
         try:
             generator = chat(
-                model='qwen3-vl:8b',
-                messages=[{
-                    'role': 'user',
-                    'content': user_query,
-                    'images': [image_path],
-                }],
+                model='qwen3-vl:8b-instruct',
+                messages=messages,
                 stream=True,
             )
             for idx, chunk in enumerate(generator):
@@ -300,9 +328,12 @@ _latest_screenshot_path: str | None = None
 _is_streaming: bool = False
 _stream_lock = asyncio.Lock()
 
+# Chat history for multi-turn conversations (cleared on new screenshot)
+_chat_history: List[Dict[str, Any]] = []
+
 async def handle_submit_query(user_query: str):
     """Handle query submitted from a client for the most recent screenshot."""
-    global _latest_screenshot_path, _is_streaming
+    global _latest_screenshot_path, _is_streaming, _chat_history
     async with _stream_lock:
         if _is_streaming:
             await broadcast_message("error", "Already streaming a response. Please wait for completion.")
@@ -317,21 +348,33 @@ async def handle_submit_query(user_query: str):
     await broadcast_message("query", user_query)
 
     try:
-        await _stream_ollama_chat(user_query, image_path)
+        # Pass current chat history to the streaming function
+        response_text = await _stream_ollama_chat(user_query, image_path, _chat_history.copy())
+        
+        # Add this exchange to chat history for future follow-ups
+        _chat_history.append({'role': 'user', 'content': user_query})
+        _chat_history.append({'role': 'assistant', 'content': response_text})
+        print(f"Chat history now has {len(_chat_history)} messages")
+        
     except Exception as e:
         await broadcast_message("error", f"Error processing with AI: {e}")
     finally:
-        # Cleanup after completion
-        folder_path = os.path.dirname(image_path)
-        clear_screenshots_folder(folder_path)
         async with _stream_lock:
-            _latest_screenshot_path = None
             _is_streaming = False
-        print("Screenshot processed & cleaned up. Ready for next capture.")
+        # Note: We no longer clear the screenshot here to allow follow-up questions
 
 async def _on_screenshot_start():
     """Called when screenshot capture starts; notify clients to hide window."""
+    global _latest_screenshot_path
     print("Screenshot capture starting - hiding window")
+    
+    # Clear old screenshot BEFORE new one is taken (so we don't delete the new one)
+    if _latest_screenshot_path:
+        old_folder = os.path.dirname(_latest_screenshot_path)
+        if old_folder:
+            clear_screenshots_folder(old_folder)
+        _latest_screenshot_path = None  # Clear the path since we deleted it
+    
     await broadcast_message("screenshot_start", "Screenshot capture starting")
 
 def process_screenshot_start():
@@ -356,7 +399,12 @@ def process_screenshot_start():
 
 async def _on_screenshot_captured(image_path: str):
     """Called when a screenshot is captured; notify clients to ask for query."""
-    global _latest_screenshot_path
+    global _latest_screenshot_path, _chat_history
+    
+    # Clear chat history for new conversation
+    _chat_history = []
+    print("Chat history cleared for new screenshot")
+    
     _latest_screenshot_path = image_path
     print(f"Screenshot ready for query: {image_path}")
     await broadcast_message("screenshot_ready", "Screenshot captured. Enter your query and press Enter.")

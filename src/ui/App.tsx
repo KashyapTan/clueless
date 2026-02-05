@@ -21,11 +21,18 @@ function App() {
   const [isThinking, setIsThinking] = useState<boolean>(false);
   const [thinkingCollapsed, setThinkingCollapsed] = useState<boolean>(true);
   const [status, setStatus] = useState<string>('Connecting to server...');
-  const [error, setError] = useState<string>('');
+  const [error, setError] = useState<string>('');;
   const [canSubmit, setCanSubmit] = useState<boolean>(false);
   const [isHidden, setIsHidden] = useState<boolean>(false);
+  // Chat history for multi-turn conversations
+  const [chatHistory, setChatHistory] = useState<Array<{role: 'user' | 'assistant', content: string, thinking?: string}>>([]);
+  const [currentQuery, setCurrentQuery] = useState<string>('');
   const wsRef = useRef<WebSocket | null>(null);
   const inputRef = useRef<HTMLInputElement | null>(null);
+  // Refs to track current values for WebSocket handler
+  const currentQueryRef = useRef<string>('');
+  const responseRef = useRef<string>('');
+  const thinkingRef = useRef<string>('');
 
   const copyToClipboard = async (text: string) => {
     try {
@@ -75,12 +82,19 @@ function App() {
               setThinkingCollapsed(true);
               setError('');
               setQuery('');
+              setCurrentQuery('');
+              setChatHistory([]); // Clear chat history for new screenshot
               setCanSubmit(true);
               setIsHidden(false);
+              // Reset refs
+              currentQueryRef.current = '';
+              responseRef.current = '';
+              thinkingRef.current = '';
               break;
             case 'query':
               // Server echoes the submitted query
-              setQuery(data.content);
+              setCurrentQuery(data.content);
+              currentQueryRef.current = data.content;
               setError('');
               setStatus('Thinking...');
               setIsThinking(true);
@@ -88,6 +102,7 @@ function App() {
               break;
             case 'thinking_chunk':
               setThinking(prev => prev + data.content);
+              thinkingRef.current += data.content;
               break;
             case 'thinking_complete':
               setIsThinking(false);
@@ -95,16 +110,38 @@ function App() {
               break;
             case 'response_chunk':
               setResponse(prev => prev + data.content);
+              responseRef.current += data.content;
               break;
-            case 'response_complete':
-              setStatus('Response complete.');
-              setCanSubmit(false);
+            case 'response_complete': {
+              // Capture values BEFORE resetting - React's setState callback runs async!
+              const completedQuery = currentQueryRef.current;
+              const completedResponse = responseRef.current;
+              const completedThinking = thinkingRef.current;
+              
+              // Add the completed exchange to chat history
+              setChatHistory(prev => [
+                ...prev,
+                { role: 'user', content: completedQuery },
+                { role: 'assistant', content: completedResponse, thinking: completedThinking || undefined }
+              ]);
+              // Clear current response/thinking for next turn
+              setResponse('');
+              setThinking('');
+              setCurrentQuery('');
+              setQuery('');
+              // Reset refs
+              currentQueryRef.current = '';
+              responseRef.current = '';
+              thinkingRef.current = '';
+              setStatus('Ready for follow-up question.');
+              setCanSubmit(true); // Allow follow-up questions
               break;
+            }
             case 'error':
               setError(data.content);
               setResponse('');
               setStatus('An error occurred.');
-              setCanSubmit(false);
+              setCanSubmit(true); // Allow retry
               break;
           }
         } catch (e) {
@@ -176,10 +213,34 @@ function App() {
     e.preventDefault();
     if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) return;
 
-    const PROMPT = "Analyze the following image in detail. Then predict what the users follow up questions/tasks could be. Based on the prediction/tasks, answer the question(s) or do the task(s). MAKE SURE YOU LIST AND ANSWER THE FOLLOW-UP QUESTIONS.";
+    const PROMPT = `
+# Role & Persona
+Imagine you are a Senior Software Engineer taking a technical interview. You are an expert at articulating complex logic, optimizing algorithms, and demonstrating clear communication. Your goal is to solve the following coding question as simply as possible and with the least space and time complexity.
+
+# Capabilities
+Since you are a Vision-Language model, if I provide an image (e.g., a screenshot of the problem description, a diagram, or a whiteboard sketch), you must analyze the visual data accurately to inform your solution.
+
+# Process
+Follow these steps for every question:
+
+1. **Clarification & Constraints:** Briefly restate the core problem and identifying any necessary edge cases or constraints (e.g., memory limits, input types).
+2. **Conversational Logic (The "Talk-Through"):** Explain your approach in plain English before writing code. Compare possible solutions (e.g., "A brute force approach would take O(n^2), but we can optimize this to O(n) using a hash map...").
+3. **Complexity Analysis:** State the time and space complexity of your proposed solution *before* writing the code.
+4. **The Solution:** Write the code (default to Python unless specified otherwise).
+   - **CRITICAL:** Add concise comments to *almost every line* that explain the "why" of the logic, simulating a candidate speaking while typing.
+
+# Style Guidelines
+- Tone: Confident, professional, and conversational.
+- Code Style: Production-grade (clean variable names, modular).
+- Formatting: Use Markdown code blocks for code and bold text for key concepts.
+# Input
+Here is my interview question:
+`;
     // Use a default prompt if query is empty
     const queryToSend = query.trim() || PROMPT;
     setResponse('');
+    setThinking('');
+    setThinkingCollapsed(true);
     wsRef.current.send(JSON.stringify({ type: 'submit_query', content: queryToSend }));
   };
 
@@ -189,27 +250,78 @@ function App() {
       <div className="title-bar" />
       <div className="response-area">
         {error && <div className="error"><strong>Error:</strong> {error}</div>}
-        {!error && query && !canSubmit && (
+        
+        {/* Display chat history */}
+        {!error && chatHistory.map((msg, idx) => (
+          <div key={idx} className={msg.role === 'user' ? 'chat-user' : 'chat-assistant'}>
+            {msg.role === 'user' ? (
+              <div className="query">
+                <strong>You:</strong>
+                <p>{msg.content}</p>
+              </div>
+            ) : (
+              <div className="response">
+                <ReactMarkdown
+                  components={{
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    code({ inline, className, children, ...props }: any) {
+                      const match = /language-(\w+)/.exec(className || '');
+                      const codeContent = String(children).replace(/\n$/, '');
+                      
+                      if (!inline && match) {
+                        return (
+                          <div className="code-block-container">
+                            <button
+                              onClick={() => copyToClipboard(codeContent)}
+                              className="copy-button"
+                              title="Copy code"
+                            >
+                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                              </svg>
+                            </button>
+                            {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                            <SyntaxHighlighter style={vscDarkPlus as any} language={match[1]} PreTag="div" {...props}>
+                              {codeContent}
+                            </SyntaxHighlighter>
+                          </div>
+                        );
+                      }
+                      return <code className={className} {...props}>{children}</code>;
+                    },
+                  }}
+                >{msg.content}</ReactMarkdown>
+              </div>
+            )}
+          </div>
+        ))}
+        
+        {/* Current query being processed */}
+        {!error && currentQuery && !canSubmit && (
           <div className="query">
-            <strong>Query:</strong>
-            <p>{query}</p>
+            <strong>You:</strong>
+            <p>{currentQuery}</p>
           </div>
         )}
+        
+        {/* Input for new query */}
         {!error && canSubmit && (
           <div className="query-input-section">
-            <strong>Query:</strong>
             <form onSubmit={handleSubmit} style={{ marginTop: '0.5rem' }}>
               <input
                 ref={inputRef}
                 className="query-input"
                 type="text"
-                placeholder="Enter query or press enter to describe "
+                placeholder={chatHistory.length > 0 ? "Ask a follow-up question..." : "Enter query or press enter to describe"}
                 value={query}
                 onChange={e => setQuery(e.target.value)}
               />
             </form>
           </div>
         )}
+        
+        {/* Current thinking process */}
         {!error && thinking && (
           <div className="thinking-section">
             <div 
@@ -228,9 +340,10 @@ function App() {
             )}
           </div>
         )}
+        
+        {/* Current response being streamed */}
         {!error && response && (
           <div className="response">
-            {/* <strong>Response:</strong> */}
             <ReactMarkdown
               components={{
                 // eslint-disable-next-line @typescript-eslint/no-explicit-any

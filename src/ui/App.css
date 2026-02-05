@@ -208,3 +208,53 @@ html{
 .thinking-content p {
   margin-bottom: 0.5em;
 }
+
+/* Chat history styles */
+.chat-user {
+  margin-bottom: 0.5rem;
+}
+
+.chat-user .query {
+  background-color: rgba(255, 255, 255, 0.08);
+  padding: 0.75rem;
+  border-radius: 8px;
+  border-left: 3px solid rgba(100, 150, 255, 0.6);
+}
+
+.chat-user .query strong {
+  color: rgba(100, 150, 255, 0.9);
+  font-size: 0.85rem;
+}
+
+.chat-user .query p {
+  margin-top: 0.25rem;
+  margin-bottom: 0;
+}
+
+.chat-assistant {
+  margin-bottom: 1rem;
+}
+
+.chat-assistant .response {
+  padding-left: 0.5rem;
+  border-radius: 8px;
+  border-left: 3px solid rgba(100, 255, 150, 0.4);
+}
+
+/* Current query styling */
+.query {
+  background-color: rgba(255, 255, 255, 0.08);
+  padding: 0.75rem;
+  border-radius: 8px;
+  border-left: 3px solid rgba(100, 150, 255, 0.6);
+}
+
+.query strong {
+  color: rgba(100, 150, 255, 0.9);
+  font-size: 0.85rem;
+}
+
+.query p {
+  margin-top: 0.25rem;
+  margin-bottom: 0;
+}

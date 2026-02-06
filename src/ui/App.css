@@ -38,12 +38,23 @@ html{
   top: 0;
   left: 0;
   width: 100%;
-  height: 30px;
+  height: 40px;
   -webkit-app-region: drag;
+  display: flex;
+  align-items: center;
+  background-color: transparent;
+}
+.clueless-logo{
+  height: 30px;
+  width: auto;
+  margin-left: calc(100% - 30px);
+  border-radius: 4px;
 }
 .response-area{
+  position: relative;
   width: 97%;
   height: 100%;
+  margin-bottom: 130px;
   overflow-y: auto;
   padding: 1rem;
   display: flex;
@@ -112,20 +123,166 @@ html{
   text-align: center;
   color: rgba(255, 255, 255, 0.7);
 }
-
+.main-interaction-section{
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  margin-right: 9px;
+  width: 98%;
+  height: 100px;
+  /* background-color: blueviolet; */
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 5px;
+}
+.query-input-section{
+  width: 100%;
+  height: 70%;
+  display: flex;
+  flex-direction: column;
+  /* background-color: lightpink; */
+  border-radius: 8px;
+  align-self: flex-end;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  padding: 5px;
+}
+.query-input-text-box-section{
+  width: 100%;
+  height: 50%;
+  display: flex;
+  align-items: center;
+  /* background-color: greenyellow; */
+}
+.input-options-section{
+  width: 100%;
+  height: 30px;
+  display: flex;
+  /* background-color: lightgray; */
+  justify-content: space-between;
+}
+.add-attachments-section{
+  width: 30px;
+  height: 100%;
+  /* background-color: orange; */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.plus-sign-svg{
+  width: 90%;
+  height: 90%;
+  color: white;
+}
+.additional-inputs-section{
+  height: 100%;
+  width: 150px;
+  /* background-color: lightcyan; */
+  display: flex;
+  justify-content: space-between;
+}
+.model-selection-section{
+  height: 100%;
+  width: 110px;
+  /* background-color: violet; */
+}
+.model-select{
+  width: 100%;
+  height: 100%;
+  background-color: transparent;
+  border: none;
+  color: white;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 0.9rem;
+  padding: 0 5px;
+}
+.model-select option{
+  background-color: rgba(0, 0, 0, 1);
+  color: white;
+}
+.model-select:focus {
+  outline: none;
+}
+.mic-input-section{
+  width: 30px;
+  height: 100%;
+  /* background-color: orange; */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.mic-sign-svg{
+  width: 80%;
+  height: 80%;
+  color: white;
+}
+.mode-selection-section{
+  width: calc(100% / 4);
+  height: 30%;
+  background-color: blue;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.fullscreenssmode{
+  width: 30px;
+  height: 100%;
+  /* background-color: orange; */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.regionssmode{
+  width: 30px;
+  height: 100%;
+  /* background-color: orange; */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.meetingrecordermode{
+    width: 30px;
+  height: 100%;
+  /* background-color: orange; */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.fullscreen-ss-icon{
+  width: 90%;
+  height: 90%;
+  color: white;
+}
+.region-ss-icon{
+  width: 90%;
+  height: 90%;
+  color: white;
+}
+.meeting-recording-icon{
+  width: 90%;
+  height: 90%;
+  color: white;
+}
+.query-input-form{
+  width: 100%;
+  height: 100%;
+}
 .query-input {
   width: 100%;
-  padding: 0.5rem;
-  border: 1px solid #ccc;
-  border-radius: 4px;
+  height: 100%;
+  border: none;
   background-color: transparent;
   font-family: 'Montserrat', sans-serif;
   color: white;
+  font-size: 1rem;
+  margin-left: 5px;
+  margin-bottom: 5px;
 }
 .query-input:focus {
   outline: none;
 }
-
 .code-block-container {
   position: relative;
 }
@@ -258,3 +415,39 @@ html{
   margin-top: 0.25rem;
   margin-bottom: 0;
 }
+
+/* Screenshot indicator styles */
+.screenshot-indicator {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.5rem 0.75rem;
+  background-color: rgba(100, 200, 150, 0.15);
+  border: 1px solid rgba(100, 200, 150, 0.3);
+  border-radius: 6px;
+  margin-bottom: 0.5rem;
+}
+
+.screenshot-badge {
+  font-size: 0.85rem;
+  color: rgba(100, 255, 150, 0.9);
+}
+
+.clear-btn {
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: rgba(255, 255, 255, 0.7);
+  border-radius: 4px;
+  padding: 0.1rem 0.5rem;
+  cursor: pointer;
+  font-size: 1rem;
+  line-height: 1;
+  transition: all 0.2s ease;
+}
+
+.clear-btn:hover {
+  background: rgba(255, 100, 100, 0.2);
+  border-color: rgba(255, 100, 100, 0.5);
+  color: rgba(255, 100, 100, 0.9);
+}
+

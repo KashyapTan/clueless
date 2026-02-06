@@ -4,7 +4,12 @@ import ReactMarkdown from 'react-markdown';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import './App.css'
-
+import cluelessLogo from './assets/transparent-clueless-logo.png';
+import plusSignSvg from './assets/plus-icon.svg';
+import micSignSvg from './assets/mic-icon.svg';
+import fullscreenSSIcon from './assets/entire-screen-shot-icon.svg';
+import regionSSIcon from './assets/region-screen-shot-icon.svg';
+import meetingRecordingIcon from './assets/meeting-record-icon.svg';
 // Extend the Window interface to include electronAPI
 declare global {
   interface Window {
@@ -21,9 +26,10 @@ function App() {
   const [isThinking, setIsThinking] = useState<boolean>(false);
   const [thinkingCollapsed, setThinkingCollapsed] = useState<boolean>(true);
   const [status, setStatus] = useState<string>('Connecting to server...');
-  const [error, setError] = useState<string>('');;
+  const [error, setError] = useState<string>('');
   const [canSubmit, setCanSubmit] = useState<boolean>(false);
   const [isHidden, setIsHidden] = useState<boolean>(false);
+  const [hasScreenshot, setHasScreenshot] = useState<boolean>(false);
   // Chat history for multi-turn conversations
   const [chatHistory, setChatHistory] = useState<Array<{role: 'user' | 'assistant', content: string, thinking?: string}>>([]);
   const [currentQuery, setCurrentQuery] = useState<string>('');
@@ -62,7 +68,7 @@ function App() {
   wsRef.current = ws;
 
       ws.onopen = () => {
-        setStatus('Waiting for screenshot...');
+        setStatus('Connected to server');
         setError('');
       };
 
@@ -71,11 +77,24 @@ function App() {
           const data = JSON.parse(event.data);
 
           switch (data.type) {
+            case 'ready':
+              // Server is ready - enable input immediately (no screenshot required)
+              setStatus(data.content || 'Ready to chat. Take a screenshot (Ctrl+Shift+Alt+S) or just type.');
+              setCanSubmit(true);
+              setError('');
+              break;
             case 'screenshot_start':
               setIsHidden(true);
               break;
             case 'screenshot_ready':
-              setStatus(data.content || 'Screenshot captured. Enter your query.');
+              setStatus('Screenshot captured! Ask about it or continue chatting.');
+              setHasScreenshot(true);
+              setError('');
+              setIsHidden(false);
+              // Don't reset chat history - allow continuing conversation with new screenshot context
+              break;
+            case 'context_cleared':
+              setStatus(data.content || 'Context cleared. Ready for new conversation.');
               setResponse('');
               setThinking('');
               setIsThinking(false);
@@ -83,9 +102,9 @@ function App() {
               setError('');
               setQuery('');
               setCurrentQuery('');
-              setChatHistory([]); // Clear chat history for new screenshot
+              setChatHistory([]);
+              setHasScreenshot(false);
               setCanSubmit(true);
-              setIsHidden(false);
               // Reset refs
               currentQueryRef.current = '';
               responseRef.current = '';
@@ -212,188 +231,216 @@ function App() {
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
     if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) return;
+    if (!query.trim()) return; // Don't submit empty queries
 
-    const PROMPT = `
-# Role & Persona
-Imagine you are a Senior Software Engineer taking a technical interview. You are an expert at articulating complex logic, optimizing algorithms, and demonstrating clear communication. Your goal is to solve the following coding question as simply as possible and with the least space and time complexity.
-
-# Capabilities
-Since you are a Vision-Language model, if I provide an image (e.g., a screenshot of the problem description, a diagram, or a whiteboard sketch), you must analyze the visual data accurately to inform your solution.
-
-# Process
-Follow these steps for every question:
-
-1. **Clarification & Constraints:** Briefly restate the core problem and identifying any necessary edge cases or constraints (e.g., memory limits, input types).
-2. **Conversational Logic (The "Talk-Through"):** Explain your approach in plain English before writing code. Compare possible solutions (e.g., "A brute force approach would take O(n^2), but we can optimize this to O(n) using a hash map...").
-3. **Complexity Analysis:** State the time and space complexity of your proposed solution *before* writing the code.
-4. **The Solution:** Write the code (default to Python unless specified otherwise).
-   - **CRITICAL:** Add concise comments to *almost every line* that explain the "why" of the logic, simulating a candidate speaking while typing.
-
-# Style Guidelines
-- Tone: Confident, professional, and conversational.
-- Code Style: Production-grade (clean variable names, modular).
-- Formatting: Use Markdown code blocks for code and bold text for key concepts.
-# Input
-Here is my interview question:
-`;
-    // Use a default prompt if query is empty
-    const queryToSend = query.trim() || PROMPT;
     setResponse('');
     setThinking('');
     setThinkingCollapsed(true);
-    wsRef.current.send(JSON.stringify({ type: 'submit_query', content: queryToSend }));
+    wsRef.current.send(JSON.stringify({ type: 'submit_query', content: query.trim() }));
+  };
+
+  const handleClearContext = () => {
+    if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) return;
+    wsRef.current.send(JSON.stringify({ type: 'clear_context' }));
+  };
+
+  // Helper to get appropriate placeholder text
+  const getPlaceholder = () => {
+    if (chatHistory.length > 0) {
+      return hasScreenshot ? "Ask a follow-up about the screenshot..." : "Ask a follow-up question...";
+    }
+    return hasScreenshot ? "Ask about this screenshot..." : "Ask anything or take a screenshot (Ctrl+Shift+Alt+S)...";
   };
 
   return (
     <>
-    <div className="container" style={{ opacity: isHidden ? 0 : 1 }}>
-      <div className="title-bar" />
-      <div className="response-area">
-        {error && <div className="error"><strong>Error:</strong> {error}</div>}
-        
-        {/* Display chat history */}
-        {!error && chatHistory.map((msg, idx) => (
-          <div key={idx} className={msg.role === 'user' ? 'chat-user' : 'chat-assistant'}>
-            {msg.role === 'user' ? (
-              <div className="query">
-                <strong>You:</strong>
-                <p>{msg.content}</p>
-              </div>
-            ) : (
-              <div className="response">
-                <ReactMarkdown
-                  components={{
-                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                    code({ inline, className, children, ...props }: any) {
-                      const match = /language-(\w+)/.exec(className || '');
-                      const codeContent = String(children).replace(/\n$/, '');
-                      
-                      if (!inline && match) {
-                        return (
-                          <div className="code-block-container">
-                            <button
-                              onClick={() => copyToClipboard(codeContent)}
-                              className="copy-button"
-                              title="Copy code"
-                            >
-                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
-                                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
-                              </svg>
-                            </button>
-                            {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                            <SyntaxHighlighter style={vscDarkPlus as any} language={match[1]} PreTag="div" {...props}>
-                              {codeContent}
-                            </SyntaxHighlighter>
-                          </div>
-                        );
-                      }
-                      return <code className={className} {...props}>{children}</code>;
-                    },
-                  }}
-                >{msg.content}</ReactMarkdown>
-              </div>
-            )}
-          </div>
-        ))}
-        
-        {/* Current query being processed */}
-        {!error && currentQuery && !canSubmit && (
-          <div className="query">
-            <strong>You:</strong>
-            <p>{currentQuery}</p>
-          </div>
-        )}
-        
-        {/* Input for new query */}
-        {!error && canSubmit && (
-          <div className="query-input-section">
-            <form onSubmit={handleSubmit} style={{ marginTop: '0.5rem' }}>
-              <input
-                ref={inputRef}
-                className="query-input"
-                type="text"
-                placeholder={chatHistory.length > 0 ? "Ask a follow-up question..." : "Enter query or press enter to describe"}
-                value={query}
-                onChange={e => setQuery(e.target.value)}
-              />
-            </form>
-          </div>
-        )}
-        
-        {/* Current thinking process */}
-        {!error && thinking && (
-          <div className="thinking-section">
-            <div 
-              className="thinking-header" 
-              onClick={() => setThinkingCollapsed(!thinkingCollapsed)}
-            >
-              <span className={`thinking-arrow ${thinkingCollapsed ? '' : 'expanded'}`}>▶</span>
-              <span className="thinking-label">
-                {isThinking ? 'Thinking...' : 'Thought process'}
-              </span>
+      <div className="container" style={{ opacity: isHidden ? 0 : 1 }}>
+        <div className="title-bar">
+          <img src={cluelessLogo} alt="Clueless Logo" className='clueless-logo' />
+        </div>
+        <div className="response-area">
+          {error && <div className="error"><strong>Error:</strong> {error}</div>}
+
+          {/* Screenshot indicator */}
+          {hasScreenshot && (
+            <div className="screenshot-indicator">
+              <span className="screenshot-badge">📷 Screenshot attached</span>
+              <button className="clear-btn" onClick={handleClearContext} title="Clear context">×</button>
             </div>
-            {!thinkingCollapsed && (
-              <div className="thinking-content">
-                <ReactMarkdown>{thinking}</ReactMarkdown>
+          )}
+
+          {/* Display chat history */}
+          {!error && chatHistory.map((msg, idx) => (
+            <div key={idx} className={msg.role === 'user' ? 'chat-user' : 'chat-assistant'}>
+              {msg.role === 'user' ? (
+                <div className="query">
+                  <strong>You:</strong>
+                  <p>{msg.content}</p>
+                </div>
+              ) : (
+                <div className="response">
+                  <ReactMarkdown
+                    components={{
+                      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                      code({ inline, className, children, ...props }: any) {
+                        const match = /language-(\w+)/.exec(className || '');
+                        const codeContent = String(children).replace(/\n$/, '');
+
+                        if (!inline && match) {
+                          return (
+                            <div className="code-block-container">
+                              <button
+                                onClick={() => copyToClipboard(codeContent)}
+                                className="copy-button"
+                                title="Copy code"
+                              >
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                  <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                                  <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                                </svg>
+                              </button>
+                              {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                              <SyntaxHighlighter style={vscDarkPlus as any} language={match[1]} PreTag="div" {...props}>
+                                {codeContent}
+                              </SyntaxHighlighter>
+                            </div>
+                          );
+                        }
+                        return <code className={className} {...props}>{children}</code>;
+                      },
+                    }}
+                  >{msg.content}</ReactMarkdown>
+                </div>
+              )}
+            </div>
+          ))}
+
+          {/* Current query being processed */}
+          {!error && currentQuery && !canSubmit && (
+            <div className="query">
+              <strong>You:</strong>
+              <p>{currentQuery}</p>
+            </div>
+          )}
+
+          {/* Current thinking process */}
+          {!error && thinking && (
+            <div className="thinking-section">
+              <div
+                className="thinking-header"
+                onClick={() => setThinkingCollapsed(!thinkingCollapsed)}
+              >
+                <span className={`thinking-arrow ${thinkingCollapsed ? '' : 'expanded'}`}>▶</span>
+                <span className="thinking-label">
+                  {isThinking ? 'Thinking...' : 'Thought process'}
+                </span>
               </div>
-            )}
-          </div>
-        )}
-        
-        {/* Current response being streamed */}
-        {!error && response && (
-          <div className="response">
-            <ReactMarkdown
-              components={{
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                code({ inline, className, children, ...props }: any) {
-                  const match = /language-(\w+)/.exec(className || '');
-                  const codeContent = String(children).replace(/\n$/, '');
-                  
-                  if (!inline && match) {
-                    return (
-                      <div className="code-block-container">
-                        <button
-                          onClick={() => copyToClipboard(codeContent)}
-                          className="copy-button"
-                          title="Copy code"
-                        >
-                          <svg
-                            width="14"
-                            height="14"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="2"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
+              {!thinkingCollapsed && (
+                <div className="thinking-content">
+                  <ReactMarkdown>{thinking}</ReactMarkdown>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Current response being streamed */}
+          {!error && response && (
+            <div className="response">
+              <ReactMarkdown
+                components={{
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                  code({ inline, className, children, ...props }: any) {
+                    const match = /language-(\w+)/.exec(className || '');
+                    const codeContent = String(children).replace(/\n$/, '');
+
+                    if (!inline && match) {
+                      return (
+                        <div className="code-block-container">
+                          <button
+                            onClick={() => copyToClipboard(codeContent)}
+                            className="copy-button"
+                            title="Copy code"
                           >
-                            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
-                            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
-                          </svg>
-                        </button>
-                        <SyntaxHighlighter
-                          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                          style={vscDarkPlus as any}
-                          language={match[1]}
-                          PreTag="div"
-                          {...props}
-                        >
-                          {codeContent}
-                        </SyntaxHighlighter>
-                      </div>
-                    );
-                  }
-                  return <code className={className} {...props}>{children}</code>;
-                },
-              }}
-            >{response}</ReactMarkdown>
+                            <svg
+                              width="14"
+                              height="14"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="2"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                            >
+                              <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                              <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                            </svg>
+                          </button>
+                          <SyntaxHighlighter
+                            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                            style={vscDarkPlus as any}
+                            language={match[1]}
+                            PreTag="div"
+                            {...props}
+                          >
+                            {codeContent}
+                          </SyntaxHighlighter>
+                        </div>
+                      );
+                    }
+                    return <code className={className} {...props}>{children}</code>;
+                  },
+                }}
+              >{response}</ReactMarkdown>
+            </div>
+          )}
+          {/* <div className="status">{status}</div> */}
+
+        </div>
+        <div className="main-interaction-section">
+            <div className="query-input-section">
+              <div className="query-input-text-box-section">
+                <form onSubmit={handleSubmit} style={{ marginTop: '0.5rem' }} className='query-input-form'>
+                  <input
+                    ref={inputRef}
+                    className="query-input"
+                    type="text"
+                    placeholder={getPlaceholder()}
+                    value={query}
+                    onChange={e => setQuery(e.target.value)}
+                  />
+                </form>
+              </div>
+
+              <div className="input-options-section">
+                <div className="add-attachments-section">
+                  <img src={plusSignSvg} alt="Add attachment" className='plus-sign-svg'/>
+                </div>
+                <div className="additional-inputs-section">
+                  <div className="model-selection-section">
+                    <select name="model-selector" className='model-select'>
+                      <option value="gpt-4">GPT-4</option>
+                      <option value="gpt-3.5">GPT-3.5</option>
+                    </select>
+                  </div>
+                  <div className="mic-input-section">
+                    <img src={micSignSvg} alt="Voice input" className='mic-sign-svg'/>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className="mode-selection-section">
+              <div className="fullscreenssmode">
+                <img src={fullscreenSSIcon} alt="Full Screen Screenshot Mode" className='fullscreen-ss-icon'/>
+              </div>
+              <div className="regionssmode">
+                <img src={regionSSIcon} alt="Region Screenshot Mode" className='region-ss-icon'/>
+              </div>
+              <div className="meetingrecordermode">
+                <img src={meetingRecordingIcon} alt="Meeting Recorder Mode" className='meeting-recording-icon'/>
+              </div>
+            </div>
           </div>
-        )}
-        <div className="status">{status}</div>
       </div>
-    </div>
     </>
   )
 }

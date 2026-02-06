@@ -123,15 +123,22 @@ async def websocket_endpoint(websocket: WebSocket):
 
     Client -> Server messages (JSON):
       {"type": "submit_query", "content": "<question>"}
+      {"type": "clear_context"}  - Clear screenshot and chat history
 
     Server -> Client broadcast messages (JSON):
-      screenshot_ready            : Screenshot captured, UI should enable query input
+      ready                       : Server is ready, UI can accept input immediately
+      screenshot_start            : Screenshot capture starting, UI should hide
+      screenshot_ready            : Screenshot captured, attached to context
       query                       : Echo of submitted query
       response_chunk              : Streaming model token/content fragment
       response_complete           : Model finished
       error                       : Error message
     """
     await manager.connect(websocket)
+    
+    # Immediately notify client that server is ready for queries (no screenshot required)
+    await websocket.send_text(json.dumps({"type": "ready", "content": "Server ready. You can start chatting or take a screenshot (Ctrl+Shift+Alt+S)."}))
+    
     try:
         while True:
             raw = await websocket.receive_text()
@@ -146,6 +153,9 @@ async def websocket_endpoint(websocket: WebSocket):
                     await websocket.send_text(json.dumps({"type": "error", "content": "Empty query"}))
                     continue
                 await handle_submit_query(query_text)
+            elif msg_type == "clear_context":
+                # Clear screenshot and chat history for fresh start
+                await handle_clear_context()
             # else: silently ignore unknown types (could extend later)
     except WebSocketDisconnect:
         manager.disconnect(websocket)
@@ -165,12 +175,14 @@ def clear_screenshots_folder(folder_path="screenshots"):
     except Exception as e:
         print(f"Error clearing folder: {e}")
 
-async def _stream_ollama_chat(user_query: str, image_path: str, chat_history: List[Dict[str, Any]]) -> str:
+async def _stream_ollama_chat(user_query: str, image_path: str | None, chat_history: List[Dict[str, Any]]) -> str:
     """Stream Ollama response without blocking the event loop.
 
     A background thread iterates the blocking Ollama generator and schedules
     WebSocket broadcasts for each incremental token. Returns the full output
     once streaming completes.
+    
+    image_path can be None for text-only queries.
     """
     loop = asyncio.get_running_loop()
     done_future: asyncio.Future[str] = loop.create_future()
@@ -234,11 +246,11 @@ async def _stream_ollama_chat(user_query: str, image_path: str, chat_history: Li
         final_message_content: str | None = None
         
         # Build messages list from chat history
-        # First message includes the image, follow-ups are text-only
+        # First message may include the image if available, follow-ups are text-only
         messages = []
         for i, msg in enumerate(chat_history):
-            if i == 0:
-                # First user message includes the image
+            if i == 0 and image_path:
+                # First user message includes the image (if we have one)
                 messages.append({
                     'role': msg['role'],
                     'content': msg['content'],
@@ -252,12 +264,18 @@ async def _stream_ollama_chat(user_query: str, image_path: str, chat_history: Li
         
         # Add current user query
         if len(messages) == 0:
-            # First message - include image
-            messages.append({
-                'role': 'user',
-                'content': user_query,
-                'images': [image_path],
-            })
+            # First message - include image only if we have one
+            if image_path:
+                messages.append({
+                    'role': 'user',
+                    'content': user_query,
+                    'images': [image_path],
+                })
+            else:
+                messages.append({
+                    'role': 'user',
+                    'content': user_query,
+                })
         else:
             # Follow-up message - no image needed
             messages.append({
@@ -266,8 +284,10 @@ async def _stream_ollama_chat(user_query: str, image_path: str, chat_history: Li
             })
         
         try:
+            # Use vision model if we have an image, otherwise use text model
+            model_name = 'qwen3-vl:8b-instruct'
             generator = chat(
-                model='qwen3-vl:8b-instruct',
+                model=model_name,
                 messages=messages,
                 stream=True,
             )
@@ -331,24 +351,42 @@ _stream_lock = asyncio.Lock()
 # Chat history for multi-turn conversations (cleared on new screenshot)
 _chat_history: List[Dict[str, Any]] = []
 
+async def handle_clear_context():
+    """Clear screenshot and chat history for a fresh start."""
+    global _latest_screenshot_path, _chat_history
+    
+    # Clear screenshot
+    if _latest_screenshot_path:
+        old_folder = os.path.dirname(_latest_screenshot_path)
+        if old_folder:
+            clear_screenshots_folder(old_folder)
+        _latest_screenshot_path = None
+    
+    # Clear chat history
+    _chat_history = []
+    print("Context cleared: screenshot and chat history reset")
+    
+    await broadcast_message("context_cleared", "Context cleared. Ready for new conversation.")
+
 async def handle_submit_query(user_query: str):
-    """Handle query submitted from a client for the most recent screenshot."""
+    """Handle query submitted from a client. Screenshot is optional."""
     global _latest_screenshot_path, _is_streaming, _chat_history
     async with _stream_lock:
         if _is_streaming:
             await broadcast_message("error", "Already streaming a response. Please wait for completion.")
             return
-        if not _latest_screenshot_path or not os.path.exists(_latest_screenshot_path):
-            await broadcast_message("error", "No screenshot available. Take a screenshot first (Ctrl+Shift+Alt+S).")
-            return
-        image_path = _latest_screenshot_path
         _is_streaming = True
+
+    # Check if we have a screenshot (optional now)
+    image_path = None
+    if _latest_screenshot_path and os.path.exists(_latest_screenshot_path):
+        image_path = _latest_screenshot_path
 
     # Echo query to clients (outside lock to not block other ops)
     await broadcast_message("query", user_query)
 
     try:
-        # Pass current chat history to the streaming function
+        # Pass current chat history to the streaming function (image_path can be None)
         response_text = await _stream_ollama_chat(user_query, image_path, _chat_history.copy())
         
         # Add this exchange to chat history for future follow-ups

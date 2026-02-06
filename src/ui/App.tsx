@@ -10,6 +10,10 @@ import micSignSvg from './assets/mic-icon.svg';
 import fullscreenSSIcon from './assets/entire-screen-shot-icon.svg';
 import regionSSIcon from './assets/region-screen-shot-icon.svg';
 import meetingRecordingIcon from './assets/meeting-record-icon.svg';
+import settingsIcon from './assets/settings-icon.svg';
+import chatHistoryIcon from './assets/chat-history-icon.svg';
+import recordedMeetingsAlbumIcon from './assets/recorded-meetings-album-icon.svg';
+import newChatIcon from './assets/new-chat-icon.svg';
 // Extend the Window interface to include electronAPI
 declare global {
   interface Window {
@@ -30,6 +34,9 @@ function App() {
   const [canSubmit, setCanSubmit] = useState<boolean>(false);
   const [isHidden, setIsHidden] = useState<boolean>(false);
   const [hasScreenshot, setHasScreenshot] = useState<boolean>(false);
+  const [fullscreenMode, setFullscreenMode] = useState<boolean>(true);
+  const [precisionMode, setPrecisionMode] = useState<boolean>(false);
+  const [meetingRecordingMode, setMeetingRecordingMode] = useState<boolean>(false);
   // Chat history for multi-turn conversations
   const [chatHistory, setChatHistory] = useState<Array<{role: 'user' | 'assistant', content: string, thinking?: string}>>([]);
   const [currentQuery, setCurrentQuery] = useState<string>('');
@@ -249,14 +256,48 @@ function App() {
     if (chatHistory.length > 0) {
       return hasScreenshot ? "Ask a follow-up about the screenshot..." : "Ask a follow-up question...";
     }
-    return hasScreenshot ? "Ask about this screenshot..." : "Ask anything or take a screenshot (Ctrl+Shift+Alt+S)...";
+    return hasScreenshot ? "Ask about this screenshot..." : "Ask Clueless anything...";
   };
-
+  const fullscreenModeEnabled = () =>{
+    setFullscreenMode(true);
+    setPrecisionMode(false);
+    setMeetingRecordingMode(false);
+  };
+  const precisionModeEnabled = () =>{
+    setFullscreenMode(false);
+    setPrecisionMode(true);
+    setMeetingRecordingMode(false);
+  };
+  const meetingRecordingModeEnabled = () =>{
+    setFullscreenMode(false);
+    setPrecisionMode(false);
+    setMeetingRecordingMode(true);
+  }
   return (
     <>
       <div className="container" style={{ opacity: isHidden ? 0 : 1 }}>
         <div className="title-bar">
-          <img src={cluelessLogo} alt="Clueless Logo" className='clueless-logo' />
+          <div className="nav-bar">
+            <div className="settingsButton">
+              <img src={settingsIcon} alt="Settings" className='settings-icon' />
+            </div>
+            <div className="chatHistoryButton">
+              <img src={chatHistoryIcon} alt="Chat History" className='chat-history-icon'/>
+            </div>
+            <div className="recordedMeetingsAlbumButton">
+              <img src={recordedMeetingsAlbumIcon} alt="Recorded Meetings Album" className='recorded-meetings-album-icon'/>
+            </div>
+          </div>
+          <div className="blank-space-to-drag"></div>
+          <div className="nav-bar-right-side">
+            <div className="newChatButton">
+              <img src={newChatIcon} alt="New Chat" className='new-chat-icon'/>
+            </div>
+            <div className="clueless-logo-holder">
+              <img src={cluelessLogo} alt="Clueless Logo" className='clueless-logo' />
+            </div>
+          </div>
+
         </div>
         <div className="response-area">
           {error && <div className="error"><strong>Error:</strong> {error}</div>}
@@ -397,49 +438,49 @@ function App() {
 
         </div>
         <div className="main-interaction-section">
-            <div className="query-input-section">
-              <div className="query-input-text-box-section">
-                <form onSubmit={handleSubmit} style={{ marginTop: '0.5rem' }} className='query-input-form'>
-                  <input
-                    ref={inputRef}
-                    className="query-input"
-                    type="text"
-                    placeholder={getPlaceholder()}
-                    value={query}
-                    onChange={e => setQuery(e.target.value)}
-                  />
-                </form>
-              </div>
-
-              <div className="input-options-section">
-                <div className="add-attachments-section">
-                  <img src={plusSignSvg} alt="Add attachment" className='plus-sign-svg'/>
-                </div>
-                <div className="additional-inputs-section">
-                  <div className="model-selection-section">
-                    <select name="model-selector" className='model-select'>
-                      <option value="gpt-4">GPT-4</option>
-                      <option value="gpt-3.5">GPT-3.5</option>
-                    </select>
-                  </div>
-                  <div className="mic-input-section">
-                    <img src={micSignSvg} alt="Voice input" className='mic-sign-svg'/>
-                  </div>
-                </div>
-              </div>
+          <div className="query-input-section">
+            <div className="query-input-text-box-section">
+              <form onSubmit={handleSubmit} style={{ marginTop: '0.5rem' }} className='query-input-form'>
+                <input
+                  ref={inputRef}
+                  className="query-input"
+                  type="text"
+                  placeholder={getPlaceholder()}
+                  value={query}
+                  onChange={e => setQuery(e.target.value)}
+                />
+              </form>
             </div>
-            <div className="mode-selection-section">
-              <div className="fullscreenssmode">
-                <img src={fullscreenSSIcon} alt="Full Screen Screenshot Mode" className='fullscreen-ss-icon'/>
+
+            <div className="input-options-section">
+              <div className="add-attachments-section">
+                <img src={plusSignSvg} alt="Add attachment" className='plus-sign-svg' />
               </div>
-              <div className="regionssmode">
-                <img src={regionSSIcon} alt="Region Screenshot Mode" className='region-ss-icon'/>
-              </div>
-              <div className="meetingrecordermode">
-                <img src={meetingRecordingIcon} alt="Meeting Recorder Mode" className='meeting-recording-icon'/>
+              <div className="additional-inputs-section">
+                <div className="model-selection-section">
+                  <select name="model-selector" className='model-select'>
+                    <option value="gpt-4">GPT-4</option>
+                    <option value="gpt-3.5">GPT-3.5</option>
+                  </select>
+                </div>
+                <div className="mic-input-section">
+                  <img src={micSignSvg} alt="Voice input" className='mic-icon' />
+                </div>
               </div>
             </div>
           </div>
+          <div className="mode-selection-section">
+            <div className={`fullscreenssmode${fullscreenMode ? '-active' : ''}`} onClick={fullscreenModeEnabled}>
+              <img src={fullscreenSSIcon} alt="Full Screen Screenshot Mode" className='fullscreen-ss-icon' />
+            </div>
+            <div className={`regionssmode${precisionMode ? '-active' : ''}`} onClick={precisionModeEnabled}>
+              <img src={regionSSIcon} alt="Region Screenshot Mode" className='region-ss-icon' />
+            </div>
+            <div className={`meetingrecordermode${meetingRecordingMode ? '-active' : ''}`} onClick={meetingRecordingModeEnabled}>
+              <img src={meetingRecordingIcon} alt="Meeting Recorder Mode" className='meeting-recording-icon' />
+            </div>
+          </div>
+        </div>
       </div>
     </>
   )

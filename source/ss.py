@@ -315,6 +315,55 @@ def take_region_screenshot_debug(save_folder="screenshots"):
     """
     return take_region_screenshot(save_folder, debug=True)
 
+def take_fullscreen_screenshot(save_folder="screenshots"):
+    """
+    Capture entire screen without UI overlay.
+    Returns the path to the saved screenshot.
+    """
+    if not os.path.exists(save_folder):
+        os.makedirs(save_folder)
+    
+    try:
+        # Capture the entire screen
+        screen = ImageGrab.grab()
+        
+        # Generate unique filename with timestamp
+        timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S_%f")
+        filename = f"fullscreen_{timestamp}.png"
+        filepath = os.path.join(save_folder, filename)
+        
+        # Save the screenshot
+        screen.save(filepath)
+        print(f"Fullscreen screenshot saved: {filepath}")
+        
+        return filepath
+    except Exception as e:
+        print(f"Error taking fullscreen screenshot: {e}")
+        return None
+
+def create_thumbnail(image_path, max_size=(300, 300)):
+    """
+    Create a base64 encoded thumbnail from an image file.
+    Returns base64 string for preview display.
+    """
+    import base64
+    from io import BytesIO
+    
+    try:
+        with Image.open(image_path) as img:
+            # Create thumbnail preserving aspect ratio
+            img.thumbnail(max_size, Image.Resampling.LANCZOS)
+            
+            # Convert to base64 with good quality
+            buffer = BytesIO()
+            img.save(buffer, format='PNG', optimize=False)
+            buffer.seek(0)
+            
+            return base64.b64encode(buffer.read()).decode('utf-8')
+    except Exception as e:
+        print(f"Error creating thumbnail: {e}")
+        return None
+
 def start_screenshot_service(save_folder="screenshots", callback=None):
     """Start the screenshot service with keyboard shortcut"""
     service = ScreenshotService(callback)

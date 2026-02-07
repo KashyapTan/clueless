@@ -13,10 +13,10 @@ if __name__ == "__main__":
 
 # Now import ss module
 try:
-    from .ss import take_region_screenshot, start_screenshot_service
+    from .ss import take_region_screenshot, start_screenshot_service, take_fullscreen_screenshot, create_thumbnail
 except ImportError:
     # Fallback for when run as script
-    from ss import take_region_screenshot, start_screenshot_service
+    from ss import take_region_screenshot, start_screenshot_service, take_fullscreen_screenshot, create_thumbnail
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.responses import HTMLResponse
 import threading
@@ -122,13 +122,18 @@ async def websocket_endpoint(websocket: WebSocket):
     """Bidirectional websocket.
 
     Client -> Server messages (JSON):
-      {"type": "submit_query", "content": "<question>"}
-      {"type": "clear_context"}  - Clear screenshot and chat history
+      {"type": "submit_query", "content": "<question>", "capture_mode": "fullscreen"|"precision"|"none"}
+      {"type": "clear_context"}  - Clear screenshots and chat history
+      {"type": "remove_screenshot", "id": "<screenshot_id>"}  - Remove specific screenshot
+      {"type": "set_capture_mode", "mode": "fullscreen"|"precision"|"none"}  - Set capture mode
 
     Server -> Client broadcast messages (JSON):
       ready                       : Server is ready, UI can accept input immediately
       screenshot_start            : Screenshot capture starting, UI should hide
-      screenshot_ready            : Screenshot captured, attached to context
+      screenshot_ready            : Screenshot captured, attached to context (legacy)
+      screenshot_added            : Screenshot added to context with preview data
+      screenshot_removed          : Screenshot removed from context
+      screenshots_cleared         : All screenshots cleared
       query                       : Echo of submitted query
       response_chunk              : Streaming model token/content fragment
       response_complete           : Model finished
@@ -138,6 +143,17 @@ async def websocket_endpoint(websocket: WebSocket):
     
     # Immediately notify client that server is ready for queries (no screenshot required)
     await websocket.send_text(json.dumps({"type": "ready", "content": "Server ready. You can start chatting or take a screenshot (Ctrl+Shift+Alt+S)."}))
+    
+    # Send any existing screenshots to the newly connected client
+    for ss in _screenshot_list:
+        await websocket.send_text(json.dumps({
+            "type": "screenshot_added",
+            "content": {
+                "id": ss["id"],
+                "name": ss["name"],
+                "thumbnail": ss["thumbnail"]
+            }
+        }))
     
     try:
         while True:
@@ -149,13 +165,23 @@ async def websocket_endpoint(websocket: WebSocket):
             msg_type = data.get("type")
             if msg_type == "submit_query":
                 query_text = data.get("content", "").strip()
+                capture_mode = data.get("capture_mode", "none")  # fullscreen, precision, or none
                 if not query_text:
                     await websocket.send_text(json.dumps({"type": "error", "content": "Empty query"}))
                     continue
-                await handle_submit_query(query_text)
+                await handle_submit_query(query_text, capture_mode)
             elif msg_type == "clear_context":
-                # Clear screenshot and chat history for fresh start
+                # Clear screenshots and chat history for fresh start
                 await handle_clear_context()
+            elif msg_type == "remove_screenshot":
+                # Remove a specific screenshot
+                screenshot_id = data.get("id")
+                if screenshot_id:
+                    await handle_remove_screenshot(screenshot_id)
+            elif msg_type == "set_capture_mode":
+                # Update the capture mode for hotkey behavior
+                mode = data.get("mode", "fullscreen")
+                await handle_set_capture_mode(mode)
             # else: silently ignore unknown types (could extend later)
     except WebSocketDisconnect:
         manager.disconnect(websocket)
@@ -175,14 +201,14 @@ def clear_screenshots_folder(folder_path="screenshots"):
     except Exception as e:
         print(f"Error clearing folder: {e}")
 
-async def _stream_ollama_chat(user_query: str, image_path: str | None, chat_history: List[Dict[str, Any]]) -> str:
+async def _stream_ollama_chat(user_query: str, image_paths: List[str], chat_history: List[Dict[str, Any]]) -> str:
     """Stream Ollama response without blocking the event loop.
 
     A background thread iterates the blocking Ollama generator and schedules
     WebSocket broadcasts for each incremental token. Returns the full output
     once streaming completes.
     
-    image_path can be None for text-only queries.
+    image_paths can be empty list for text-only queries, or contain multiple images.
     """
     loop = asyncio.get_running_loop()
     done_future: asyncio.Future[str] = loop.create_future()
@@ -246,38 +272,26 @@ async def _stream_ollama_chat(user_query: str, image_path: str | None, chat_hist
         final_message_content: str | None = None
         
         # Build messages list from chat history
-        # First message may include the image if available, follow-ups are text-only
+        # Images are stored WITH the message they were sent with, so they persist properly
         messages = []
-        for i, msg in enumerate(chat_history):
-            if i == 0 and image_path:
-                # First user message includes the image (if we have one)
-                messages.append({
-                    'role': msg['role'],
-                    'content': msg['content'],
-                    'images': [image_path],
-                })
-            else:
-                messages.append({
-                    'role': msg['role'],
-                    'content': msg['content'],
-                })
+        for msg in chat_history:
+            message_data = {
+                'role': msg['role'],
+                'content': msg['content'],
+            }
+            # Include images if they were stored with this message
+            if msg.get('images'):
+                message_data['images'] = msg['images']
+            messages.append(message_data)
         
-        # Add current user query
-        if len(messages) == 0:
-            # First message - include image only if we have one
-            if image_path:
-                messages.append({
-                    'role': 'user',
-                    'content': user_query,
-                    'images': [image_path],
-                })
-            else:
-                messages.append({
-                    'role': 'user',
-                    'content': user_query,
-                })
+        # Add current user query - include images if this is a new image submission
+        if image_paths:
+            messages.append({
+                'role': 'user',
+                'content': user_query,
+                'images': image_paths,
+            })
         else:
-            # Follow-up message - no image needed
             messages.append({
                 'role': 'user',
                 'content': user_query,
@@ -343,76 +357,170 @@ async def _stream_ollama_chat(user_query: str, image_path: str | None, chat_hist
 # Query submission & screenshot lifecycle   #
 #############################################
 
-# Track latest screenshot awaiting a query
-_latest_screenshot_path: str | None = None
+# Track multiple screenshots (list of dicts with id, path, name, thumbnail)
+_screenshot_list: List[Dict[str, Any]] = []
+_screenshot_counter = 0  # For generating unique IDs
 _is_streaming: bool = False
 _stream_lock = asyncio.Lock()
+
+# Current capture mode: 'fullscreen' | 'precision' | 'none'
+# - fullscreen: auto-capture on submit, hotkey disabled
+# - precision: hotkey captures regions, adds to context
+# - none: no screenshots (text-only mode)
+_current_capture_mode: str = "fullscreen"
 
 # Chat history for multi-turn conversations (cleared on new screenshot)
 _chat_history: List[Dict[str, Any]] = []
 
-async def handle_clear_context():
-    """Clear screenshot and chat history for a fresh start."""
-    global _latest_screenshot_path, _chat_history
+async def handle_set_capture_mode(mode: str):
+    """Update the capture mode."""
+    global _current_capture_mode
+    if mode in ("fullscreen", "precision", "none"):
+        _current_capture_mode = mode
+        print(f"Capture mode set to: {mode}")
+    else:
+        print(f"Invalid capture mode: {mode}")
+
+async def handle_remove_screenshot(screenshot_id: str):
+    """Remove a specific screenshot from context."""
+    global _screenshot_list
     
-    # Clear screenshot
-    if _latest_screenshot_path:
-        old_folder = os.path.dirname(_latest_screenshot_path)
-        if old_folder:
-            clear_screenshots_folder(old_folder)
-        _latest_screenshot_path = None
+    # Find and remove the screenshot
+    for i, ss in enumerate(_screenshot_list):
+        if ss["id"] == screenshot_id:
+            # Delete the file
+            if os.path.exists(ss["path"]):
+                try:
+                    os.remove(ss["path"])
+                except Exception as e:
+                    print(f"Error deleting screenshot file: {e}")
+            
+            # Remove from list
+            _screenshot_list.pop(i)
+            print(f"Screenshot removed: {screenshot_id}")
+            
+            # Notify clients
+            await broadcast_message("screenshot_removed", json.dumps({"id": screenshot_id}))
+            return
+    
+    print(f"Screenshot not found: {screenshot_id}")
+
+async def handle_clear_context():
+    """Clear screenshots and chat history for a fresh start."""
+    global _screenshot_list, _chat_history
+    
+    # Clear all screenshots
+    for ss in _screenshot_list:
+        if os.path.exists(ss["path"]):
+            try:
+                os.remove(ss["path"])
+            except Exception as e:
+                print(f"Error deleting screenshot: {e}")
+    
+    _screenshot_list = []
     
     # Clear chat history
     _chat_history = []
-    print("Context cleared: screenshot and chat history reset")
+    print("Context cleared: screenshots and chat history reset")
     
     await broadcast_message("context_cleared", "Context cleared. Ready for new conversation.")
 
-async def handle_submit_query(user_query: str):
+async def handle_submit_query(user_query: str, capture_mode: str = "none"):
     """Handle query submitted from a client. Screenshot is optional."""
-    global _latest_screenshot_path, _is_streaming, _chat_history
+    global _screenshot_list, _is_streaming, _chat_history, _screenshot_counter
+    
+    print(f"[DEBUG] handle_submit_query called: capture_mode={capture_mode}, screenshots={len(_screenshot_list)}, history={len(_chat_history)}")
+    
     async with _stream_lock:
         if _is_streaming:
             await broadcast_message("error", "Already streaming a response. Please wait for completion.")
             return
         _is_streaming = True
 
-    # Check if we have a screenshot (optional now)
-    image_path = None
-    if _latest_screenshot_path and os.path.exists(_latest_screenshot_path):
-        image_path = _latest_screenshot_path
+    # Handle fullscreen mode - auto-capture ONLY on first message of a new conversation
+    # (no screenshots AND no chat history means this is a fresh start)
+    # Follow-up questions rely on the LLM's conversation memory
+    if capture_mode == "fullscreen" and len(_screenshot_list) == 0 and len(_chat_history) == 0:
+        print(f"[DEBUG] Taking fullscreen screenshot (new conversation)")
+        try:
+            # Notify about screenshot capture start
+            await broadcast_message("screenshot_start", "Taking fullscreen screenshot...")
+            
+            # Give the UI time to hide (WebSocket message + React re-render)
+            await asyncio.sleep(0.4)
+            
+            # Take fullscreen screenshot
+            image_path = take_fullscreen_screenshot("screenshots")
+            
+            if image_path and os.path.exists(image_path):
+                # Generate ID and thumbnail
+                _screenshot_counter += 1
+                ss_id = f"ss_{_screenshot_counter}"
+                thumbnail = create_thumbnail(image_path)
+                name = os.path.basename(image_path)
+                
+                # Add to list
+                ss_data = {
+                    "id": ss_id,
+                    "path": image_path,
+                    "name": name,
+                    "thumbnail": thumbnail
+                }
+                _screenshot_list.append(ss_data)
+                
+                # Notify clients
+                await broadcast_message("screenshot_added", json.dumps({
+                    "id": ss_id,
+                    "name": name,
+                    "thumbnail": thumbnail
+                }))
+                
+                print(f"Fullscreen screenshot captured: {ss_id}")
+        except Exception as e:
+            print(f"Error taking fullscreen screenshot: {e}")
+
+    # Get all image paths for the query
+    image_paths = [ss["path"] for ss in _screenshot_list if os.path.exists(ss["path"])]
 
     # Echo query to clients (outside lock to not block other ops)
     await broadcast_message("query", user_query)
 
     try:
-        # Pass current chat history to the streaming function (image_path can be None)
-        response_text = await _stream_ollama_chat(user_query, image_path, _chat_history.copy())
+        # Pass current chat history to the streaming function
+        response_text = await _stream_ollama_chat(user_query, image_paths, _chat_history.copy())
         
         # Add this exchange to chat history for future follow-ups
-        _chat_history.append({'role': 'user', 'content': user_query})
+        # Store images WITH the user message so they persist in history
+        user_msg = {'role': 'user', 'content': user_query}
+        if image_paths:
+            user_msg['images'] = image_paths
+        _chat_history.append(user_msg)
         _chat_history.append({'role': 'assistant', 'content': response_text})
         print(f"Chat history now has {len(_chat_history)} messages")
+        
+        # Clear screenshots from UI after they've been embedded in chat history
+        # The images are now stored in _chat_history, so we can clear the screenshot list
+        if image_paths and len(_screenshot_list) > 0:
+            _screenshot_list.clear()
+            await broadcast_message("screenshots_cleared", "")
+            print("Screenshots cleared from UI - images now embedded in chat history")
         
     except Exception as e:
         await broadcast_message("error", f"Error processing with AI: {e}")
     finally:
         async with _stream_lock:
             _is_streaming = False
-        # Note: We no longer clear the screenshot here to allow follow-up questions
 
 async def _on_screenshot_start():
     """Called when screenshot capture starts; notify clients to hide window."""
-    global _latest_screenshot_path
+    global _current_capture_mode
+    
+    # Only process hotkey captures in precision mode
+    if _current_capture_mode != "precision":
+        print(f"Hotkey capture ignored - not in precision mode (current: {_current_capture_mode})")
+        return
+    
     print("Screenshot capture starting - hiding window")
-    
-    # Clear old screenshot BEFORE new one is taken (so we don't delete the new one)
-    if _latest_screenshot_path:
-        old_folder = os.path.dirname(_latest_screenshot_path)
-        if old_folder:
-            clear_screenshots_folder(old_folder)
-        _latest_screenshot_path = None  # Clear the path since we deleted it
-    
     await broadcast_message("screenshot_start", "Screenshot capture starting")
 
 def process_screenshot_start():
@@ -436,15 +544,45 @@ def process_screenshot_start():
     return None
 
 async def _on_screenshot_captured(image_path: str):
-    """Called when a screenshot is captured; notify clients to ask for query."""
-    global _latest_screenshot_path, _chat_history
+    """Called when a screenshot is captured via hotkey; add to screenshot list."""
+    global _screenshot_list, _screenshot_counter, _current_capture_mode
     
-    # Clear chat history for new conversation
-    _chat_history = []
-    print("Chat history cleared for new screenshot")
+    # Only process hotkey captures in precision mode
+    if _current_capture_mode != "precision":
+        print(f"Hotkey capture ignored - not in precision mode (current: {_current_capture_mode})")
+        # Delete the captured file since we're not using it
+        if os.path.exists(image_path):
+            try:
+                os.remove(image_path)
+            except Exception as e:
+                print(f"Error deleting unused screenshot: {e}")
+        return
     
-    _latest_screenshot_path = image_path
-    print(f"Screenshot ready for query: {image_path}")
+    # Generate ID and thumbnail
+    _screenshot_counter += 1
+    ss_id = f"ss_{_screenshot_counter}"
+    thumbnail = create_thumbnail(image_path)
+    name = os.path.basename(image_path)
+    
+    # Add to list
+    ss_data = {
+        "id": ss_id,
+        "path": image_path,
+        "name": name,
+        "thumbnail": thumbnail
+    }
+    _screenshot_list.append(ss_data)
+    
+    print(f"Screenshot added to context: {ss_id} - {name}")
+    
+    # Notify clients with the new screenshot data
+    await broadcast_message("screenshot_added", json.dumps({
+        "id": ss_id,
+        "name": name,
+        "thumbnail": thumbnail
+    }))
+    
+    # Also send legacy screenshot_ready for backwards compatibility
     await broadcast_message("screenshot_ready", "Screenshot captured. Enter your query and press Enter.")
 
 def process_screenshot(image_path):

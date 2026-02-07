@@ -33,9 +33,10 @@ function App() {
   const [error, setError] = useState<string>('');
   const [canSubmit, setCanSubmit] = useState<boolean>(false);
   const [isHidden, setIsHidden] = useState<boolean>(false);
-  const [hasScreenshot, setHasScreenshot] = useState<boolean>(false);
-  const [fullscreenMode, setFullscreenMode] = useState<boolean>(true);
-  const [precisionMode, setPrecisionMode] = useState<boolean>(false);
+  // Multiple screenshots support
+  const [screenshots, setScreenshots] = useState<Array<{id: string, name: string, thumbnail: string}>>([]);
+  // Capture mode: 'fullscreen' | 'precision' | 'none'
+  const [captureMode, setCaptureMode] = useState<'fullscreen' | 'precision' | 'none'>('fullscreen');
   const [meetingRecordingMode, setMeetingRecordingMode] = useState<boolean>(false);
   // Chat history for multi-turn conversations
   const [chatHistory, setChatHistory] = useState<Array<{role: 'user' | 'assistant', content: string, thinking?: string}>>([]);
@@ -77,6 +78,8 @@ function App() {
       ws.onopen = () => {
         setStatus('Connected to server');
         setError('');
+        // Send initial capture mode to backend
+        ws?.send(JSON.stringify({ type: 'set_capture_mode', mode: 'fullscreen' }));
       };
 
       ws.onmessage = (event) => {
@@ -95,10 +98,39 @@ function App() {
               break;
             case 'screenshot_ready':
               setStatus('Screenshot captured! Ask about it or continue chatting.');
-              setHasScreenshot(true);
               setError('');
               setIsHidden(false);
               // Don't reset chat history - allow continuing conversation with new screenshot context
+              break;
+            case 'screenshot_added': {
+              // New screenshot added to context
+              try {
+                const ssData = typeof data.content === 'string' ? JSON.parse(data.content) : data.content;
+                setScreenshots(prev => [...prev, {
+                  id: ssData.id,
+                  name: ssData.name,
+                  thumbnail: ssData.thumbnail
+                }]);
+                setStatus('Screenshot added to context.');
+                setIsHidden(false);
+              } catch (e) {
+                console.error('Error parsing screenshot data:', e);
+              }
+              break;
+            }
+            case 'screenshot_removed': {
+              // Screenshot removed from context
+              try {
+                const removeData = typeof data.content === 'string' ? JSON.parse(data.content) : data.content;
+                setScreenshots(prev => prev.filter(ss => ss.id !== removeData.id));
+              } catch (e) {
+                console.error('Error parsing screenshot removal:', e);
+              }
+              break;
+            }
+            case 'screenshots_cleared':
+              // Only clear screenshots, preserve chat history (used in fullscreen mode)
+              setScreenshots([]);
               break;
             case 'context_cleared':
               setStatus(data.content || 'Context cleared. Ready for new conversation.');
@@ -110,7 +142,7 @@ function App() {
               setQuery('');
               setCurrentQuery('');
               setChatHistory([]);
-              setHasScreenshot(false);
+              setScreenshots([]);
               setCanSubmit(true);
               // Reset refs
               currentQueryRef.current = '';
@@ -154,7 +186,7 @@ function App() {
               setResponse('');
               setThinking('');
               setCurrentQuery('');
-              setQuery('');
+              // Note: query input is already cleared in handleSubmit
               // Reset refs
               currentQueryRef.current = '';
               responseRef.current = '';
@@ -243,7 +275,14 @@ function App() {
     setResponse('');
     setThinking('');
     setThinkingCollapsed(true);
-    wsRef.current.send(JSON.stringify({ type: 'submit_query', content: query.trim() }));
+    setQuery(''); // Clear input immediately
+    
+    // Send query with capture mode
+    wsRef.current.send(JSON.stringify({ 
+      type: 'submit_query', 
+      content: query.trim(),
+      capture_mode: captureMode
+    }));
   };
 
   const handleClearContext = () => {
@@ -251,27 +290,47 @@ function App() {
     wsRef.current.send(JSON.stringify({ type: 'clear_context' }));
   };
 
+  const handleRemoveScreenshot = (id: string) => {
+    if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) return;
+    wsRef.current.send(JSON.stringify({ type: 'remove_screenshot', id }));
+  };
+
   // Helper to get appropriate placeholder text
   const getPlaceholder = () => {
     if (chatHistory.length > 0) {
-      return hasScreenshot ? "Ask a follow-up about the screenshot..." : "Ask a follow-up question...";
+      return screenshots.length > 0 ? "Ask a follow-up about the screenshot(s)..." : "Ask a follow-up question...";
     }
-    return hasScreenshot ? "Ask about this screenshot..." : "Ask Clueless anything...";
+    if (captureMode === 'fullscreen') {
+      return "Ask anything... (auto-captures screen on submit)";
+    }
+    if (captureMode === 'precision') {
+      return screenshots.length > 0 ? "Ask about the screenshot(s)..." : "Press Ctrl+Shift+Alt+S to capture a region...";
+    }
+    return "Ask Clueless anything...";
   };
-  const fullscreenModeEnabled = () =>{
-    setFullscreenMode(true);
-    setPrecisionMode(false);
+  
+  const sendCaptureMode = (mode: 'fullscreen' | 'precision' | 'none') => {
+    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+      wsRef.current.send(JSON.stringify({ type: 'set_capture_mode', mode }));
+    }
+  };
+  
+  const fullscreenModeEnabled = () => {
+    setCaptureMode('fullscreen');
     setMeetingRecordingMode(false);
+    sendCaptureMode('fullscreen');
   };
-  const precisionModeEnabled = () =>{
-    setFullscreenMode(false);
-    setPrecisionMode(true);
+  
+  const precisionModeEnabled = () => {
+    setCaptureMode('precision');
     setMeetingRecordingMode(false);
+    sendCaptureMode('precision');
   };
-  const meetingRecordingModeEnabled = () =>{
-    setFullscreenMode(false);
-    setPrecisionMode(false);
+  
+  const meetingRecordingModeEnabled = () => {
+    setCaptureMode('none');
     setMeetingRecordingMode(true);
+    sendCaptureMode('none');
   }
   return (
     <>
@@ -290,7 +349,7 @@ function App() {
           </div>
           <div className="blank-space-to-drag"></div>
           <div className="nav-bar-right-side">
-            <div className="newChatButton">
+            <div className="newChatButton" onClick={handleClearContext} title="Start new chat">
               <img src={newChatIcon} alt="New Chat" className='new-chat-icon'/>
             </div>
             <div className="clueless-logo-holder">
@@ -301,14 +360,6 @@ function App() {
         </div>
         <div className="response-area">
           {error && <div className="error"><strong>Error:</strong> {error}</div>}
-
-          {/* Screenshot indicator */}
-          {hasScreenshot && (
-            <div className="screenshot-indicator">
-              <span className="screenshot-badge">📷 Screenshot attached</span>
-              <button className="clear-btn" onClick={handleClearContext} title="Clear context">×</button>
-            </div>
-          )}
 
           {/* Display chat history */}
           {!error && chatHistory.map((msg, idx) => (
@@ -453,8 +504,50 @@ function App() {
             </div>
 
             <div className="input-options-section">
-              <div className="add-attachments-section">
+              {/* <div className="add-attachments-section">
                 <img src={plusSignSvg} alt="Add attachment" className='plus-sign-svg' />
+              </div> */}
+              
+              {/* Fixed container for context chips - maintains layout stability */}
+              <div className="chips-container-wrapper">
+                {screenshots.length > 0 && (
+                  <div className="context-chips">
+                    {screenshots.map((ss, index) => (
+                      <div key={ss.id} className="context-chip">
+                        <div className="chip-preview">
+                          {ss.thumbnail ? (
+                            <img 
+                              src={`data:image/png;base64,${ss.thumbnail}`} 
+                              alt={ss.name}
+                              className="chip-thumb"
+                            />
+                          ) : (
+                            <span className="chip-icon">📷</span>
+                          )}
+                        </div>
+                        <span className="chip-name">SS{index + 1}</span>
+                        <button 
+                          className="chip-remove" 
+                          onClick={() => handleRemoveScreenshot(ss.id)}
+                          title="Remove"
+                        >
+                          ×
+                        </button>
+                        {/* Hover preview popup */}
+                        <div className="chip-hover-preview">
+                          {ss.thumbnail && (
+                            <img 
+                              src={`data:image/png;base64,${ss.thumbnail}`} 
+                              alt={ss.name}
+                              className="hover-preview-img"
+                            />
+                          )}
+                          <span className="hover-preview-name">{ss.name}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
               <div className="additional-inputs-section">
                 <div className="model-selection-section">
@@ -470,13 +563,13 @@ function App() {
             </div>
           </div>
           <div className="mode-selection-section">
-            <div className={`fullscreenssmode${fullscreenMode ? '-active' : ''}`} onClick={fullscreenModeEnabled}>
+            <div className={`fullscreenssmode${captureMode === 'fullscreen' ? '-active' : ''}`} onClick={fullscreenModeEnabled} title="Talk to anything on your screen">
               <img src={fullscreenSSIcon} alt="Full Screen Screenshot Mode" className='fullscreen-ss-icon' />
             </div>
-            <div className={`regionssmode${precisionMode ? '-active' : ''}`} onClick={precisionModeEnabled}>
+            <div className={`regionssmode${captureMode === 'precision' ? '-active' : ''}`} onClick={precisionModeEnabled} title="Talk to a specific region of your screen">
               <img src={regionSSIcon} alt="Region Screenshot Mode" className='region-ss-icon' />
             </div>
-            <div className={`meetingrecordermode${meetingRecordingMode ? '-active' : ''}`} onClick={meetingRecordingModeEnabled}>
+            <div className={`meetingrecordermode${meetingRecordingMode ? '-active' : ''}`} onClick={meetingRecordingModeEnabled} title="Meeting recorder mode">
               <img src={meetingRecordingIcon} alt="Meeting Recorder Mode" className='meeting-recording-icon' />
             </div>
           </div>

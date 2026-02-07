@@ -81,7 +81,8 @@ html{
 .response-area{
   position: relative;
   width: 97%;
-  height: 100%;
+  height: calc(100% - 160px);
+  margin-top: 30px;
   margin-bottom: 130px;
   overflow-y: auto;
   padding: 1rem;
@@ -90,6 +91,7 @@ html{
   gap: 1rem;
   scrollbar-width: none; /* For Firefox */
   -ms-overflow-style: none;  /* For Internet Explorer and Edge */
+  /* background-color: lightcoral; */
 }
 
 .response-area::-webkit-scrollbar {
@@ -156,7 +158,7 @@ html{
   bottom: 5px;
   right: 0;
   width: 100%;
-  height: 100px;
+  height: 115px;
   padding-left: 5px;
   padding-right: 5px;
   /* background-color: blueviolet; */
@@ -183,14 +185,17 @@ html{
   height: 50%;
   display: flex;
   align-items: center;
+  margin-bottom: 5px;
   /* background-color: greenyellow; */
 }
 .input-options-section{
   width: 100%;
-  height: 30px;
+  height: 40px;
   display: flex;
   /* background-color: lightgray; */
   justify-content: space-between;
+  align-items: center;
+  gap: 8px;
 }
 .add-attachments-section{
   width: 30px;
@@ -199,6 +204,7 @@ html{
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-shrink: 0;
 }
 .plus-sign-svg{
   width: 90%;
@@ -207,14 +213,15 @@ html{
 }
 .additional-inputs-section{
   height: 100%;
-  width: 150px;
+  width: 130px;
   /* background-color: lightcyan; */
   display: flex;
   justify-content: space-between;
+  /* flex-shrink: 0; */
 }
 .model-selection-section{
   height: 100%;
-  width: 110px;
+  width: 100px;
   /* background-color: violet; */
 }
 .model-select{
@@ -505,6 +512,175 @@ html{
 .clear-btn:hover {
   background: rgba(255, 100, 100, 0.2);
   border-color: rgba(255, 100, 100, 0.5);
+  color: rgba(255, 100, 100, 0.9);
+}
+
+/* Fixed container wrapper - maintains layout stability */
+.chips-container-wrapper {
+  flex: 1;
+  min-width: 0;
+  min-height: 28px;
+  display: flex;
+  align-items: center;
+  overflow-x: auto;
+  overflow-y: visible;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.3) transparent;
+  /* background-color: red; */
+}
+
+.chips-container-wrapper::-webkit-scrollbar {
+  height: 3px;
+}
+
+.chips-container-wrapper::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.chips-container-wrapper::-webkit-scrollbar-thumb {
+  background-color: rgba(255, 255, 255, 0.3);
+  border-radius: 2px;
+}
+
+/* Context chips - compact inline screenshot indicators */
+.context-chips {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: nowrap;
+  /* background-color: blue; */
+}
+
+.context-chip {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 6px 2px 2px;
+  background-color: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+  font-size: 0.65rem;
+  color: rgba(255, 255, 255, 0.85);
+  cursor: default;
+  transition: all 0.15s ease;
+  height: 22px;
+  flex-shrink: 0;
+}
+
+.context-chip:hover {
+  background-color: rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.35);
+}
+
+.chip-preview {
+  width: 16px;
+  height: 16px;
+  border-radius: 2px;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: rgba(0, 0, 0, 0.3);
+  flex-shrink: 0;
+}
+
+.chip-thumb {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.chip-icon {
+  font-size: 0.6rem;
+}
+
+.chip-name {
+  max-width: 60px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.chip-remove {
+  background: transparent;
+  border: none;
+  color: rgba(255, 255, 255, 0.5);
+  cursor: pointer;
+  font-size: 0.8rem;
+  line-height: 1;
+  padding: 0;
+  margin-left: 2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.15s ease;
+}
+
+.chip-remove:hover {
+  color: rgba(255, 100, 100, 0.9);
+}
+
+/* Hover preview popup */
+.chip-hover-preview {
+  position: fixed;
+  bottom: 115px;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: rgba(30, 30, 30, 0.98);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 8px;
+  padding: 10px;
+  opacity: 0;
+  visibility: hidden;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  z-index: 9999;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.7);
+  pointer-events: none;
+  transition: opacity 0.15s ease, visibility 0.15s ease;
+}
+
+.context-chip:hover .chip-hover-preview {
+  opacity: 1;
+  visibility: visible;
+  display: flex;
+}
+
+.hover-preview-img {
+  max-width: 350px;
+  max-height: 250px;
+  border-radius: 4px;
+  object-fit: contain;
+}
+
+.hover-preview-name {
+  font-size: 0.7rem;
+  color: rgba(255, 255, 255, 0.7);
+  text-align: center;
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.clear-all-chips-btn {
+  background: transparent;
+  border: 1px solid rgba(255, 100, 100, 0.4);
+  color: rgba(255, 100, 100, 0.7);
+  border-radius: 4px;
+  padding: 2px 6px;
+  cursor: pointer;
+  font-size: 0.6rem;
+  transition: all 0.15s ease;
+  height: 22px;
+  flex-shrink: 0;
+}
+
+.clear-all-chips-btn:hover {
+  background: rgba(255, 100, 100, 0.15);
+  border-color: rgba(255, 100, 100, 0.6);
   color: rgba(255, 100, 100, 0.9);
 }
 

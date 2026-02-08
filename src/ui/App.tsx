@@ -14,11 +14,14 @@ import settingsIcon from './assets/settings-icon.svg';
 import chatHistoryIcon from './assets/chat-history-icon.svg';
 import recordedMeetingsAlbumIcon from './assets/recorded-meetings-album-icon.svg';
 import newChatIcon from './assets/new-chat-icon.svg';
+import contextWindowInsightsIcon from './assets/context-window-icon.svg';
+import scrollDownIcon from './assets/scroll-down-icon.svg';
 // Extend the Window interface to include electronAPI
 declare global {
   interface Window {
     electronAPI?: {
       focusWindow: () => Promise<void>;
+      setMiniMode: (mini: boolean) => Promise<void>;
     };
   }
 }
@@ -33,6 +36,8 @@ function App() {
   const [error, setError] = useState<string>('');
   const [canSubmit, setCanSubmit] = useState<boolean>(false);
   const [isHidden, setIsHidden] = useState<boolean>(false);
+  const [mini, setMini] = useState<boolean>(false);
+  const [selectedModel, setSelectedModel] = useState<string>('GPT-4');
   // Multiple screenshots support
   const [screenshots, setScreenshots] = useState<Array<{id: string, name: string, thumbnail: string}>>([]);
   // Capture mode: 'fullscreen' | 'precision' | 'none'
@@ -41,8 +46,20 @@ function App() {
   // Chat history for multi-turn conversations
   const [chatHistory, setChatHistory] = useState<Array<{role: 'user' | 'assistant', content: string, thinking?: string}>>([]);
   const [currentQuery, setCurrentQuery] = useState<string>('');
+  
+  // Token usage states
+  const [tokenUsage, setTokenUsage] = useState({
+    total: 0,
+    input: 0,
+    output: 0,
+    limit: 128000
+  });
+  const [showTokenPopup, setShowTokenPopup] = useState(false);
+  const [showScrollBottom, setShowScrollBottom] = useState(false);
+
   const wsRef = useRef<WebSocket | null>(null);
   const inputRef = useRef<HTMLInputElement | null>(null);
+  const responseAreaRef = useRef<HTMLDivElement | null>(null);
   // Refs to track current values for WebSocket handler
   const currentQueryRef = useRef<string>('');
   const responseRef = useRef<string>('');
@@ -89,7 +106,7 @@ function App() {
           switch (data.type) {
             case 'ready':
               // Server is ready - enable input immediately (no screenshot required)
-              setStatus(data.content || 'Ready to chat. Take a screenshot (Ctrl+Shift+Alt+S) or just type.');
+              setStatus(data.content || 'Ready to chat. Take a screenshot (Alt+.) or just type.');
               setCanSubmit(true);
               setError('');
               break;
@@ -195,6 +212,20 @@ function App() {
               setCanSubmit(true); // Allow follow-up questions
               break;
             }
+            case 'token_usage': {
+              const stats = JSON.parse(data.content);
+              const input = stats.prompt_eval_count || 0;
+              const output = stats.eval_count || 0;
+              const total = input + output;
+              
+              setTokenUsage(prev => ({
+                ...prev,
+                total: total,
+                input: input,
+                output: output
+              }));
+              break;
+            }
             case 'error':
               setError(data.content);
               setResponse('');
@@ -267,6 +298,24 @@ function App() {
     }
   }, [canSubmit]);
 
+  const scrollToBottom = () => {
+    if (responseAreaRef.current) {
+      responseAreaRef.current.scrollTo({
+        top: responseAreaRef.current.scrollHeight,
+        behavior: 'smooth'
+      });
+    }
+  };
+
+  const handleScroll = () => {
+    if (responseAreaRef.current) {
+      const { scrollTop, scrollHeight, clientHeight } = responseAreaRef.current;
+      // Show button if we are more than 50px from the bottom
+      const isNearBottom = scrollHeight - scrollTop - clientHeight < 50;
+      setShowScrollBottom(!isNearBottom);
+    }
+  };
+
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
     if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) return;
@@ -276,6 +325,9 @@ function App() {
     setThinking('');
     setThinkingCollapsed(true);
     setQuery(''); // Clear input immediately
+
+    // Scroll to bottom when user submits
+    setTimeout(scrollToBottom, 50);
     
     // Send query with capture mode
     wsRef.current.send(JSON.stringify({ 
@@ -301,10 +353,10 @@ function App() {
       return screenshots.length > 0 ? "Ask a follow-up about the screenshot(s)..." : "Ask a follow-up question...";
     }
     if (captureMode === 'fullscreen') {
-      return "Ask anything... (auto-captures screen on submit)";
+      return "Ask Clueless anything on your screen...";
     }
     if (captureMode === 'precision') {
-      return screenshots.length > 0 ? "Ask about the screenshot(s)..." : "Press Ctrl+Shift+Alt+S to capture a region...";
+      return screenshots.length > 0 ? "Ask about the screenshot(s)..." : "Ask Clueless about a region on your screen (Alt+.)";
     }
     return "Ask Clueless anything...";
   };
@@ -333,7 +385,23 @@ function App() {
     sendCaptureMode('none');
   }
   return (
-    <>
+    <div className={`app-wrapper ${mini ? 'mini-mode' : 'normal-mode'}`}>
+      <div
+        className="mini-container"
+        title="Restore Clueless"
+        onClick={() => {
+          console.log('Mini logo clicked, restoring window');
+          setMini(false);
+          window.electronAPI?.setMiniMode(false);
+        }}
+      >
+        <img
+          src={cluelessLogo}
+          alt="Clueless Logo"
+          className="clueless-logo"
+        />
+      </div>
+
       <div className="container" style={{ opacity: isHidden ? 0 : 1 }}>
         <div className="title-bar">
           <div className="nav-bar">
@@ -353,12 +421,28 @@ function App() {
               <img src={newChatIcon} alt="New Chat" className='new-chat-icon'/>
             </div>
             <div className="clueless-logo-holder">
-              <img src={cluelessLogo} alt="Clueless Logo" className='clueless-logo' />
+              <img
+                src={cluelessLogo}
+                alt="Clueless Logo"
+                className='clueless-logo'
+                onClick={() => {
+                  console.log('Logo clicked, entering mini mode');
+                  console.log('electronAPI available:', !!window.electronAPI);
+                  setMini(true);
+                  window.electronAPI?.setMiniMode(true);
+                }}
+                style={{ cursor: 'pointer' }}
+                title="Mini mode"
+              />
             </div>
           </div>
 
         </div>
-        <div className="response-area">
+        <div 
+          className="response-area" 
+          ref={responseAreaRef}
+          onScroll={handleScroll}
+        >
           {error && <div className="error"><strong>Error:</strong> {error}</div>}
 
           {/* Display chat history */}
@@ -366,11 +450,12 @@ function App() {
             <div key={idx} className={msg.role === 'user' ? 'chat-user' : 'chat-assistant'}>
               {msg.role === 'user' ? (
                 <div className="query">
-                  <strong>You:</strong>
+                  {/* <div className="user-header">You</div> */}
                   <p>{msg.content}</p>
                 </div>
               ) : (
                 <div className="response">
+                  <div className="assistant-header">Clueless • {selectedModel}</div>
                   <ReactMarkdown
                     components={{
                       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -410,7 +495,7 @@ function App() {
           {/* Current query being processed */}
           {!error && currentQuery && !canSubmit && (
             <div className="query">
-              <strong>You:</strong>
+              {/* <div className="user-header">You</div> */}
               <p>{currentQuery}</p>
             </div>
           )}
@@ -438,6 +523,7 @@ function App() {
           {/* Current response being streamed */}
           {!error && response && (
             <div className="response">
+              <div className="assistant-header">Clueless • {selectedModel}</div>
               <ReactMarkdown
                 components={{
                   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -486,8 +572,18 @@ function App() {
             </div>
           )}
           {/* <div className="status">{status}</div> */}
-
         </div>
+
+        {showScrollBottom && (
+          <button 
+            className="scroll-bottom-button" 
+            onClick={scrollToBottom}
+            title="Scroll to bottom"
+          >
+            <img src={scrollDownIcon} alt="Scroll down" className="scroll-down-icon" />
+          </button>
+        )}
+
         <div className="main-interaction-section">
           <div className="query-input-section">
             <div className="query-input-text-box-section">
@@ -551,10 +647,58 @@ function App() {
               </div>
               <div className="additional-inputs-section">
                 <div className="model-selection-section">
-                  <select name="model-selector" className='model-select'>
-                    <option value="gpt-4">GPT-4</option>
-                    <option value="gpt-3.5">GPT-3.5</option>
+                  <select 
+                    name="model-selector" 
+                    className='model-select' 
+                    value={selectedModel}
+                    onChange={(e) => setSelectedModel(e.target.value)}
+                  >
+                    <option value="qwen3-vl:8b-instruct">Qwen 3 VL:8B</option>
+                    <option value="GPT-5">GPT-4</option>
+                    <option value="GPT-3.5">GPT-3.5</option>
+                    <option value="Claude Opus 4.6">Claude Opus 4.6</option>
                   </select>
+                </div>
+                <div 
+                  className="context-window-insights-icon"
+                  onMouseEnter={() => setShowTokenPopup(true)}
+                  onMouseLeave={() => setShowTokenPopup(false)}
+                  onClick={() => setShowTokenPopup(!showTokenPopup)}
+                >
+                  <img src={contextWindowInsightsIcon} alt="Context Window Insights" className='context-window-insights-svg' title="Context Window Insights" />
+                  
+                  {showTokenPopup && (
+                    <div className="token-usage-popup">
+                      <div className="token-popup-header">
+                        <span className="token-popup-title">Context Window</span>
+                        <span className="token-popup-subtitle">
+                          {((tokenUsage.total / 1000)).toFixed(1)}K / {(tokenUsage.limit / 1000)}K tokens • {Math.round((tokenUsage.total / tokenUsage.limit) * 100)}%
+                        </span>
+                      </div>
+                      
+                      <div className="token-progress-bar-container">
+                        <div 
+                          className="token-progress-bar-fill" 
+                          style={{ width: `${Math.min(100, (tokenUsage.total / tokenUsage.limit) * 100)}%` }}
+                        ></div>
+                      </div>
+
+                      <div className="token-usage-section">
+                        <div className="token-usage-row">
+                          <span className="token-usage-label">Total Tokens</span>
+                          <span className="token-usage-value">{tokenUsage.total.toLocaleString()} ({Math.round((tokenUsage.total / tokenUsage.limit) * 100)}%)</span>
+                        </div>
+                        <div className="token-usage-row">
+                          <span className="token-usage-label">Input Tokens</span>
+                          <span className="token-usage-value">{tokenUsage.input.toLocaleString()} ({Math.round((tokenUsage.input / tokenUsage.total || 0) * 100)}%)</span>
+                        </div>
+                        <div className="token-usage-row">
+                          <span className="token-usage-label">Output Tokens</span>
+                          <span className="token-usage-value">{tokenUsage.output.toLocaleString()} ({Math.round((tokenUsage.output / tokenUsage.total || 0) * 100)}%)</span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
                 <div className="mic-input-section">
                   <img src={micSignSvg} alt="Voice input" className='mic-icon' />
@@ -575,7 +719,7 @@ function App() {
           </div>
         </div>
       </div>
-    </>
+    </div>
   )
 }
 

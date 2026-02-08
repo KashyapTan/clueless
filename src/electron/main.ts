@@ -1,9 +1,14 @@
-import {app, BrowserWindow} from 'electron';
+import {app, BrowserWindow, ipcMain, screen} from 'electron';
 import path from 'path';
+import { fileURLToPath } from 'url';
 import {isDev} from './utils.js';
 import { startPythonServer, stopPythonServer } from './pythonApi.js';
 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
 let mainWindow: BrowserWindow | null = null;
+let normalBounds = { width: 450, height: 450, x: 100, y: 100 };
 
 app.on('ready', async ()=>{
     // Only start Python server in production mode
@@ -19,9 +24,14 @@ app.on('ready', async ()=>{
         console.log('Development mode: Python server should be started by dev:pyserver script');
     }
 
+    const preloadPath = path.join(__dirname, 'preload.js');
+    console.log('Preload path:', preloadPath);
+    console.log('App path:', app.getAppPath());
+    console.log('__dirname:', __dirname);
+
     mainWindow = new BrowserWindow({
-        width: 400,
-        height: 400,
+        width: 450,
+        height: 450,
         minWidth: 30,
         minHeight: 20,
         title: 'Clueless',
@@ -36,12 +46,48 @@ app.on('ready', async ()=>{
         webPreferences: {
             nodeIntegration: false,
             contextIsolation: true,
+            sandbox: false,
+            preload: preloadPath,
         }
     });
 
     // Strengthen always-on-top level (optional):
     mainWindow.setAlwaysOnTop(true, 'screen-saver'); // or 'floating'
     mainWindow.setContentProtection(true); // Prevent screen capture on some OSes
+
+    // IPC: Toggle mini mode - resize the actual electron window
+    ipcMain.handle('set-mini-mode', (_event, mini: boolean) => {
+        console.log('IPC set-mini-mode called with:', mini);
+        if (!mainWindow) {
+            console.log('mainWindow is null');
+            return;
+        }
+        if (mini) {
+            normalBounds = mainWindow.getBounds();
+            console.log('Saving normalBounds:', normalBounds);
+            // Calculate position: top-right of the current window
+            const newX = normalBounds.x + normalBounds.width - 52;
+            const newY = normalBounds.y;
+            // Resize to a small 52x52 window (32 icon + padding/shadow)
+            mainWindow.setMinimumSize(52, 52);
+            mainWindow.setSize(52, 52);
+            // Position at top-right of where the window was
+            console.log('Setting position to:', newX, newY);
+            mainWindow.setPosition(newX, newY);
+            console.log('Window resized to mini mode');
+        } else {
+            console.log('Restoring normalBounds:', normalBounds);
+            mainWindow.setMinimumSize(30, 20);
+            mainWindow.setBounds(normalBounds);
+            console.log('Window restored from mini mode');
+        }
+    });
+
+    // IPC: Focus the window
+    ipcMain.handle('focus-window', () => {
+        if (!mainWindow) return;
+        mainWindow.focus();
+    });
 
     // Show across virtual desktops / fullscreen spaces:
     // mainWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });

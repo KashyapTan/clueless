@@ -91,9 +91,9 @@ class ScreenshotService:
                 self.capturing = False
 
     def start_listener(self, save_folder="screenshots"):
-        """Start listening for Ctrl+Shift+Alt+S keyboard shortcut (strict)."""
+        """Start listening for Alt+. keyboard shortcut (strict)."""
         self.running = True
-        print("Screenshot service started. Press Ctrl+Shift+Alt+S to take a region screenshot.")
+        print("Screenshot service started. Press Alt+. to take a region screenshot.")
         print("Press Ctrl+C to stop the service.")
 
         def on_activate():
@@ -112,7 +112,7 @@ class ScreenshotService:
             threading.Thread(target=self._do_capture, args=(save_folder,), daemon=True).start()
 
         hotkey = keyboard.HotKey(
-            keyboard.HotKey.parse('<ctrl>+<shift>+<alt>+s'),
+            keyboard.HotKey.parse('<alt>+.'),
             on_activate
         )
 
@@ -375,6 +375,6 @@ def start_screenshot_service(save_folder="screenshots", callback=None):
 
 if __name__ == "__main__":
     print("Starting screenshot service...")
-    print("Press Ctrl+Shift+Alt+S to take a region screenshot")
+    print("Press Alt+. to take a region screenshot")
     print("Press Ctrl+C to exit")
     start_screenshot_service("screenshots")

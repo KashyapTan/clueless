@@ -142,7 +142,7 @@ async def websocket_endpoint(websocket: WebSocket):
     await manager.connect(websocket)
     
     # Immediately notify client that server is ready for queries (no screenshot required)
-    await websocket.send_text(json.dumps({"type": "ready", "content": "Server ready. You can start chatting or take a screenshot (Ctrl+Shift+Alt+S)."}))
+    await websocket.send_text(json.dumps({"type": "ready", "content": "Server ready. You can start chatting or take a screenshot (Alt+.)"}))
     
     # Send any existing screenshots to the newly connected client
     for ss in _screenshot_list:
@@ -321,14 +321,21 @@ async def _stream_ollama_chat(user_query: str, image_paths: List[str], chat_hist
                     accumulated.append(content_token)
                     safe_schedule(broadcast_message("response_chunk", content_token))
                     
-                # Track final message from done chunk
-                if hasattr(chunk, 'done') and getattr(chunk, 'done') and hasattr(chunk, 'message'):
-                    msg = getattr(chunk, 'message')
-                    if msg is not None:
-                        if hasattr(msg, 'content'):
-                            mc = getattr(msg, 'content')
-                            if isinstance(mc, str) and mc:
-                                final_message_content = mc
+                # Track final message from done chunk and collect token stats
+                if hasattr(chunk, 'done') and getattr(chunk, 'done'):
+                    token_stats = {
+                        "prompt_eval_count": getattr(chunk, 'prompt_eval_count', 0),
+                        "eval_count": getattr(chunk, 'eval_count', 0),
+                    }
+                    safe_schedule(broadcast_message("token_usage", json.dumps(token_stats)))
+                    
+                    if hasattr(chunk, 'message'):
+                        msg = getattr(chunk, 'message')
+                        if msg is not None:
+                            if hasattr(msg, 'content'):
+                                mc = getattr(msg, 'content')
+                                if isinstance(mc, str) and mc:
+                                    final_message_content = mc
             
             # If we had thinking but never sent complete (e.g., no content followed)
             if thinking_tokens and not accumulated:
@@ -496,6 +503,12 @@ async def handle_submit_query(user_query: str, capture_mode: str = "none"):
             user_msg['images'] = image_paths
         _chat_history.append(user_msg)
         _chat_history.append({'role': 'assistant', 'content': response_text})
+        # Function to print full chat history including content and how image gets embeddedin a readable format for debugging
+        # def print_chat_history():
+        #     print("Current chat history:")
+        #     for i, msg in enumerate(_chat_history):
+        #         print(f"  Message {i+1}: role={msg['role']}, content_length={len(msg['content'])}, images={len(msg.get('images', []))}")
+        # print_chat_history()
         print(f"Chat history now has {len(_chat_history)} messages")
         
         # Clear screenshots from UI after they've been embedded in chat history

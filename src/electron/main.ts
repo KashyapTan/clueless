@@ -51,6 +51,8 @@ app.on('ready', async ()=>{
         }
     });
 
+    normalBounds = mainWindow.getBounds();
+
     // Strengthen always-on-top level (optional):
     mainWindow.setAlwaysOnTop(true, 'screen-saver'); // or 'floating'
     mainWindow.setContentProtection(true); // Prevent screen capture on some OSes
@@ -58,28 +60,39 @@ app.on('ready', async ()=>{
     // IPC: Toggle mini mode - resize the actual electron window
     ipcMain.handle('set-mini-mode', (_event, mini: boolean) => {
         console.log('IPC set-mini-mode called with:', mini);
+        console.log('Current Bounds before action:', mainWindow?.getBounds());
+        
         if (!mainWindow) {
             console.log('mainWindow is null');
             return;
         }
+
         if (mini) {
-            normalBounds = mainWindow.getBounds();
-            console.log('Saving normalBounds:', normalBounds);
+            const currentBounds = mainWindow.getBounds();
+            // Only update normalBounds if we are currently "large"
+            if (currentBounds.width > 100 || currentBounds.height > 100) {
+              normalBounds = currentBounds;
+              console.log('Saved normalBounds:', normalBounds);
+            }
+            
             // Calculate position: top-right of the current window
             const newX = normalBounds.x + normalBounds.width - 52;
             const newY = normalBounds.y;
-            // Resize to a small 52x52 window (32 icon + padding/shadow)
+            
+            mainWindow.setResizable(true); // Ensure we can resize
             mainWindow.setMinimumSize(52, 52);
-            mainWindow.setSize(52, 52);
-            // Position at top-right of where the window was
-            console.log('Setting position to:', newX, newY);
-            mainWindow.setPosition(newX, newY);
-            console.log('Window resized to mini mode');
+            mainWindow.setSize(52, 52, false); // false to disable animation which can sometimes bug out size setting
+            mainWindow.setPosition(newX, newY, false);
+            console.log('Window resized to mini mode. New Bounds:', mainWindow.getBounds());
         } else {
-            console.log('Restoring normalBounds:', normalBounds);
+            console.log('Restoring to normalBounds:', normalBounds);
             mainWindow.setMinimumSize(30, 20);
-            mainWindow.setBounds(normalBounds);
-            console.log('Window restored from mini mode');
+            
+            // Explicitly set size and position separately if setBounds fails
+            mainWindow.setSize(normalBounds.width, normalBounds.height, false);
+            mainWindow.setPosition(normalBounds.x, normalBounds.y, false);
+            
+            console.log('Window restored. New Bounds:', mainWindow.getBounds());
         }
     });
 

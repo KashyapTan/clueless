@@ -1,21 +1,19 @@
 import { useState, useEffect, useRef } from 'react';
 import type { FormEvent } from 'react';
+import { useOutletContext } from 'react-router-dom';
 import ReactMarkdown from 'react-markdown';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
-import './App.css'
-import cluelessLogo from './assets/transparent-clueless-logo.png';
-// import plusSignSvg from './assets/plus-icon.svg';
-import micSignSvg from './assets/mic-icon.svg';
-import fullscreenSSIcon from './assets/entire-screen-shot-icon.svg';
-import regionSSIcon from './assets/region-screen-shot-icon.svg';
-import meetingRecordingIcon from './assets/meeting-record-icon.svg';
-import settingsIcon from './assets/settings-icon.svg';
-import chatHistoryIcon from './assets/chat-history-icon.svg';
-import recordedMeetingsAlbumIcon from './assets/recorded-meetings-album-icon.svg';
-import newChatIcon from './assets/new-chat-icon.svg';
-import contextWindowInsightsIcon from './assets/context-window-icon.svg';
-import scrollDownIcon from './assets/scroll-down-icon.svg';
+import '../CSS/App.css';
+import TitleBar from '../components/TitleBar';
+import cluelessLogo from '../assets/transparent-clueless-logo.png';
+// import plusSignSvg from '../assets/plus-icon.svg';
+import micSignSvg from '../assets/mic-icon.svg';
+import fullscreenSSIcon from '../assets/entire-screen-shot-icon.svg';
+import regionSSIcon from '../assets/region-screen-shot-icon.svg';
+import meetingRecordingIcon from '../assets/meeting-record-icon.svg';
+import contextWindowInsightsIcon from '../assets/context-window-icon.svg';
+import scrollDownIcon from '../assets/scroll-down-icon.svg';
 // Extend the Window interface to include electronAPI
 declare global {
   interface Window {
@@ -35,9 +33,12 @@ function App() {
   const [status, setStatus] = useState<string>('Connecting to server...');
   const [error, setError] = useState<string>('');
   const [canSubmit, setCanSubmit] = useState<boolean>(false);
-  const [isHidden, setIsHidden] = useState<boolean>(false);
-  const [mini, setMini] = useState<boolean>(false);
-  const [selectedModel, setSelectedModel] = useState<string>('GPT-4');
+  const { setMini, setIsHidden, isHidden } = useOutletContext<{ 
+    setMini: (val: boolean) => void, 
+    setIsHidden: (val: boolean) => void,
+    isHidden: boolean
+  }>();
+  const [selectedModel, setSelectedModel] = useState<string>('QWEN 3 VL:8B');
   // Multiple screenshots support
   const [screenshots, setScreenshots] = useState<Array<{id: string, name: string, thumbnail: string}>>([]);
   // Capture mode: 'fullscreen' | 'precision' | 'none'
@@ -385,59 +386,9 @@ function App() {
     sendCaptureMode('none');
   }
   return (
-    <div className={`app-wrapper ${mini ? 'mini-mode' : 'normal-mode'}`}>
-      <div
-        className="mini-container"
-        title="Restore Clueless"
-        onClick={() => {
-          console.log('Mini logo clicked, restoring window');
-          setMini(false);
-          window.electronAPI?.setMiniMode(false);
-        }}
-      >
-        <img
-          src={cluelessLogo}
-          alt="Clueless Logo"
-          className="clueless-logo"
-        />
-      </div>
-
-      <div className="container" style={{ opacity: isHidden ? 0 : 1 }}>
-        <div className="title-bar">
-          <div className="nav-bar">
-            <div className="settingsButton">
-              <img src={settingsIcon} alt="Settings" className='settings-icon' />
-            </div>
-            <div className="chatHistoryButton">
-              <img src={chatHistoryIcon} alt="Chat History" className='chat-history-icon'/>
-            </div>
-            <div className="recordedMeetingsAlbumButton">
-              <img src={recordedMeetingsAlbumIcon} alt="Recorded Meetings Album" className='recorded-meetings-album-icon'/>
-            </div>
-          </div>
-          <div className="blank-space-to-drag"></div>
-          <div className="nav-bar-right-side">
-            <div className="newChatButton" onClick={handleClearContext} title="Start new chat">
-              <img src={newChatIcon} alt="New Chat" className='new-chat-icon'/>
-            </div>
-            <div className="clueless-logo-holder">
-              <img
-                src={cluelessLogo}
-                alt="Clueless Logo"
-                className='clueless-logo'
-                onClick={() => {
-                  console.log('Logo clicked, entering mini mode');
-                  console.log('electronAPI available:', !!window.electronAPI);
-                  setMini(true);
-                  window.electronAPI?.setMiniMode(true);
-                }}
-                style={{ cursor: 'pointer' }}
-                title="Mini mode"
-              />
-            </div>
-          </div>
-
-        </div>
+    <>
+      <div className="content-container" style={{ width: '100%', height: '100%', position: 'relative' }}>
+        <TitleBar onClearContext={handleClearContext} setMini={setMini} />
         <div 
           className="response-area" 
           ref={responseAreaRef}
@@ -605,7 +556,15 @@ function App() {
               </div> */}
               
               {/* Fixed container for context chips - maintains layout stability */}
-              <div className="chips-container-wrapper">
+              <div 
+                className="chips-container-wrapper"
+                onWheel={(e) => {
+                  if (e.deltaY !== 0) {
+                    e.currentTarget.scrollLeft += e.deltaY;
+                    e.preventDefault();
+                  }
+                }}
+              >
                 {screenshots.length > 0 && (
                   <div className="context-chips">
                     {screenshots.map((ss, index) => (
@@ -654,7 +613,7 @@ function App() {
                     onChange={(e) => setSelectedModel(e.target.value)}
                   >
                     <option value="qwen3-vl:8b-instruct">Qwen 3 VL:8B</option>
-                    <option value="GPT-5">GPT-4</option>
+                    <option value="GPT-5">GPT-5</option>
                     <option value="GPT-3.5">GPT-3.5</option>
                     <option value="Claude Opus 4.6">Claude Opus 4.6</option>
                   </select>
@@ -719,7 +678,7 @@ function App() {
           </div>
         </div>
       </div>
-    </div>
+    </>
   )
 }
 

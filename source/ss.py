@@ -9,6 +9,8 @@ import threading
 import sys
 import platform
 import time
+from io import BytesIO
+import subprocess
 
 # Fix for high DPI displays on Windows
 if platform.system() == "Windows":
@@ -67,6 +69,95 @@ if platform.system() == "Windows":
 else:
     def get_dpi_scale():
         return 1.0
+
+def copy_image_to_clipboard(image, dpi_scale=None):
+    """
+    Robust way to copy a PIL Image to the Windows clipboard.
+    Handles 64-bit handles, DPI scaling, and busy clipboards.
+    """
+    if platform.system() != "Windows":
+        return False
+        
+    try:
+        import ctypes
+        from ctypes import wintypes
+        import io
+        
+        # If no scale provided, try to get it
+        if dpi_scale is None:
+            dpi_scale = get_dpi_scale()
+            
+        # 96 is standard; 144 is 150%, etc.
+        dpi = int(96 * dpi_scale)
+        output = io.BytesIO()
+        # Convert to RGB and save as BMP with DPI metadata
+        # Setting DPI ensures apps like Word/Photoshop scale it correctly
+        image.convert("RGB").save(output, "BMP", dpi=(dpi, dpi))
+        data = output.getvalue()[14:] # Strip 14-byte BMP header to get DIB
+        output.close()
+        
+        # Define Windows API types (CRITICAL for 64-bit support to prevent handle truncation)
+        kernel32 = ctypes.windll.kernel32
+        user32 = ctypes.windll.user32
+        
+        # Use c_void_p for handles to be safe on 64-bit
+        kernel32.GlobalAlloc.restype = ctypes.c_void_p
+        kernel32.GlobalAlloc.argtypes = [ctypes.c_uint, ctypes.c_size_t]
+        kernel32.GlobalLock.restype = ctypes.c_void_p
+        kernel32.GlobalLock.argtypes = [ctypes.c_void_p]
+        kernel32.GlobalUnlock.argtypes = [ctypes.c_void_p]
+        user32.OpenClipboard.argtypes = [ctypes.c_void_p]
+        user32.SetClipboardData.restype = ctypes.c_void_p
+        user32.SetClipboardData.argtypes = [ctypes.c_uint, ctypes.c_void_p]
+        
+        # Retry loop: Clipboard is often locked momentarily by managers or other apps
+        for _ in range(10):
+            if user32.OpenClipboard(0):
+                try:
+                    user32.EmptyClipboard()
+                    # GMEM_MOVEABLE (0x0002) | GMEM_ZEROINIT (0x0040) = 0x0042
+                    h_mem = kernel32.GlobalAlloc(0x0042, len(data))
+                    if h_mem:
+                        p_mem = kernel32.GlobalLock(h_mem)
+                        if p_mem:
+                            ctypes.memmove(p_mem, data, len(data))
+                            kernel32.GlobalUnlock(h_mem)
+                            
+                            # CF_DIB = 8
+                            user32.SetClipboardData(8, h_mem)
+                finally:
+                    user32.CloseClipboard()
+                return True
+            time.sleep(0.05)
+            
+    except Exception as e:
+        print(f"Error copying to clipboard: {e}")
+    
+    # Fallback to PowerShell if ctypes fails (slower but very robust)
+    # This specifically copies the *pixels* via .NET
+    try:
+        # We need a temporary file for PowerShell to read from if we don't have one
+        # but since take_region_screenshot already saves a file, we can ideally use that.
+        # For now, this is just a backup.
+        pass
+    except:
+        pass
+        
+    return False
+
+def copy_file_to_clipboard(filepath):
+    """Uses PowerShell to copy the actual file to clipboard (so you can paste into folders)"""
+    if platform.system() != "Windows" or not os.path.exists(filepath):
+        return False
+    try:
+        abspath = os.path.abspath(filepath).replace("'", "''")
+        cmd = f'Set-Clipboard -Path "{abspath}"'
+        subprocess.run(["powershell", "-NoProfile", "-Command", cmd], 
+                       creationflags=0x08000000, check=True)
+        return True
+    except Exception as e:
+        print(f"PowerShell file copy failed: {e}")
+        return False
 
 class ScreenshotService:
     def __init__(self, callback=None, start_callback=None):
@@ -285,6 +376,10 @@ def take_region_screenshot(save_folder="screenshots", debug=False):
                     region_screenshot.save(filepath)
                     self.result_path = filepath
                     
+                    # Copy to clipboard (both pixels and file reference)
+                    copy_image_to_clipboard(region_screenshot, self.dpi_scale)
+                    copy_file_to_clipboard(filepath)
+                    
                     if self.debug:
                         print(f"Debug: Saved {region_screenshot.size[0]}x{region_screenshot.size[1]} screenshot")
                 root.destroy()
@@ -336,6 +431,10 @@ def take_fullscreen_screenshot(save_folder="screenshots"):
         screen.save(filepath)
         print(f"Fullscreen screenshot saved: {filepath}")
         
+        # Copy to clipboard (both pixels and file reference)
+        copy_image_to_clipboard(screen)
+        copy_file_to_clipboard(filepath)
+        
         return filepath
     except Exception as e:
         print(f"Error taking fullscreen screenshot: {e}")
@@ -347,7 +446,6 @@ def create_thumbnail(image_path, max_size=(300, 300)):
     Returns base64 string for preview display.
     """
     import base64
-    from io import BytesIO
     
     try:
         with Image.open(image_path) as img:

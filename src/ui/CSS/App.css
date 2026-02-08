@@ -12,6 +12,8 @@ html, body {
   overflow: hidden;
   background-color: transparent;
   scroll-behavior: smooth;
+  -webkit-user-select: none;
+  user-select: none;
 }
 
 /* Global scrollbar styling for internal overflowing elements (like code blocks) */
@@ -31,6 +33,15 @@ html::-webkit-scrollbar {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+/* Allow text selection in inputs and textareas */
+input, textarea, [contenteditable="true"] {
+  -webkit-user-select: text;
+  user-select: text;
 }
 
 .container {
@@ -90,56 +101,11 @@ html::-webkit-scrollbar {
   pointer-events: auto;
   visibility: visible;
 }
-.title-bar {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 30px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  z-index: 1000;
-  background-color: rgba(255,255,255,0.05);
-}
-.nav-bar{
-  width: 90px;
-  height: 100%;
-  /* background-color: yellow; */
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-.blank-space-to-drag{
-  width: calc(100% - 150px);
-  height: 100%;
-  /* background-color: lightgreen; */
-  -webkit-app-region: drag;
-}
-.nav-bar-right-side{
-  display: flex;
-  justify-content: space-between;
-  width: 60px;
-  height: 100%;
-  user-select: none;
-  /* background-color: lightseagreen; */
-}
-.clueless-logo-holder{
-  width: 30px;
-  height: 100%;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  cursor: pointer;
-  user-select: none;
-  /* background-color: red; */
-}
 .clueless-logo{
   height: 22px;
   width: auto;
+  -webkit-user-select: none;
   user-select: none;
-  /* pointer-events: none; */
-  /* -webkit-app-region: drag; */
 }
 .response-area{
   position: relative;
@@ -396,30 +362,6 @@ html::-webkit-scrollbar {
   transition: background-color 0.5s ease;
   border-radius: 8px;
 }
-.settingsButton, .chatHistoryButton, .recordedMeetingsAlbumButton, .newChatButton {
-  width: 30px;
-  height: 30px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-.settings-icon, .recorded-meetings-album-icon, .new-chat-icon {
-  width: 70%;
-  height: 70%;
-  color: white;
-  border-radius: 8px;
-
-}
-.chat-history-icon{
-  width: 60%;
-  height: 60%;
-  color: white;
-  border-radius: 8px;
-
-}
-.settings-icon:hover, .chat-history-icon:hover, .recorded-meetings-album-icon:hover, .new-chat-icon:hover {
-  cursor: pointer;
-}
 .mic-icon{
   width: 85%;
   height: 85%;
@@ -514,6 +456,7 @@ html::-webkit-scrollbar {
   gap: 0.5rem;
   padding: 0.75rem 1.5rem;
   cursor: pointer;
+  -webkit-user-select: none;
   user-select: none;
   background-color: rgba(255, 255, 255, 0.05);
   transition: background-color 0.2s ease;
@@ -606,6 +549,8 @@ html::-webkit-scrollbar {
   border-radius: 0;
   border-left: none;
   width: 100%;
+  -webkit-user-select: text;
+  user-select: text;
 }
 
 .query p {
@@ -657,8 +602,8 @@ html::-webkit-scrollbar {
   align-items: center;
   overflow-x: auto;
   overflow-y: visible;
-  scrollbar-width: thin;
-  scrollbar-color: rgba(255, 255, 255, 0.3) transparent;
+  scrollbar-width: none;
+  /* scrollbar-color: rgba(255, 255, 255, 0.3) transparent; */
   /* background-color: red; */
 }
 
@@ -828,6 +773,7 @@ html::-webkit-scrollbar {
   border: 2px solid rgba(255, 255, 255, 0.5);
   box-shadow: 0 2px 5px rgba(0,0,0,0.1);
   background: rgba(0,0,0,0.8);
+  -webkit-user-select: none;
   user-select: none;
   z-index: 10000;
   -webkit-app-region: drag;
@@ -867,6 +813,7 @@ html::-webkit-scrollbar {
   color: #e0e0e0;
   font-family: 'Montserrat', sans-serif;
   text-align: left;
+  -webkit-user-select: none;
   user-select: none;
   cursor: default;
 }

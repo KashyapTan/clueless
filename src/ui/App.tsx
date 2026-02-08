@@ -5,7 +5,7 @@ import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import './App.css'
 import cluelessLogo from './assets/transparent-clueless-logo.png';
-import plusSignSvg from './assets/plus-icon.svg';
+// import plusSignSvg from './assets/plus-icon.svg';
 import micSignSvg from './assets/mic-icon.svg';
 import fullscreenSSIcon from './assets/entire-screen-shot-icon.svg';
 import regionSSIcon from './assets/region-screen-shot-icon.svg';

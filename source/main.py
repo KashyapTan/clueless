@@ -14,9 +14,11 @@ if __name__ == "__main__":
 # Now import ss module
 try:
     from .ss import take_region_screenshot, start_screenshot_service, take_fullscreen_screenshot, create_thumbnail
+    from .database import DatabaseManager
 except ImportError:
     # Fallback for when run as script
     from ss import take_region_screenshot, start_screenshot_service, take_fullscreen_screenshot, create_thumbnail
+    from database import DatabaseManager
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.responses import HTMLResponse
 import threading
@@ -32,6 +34,13 @@ from concurrent.futures import Future
 
 # FastAPI WebSocket setup
 app = FastAPI()
+
+# Database manager for chat history persistence
+db = DatabaseManager()
+
+# Persistent screenshot folder (inside user_data so images survive across sessions)
+SCREENSHOT_FOLDER = os.path.join('user_data', 'screenshots')
+os.makedirs(SCREENSHOT_FOLDER, exist_ok=True)
 
 # Global variables for cleanup
 _screenshot_service = None
@@ -51,11 +60,11 @@ def cleanup_resources():
         except Exception as e:
             print(f"Error stopping screenshot service: {e}")
     
-    # Clean up screenshot folder
+    # Clean up temporary screenshot folder (not the persistent user_data/screenshots)
     try:
-        if os.path.exists("screenshots"):
+        if os.path.exists("screenshots") and os.path.abspath("screenshots") != os.path.abspath(SCREENSHOT_FOLDER):
             clear_screenshots_folder("screenshots")
-            print("Screenshots folder cleaned")
+            print("Temp screenshots folder cleaned")
     except Exception as e:
         print(f"Error cleaning screenshots folder: {e}")
     
@@ -182,6 +191,57 @@ async def websocket_endpoint(websocket: WebSocket):
                 # Update the capture mode for hotkey behavior
                 mode = data.get("mode", "fullscreen")
                 await handle_set_capture_mode(mode)
+            elif msg_type == "get_conversations":
+                # Fetch conversation list for chat history page
+                limit = data.get("limit", 50)
+                offset = data.get("offset", 0)
+                conversations = db.get_recent_conversations(limit=limit, offset=offset)
+                await websocket.send_text(json.dumps({
+                    "type": "conversations_list",
+                    "content": json.dumps(conversations)
+                }))
+            elif msg_type == "load_conversation":
+                # Load a specific conversation's messages
+                conv_id = data.get("conversation_id")
+                if conv_id:
+                    messages = db.get_full_conversation(conv_id)
+                    await websocket.send_text(json.dumps({
+                        "type": "conversation_loaded",
+                        "content": json.dumps({
+                            "conversation_id": conv_id,
+                            "messages": messages
+                        })
+                    }))
+            elif msg_type == "delete_conversation":
+                # Delete a conversation from the database
+                conv_id = data.get("conversation_id")
+                if conv_id:
+                    db.delete_conversation(conv_id)
+                    await websocket.send_text(json.dumps({
+                        "type": "conversation_deleted",
+                        "content": json.dumps({"conversation_id": conv_id})
+                    }))
+            elif msg_type == "search_conversations":
+                # Search conversations by text
+                search_term = data.get("query", "")
+                if search_term:
+                    results = db.search_conversations(search_term)
+                    await websocket.send_text(json.dumps({
+                        "type": "conversations_list",
+                        "content": json.dumps(results)
+                    }))
+                else:
+                    # If empty search, return all recent conversations
+                    conversations = db.get_recent_conversations(limit=50)
+                    await websocket.send_text(json.dumps({
+                        "type": "conversations_list",
+                        "content": json.dumps(conversations)
+                    }))
+            elif msg_type == "resume_conversation":
+                # Resume a previous conversation (load into active chat)
+                conv_id = data.get("conversation_id")
+                if conv_id:
+                    await handle_resume_conversation(conv_id)
             # else: silently ignore unknown types (could extend later)
     except WebSocketDisconnect:
         manager.disconnect(websocket)
@@ -201,17 +261,17 @@ def clear_screenshots_folder(folder_path="screenshots"):
     except Exception as e:
         print(f"Error clearing folder: {e}")
 
-async def _stream_ollama_chat(user_query: str, image_paths: List[str], chat_history: List[Dict[str, Any]]) -> str:
+async def _stream_ollama_chat(user_query: str, image_paths: List[str], chat_history: List[Dict[str, Any]]) -> tuple[str, Dict[str, int]]:
     """Stream Ollama response without blocking the event loop.
 
     A background thread iterates the blocking Ollama generator and schedules
-    WebSocket broadcasts for each incremental token. Returns the full output
-    once streaming completes.
+    WebSocket broadcasts for each incremental token. Returns a tuple of
+    (full_output_text, token_stats_dict) once streaming completes.
     
     image_paths can be empty list for text-only queries, or contain multiple images.
     """
     loop = asyncio.get_running_loop()
-    done_future: asyncio.Future[str] = loop.create_future()
+    done_future: asyncio.Future[tuple[str, Dict[str, int]]] = loop.create_future()
 
     def safe_schedule(coro):
         try:
@@ -270,6 +330,7 @@ async def _stream_ollama_chat(user_query: str, image_paths: List[str], chat_hist
         accumulated: list[str] = []
         thinking_tokens: list[str] = []
         final_message_content: str | None = None
+        collected_token_stats: Dict[str, int] = {"prompt_eval_count": 0, "eval_count": 0}
         
         # Build messages list from chat history
         # Images are stored WITH the message they were sent with, so they persist properly
@@ -279,17 +340,21 @@ async def _stream_ollama_chat(user_query: str, image_paths: List[str], chat_hist
                 'role': msg['role'],
                 'content': msg['content'],
             }
-            # Include images if they were stored with this message
+            # Include images only if they still exist on disk
             if msg.get('images'):
-                message_data['images'] = msg['images']
+                existing_images = [p for p in msg['images'] if os.path.exists(p)]
+                if existing_images:
+                    message_data['images'] = existing_images
             messages.append(message_data)
         
         # Add current user query - include images if this is a new image submission
-        if image_paths:
+        # Only include images that actually exist on disk
+        existing_image_paths = [p for p in image_paths if os.path.exists(p)]
+        if existing_image_paths:
             messages.append({
                 'role': 'user',
                 'content': user_query,
-                'images': image_paths,
+                'images': existing_image_paths,
             })
         else:
             messages.append({
@@ -327,6 +392,8 @@ async def _stream_ollama_chat(user_query: str, image_paths: List[str], chat_hist
                         "prompt_eval_count": getattr(chunk, 'prompt_eval_count', 0),
                         "eval_count": getattr(chunk, 'eval_count', 0),
                     }
+                    collected_token_stats["prompt_eval_count"] = token_stats["prompt_eval_count"] or 0
+                    collected_token_stats["eval_count"] = token_stats["eval_count"] or 0
                     safe_schedule(broadcast_message("token_usage", json.dumps(token_stats)))
                     
                     if hasattr(chunk, 'message'):
@@ -349,13 +416,13 @@ async def _stream_ollama_chat(user_query: str, image_paths: List[str], chat_hist
                 # Nothing at all extracted
                 safe_schedule(broadcast_message("error", "No content tokens extracted from stream."))
             safe_schedule(broadcast_message("response_complete", ""))
-            loop.call_soon_threadsafe(done_future.set_result, ''.join(accumulated))
+            loop.call_soon_threadsafe(done_future.set_result, (''.join(accumulated), collected_token_stats))
         except Exception as e:
             err = f"Error streaming from Ollama: {e}"
             print(err)
             safe_schedule(broadcast_message("error", err))
             if not done_future.done():
-                loop.call_soon_threadsafe(done_future.set_result, err)
+                loop.call_soon_threadsafe(done_future.set_result, (err, collected_token_stats))
 
     threading.Thread(target=producer, daemon=True).start()
     return await done_future
@@ -378,6 +445,9 @@ _current_capture_mode: str = "fullscreen"
 
 # Chat history for multi-turn conversations (cleared on new screenshot)
 _chat_history: List[Dict[str, Any]] = []
+
+# Current conversation ID for database persistence
+_current_conversation_id: str | None = None
 
 async def handle_set_capture_mode(mode: str):
     """Update the capture mode."""
@@ -414,7 +484,7 @@ async def handle_remove_screenshot(screenshot_id: str):
 
 async def handle_clear_context():
     """Clear screenshots and chat history for a fresh start."""
-    global _screenshot_list, _chat_history
+    global _screenshot_list, _chat_history, _current_conversation_id
     
     # Clear all screenshots
     for ss in _screenshot_list:
@@ -426,15 +496,61 @@ async def handle_clear_context():
     
     _screenshot_list = []
     
-    # Clear chat history
+    # Clear chat history and reset conversation ID
     _chat_history = []
+    _current_conversation_id = None
     print("Context cleared: screenshots and chat history reset")
     
     await broadcast_message("context_cleared", "Context cleared. Ready for new conversation.")
 
+async def handle_resume_conversation(conversation_id: str):
+    """Resume a previously saved conversation by loading it into the active chat."""
+    global _chat_history, _current_conversation_id, _screenshot_list
+    
+    # Clear current state
+    _chat_history = []
+    for ss in _screenshot_list:
+        if os.path.exists(ss["path"]):
+            try:
+                os.remove(ss["path"])
+            except Exception as e:
+                print(f"Error deleting screenshot: {e}")
+    _screenshot_list = []
+    
+    # Load conversation from database
+    messages = db.get_full_conversation(conversation_id)
+    _current_conversation_id = conversation_id
+    
+    # Rebuild in-memory chat history from database
+    # Also generate thumbnails for any images so the frontend can display them
+    for msg in messages:
+        entry = {'role': msg['role'], 'content': msg['content']}
+        if msg.get('images'):
+            entry['images'] = msg['images']
+            # Generate thumbnails for frontend display
+            thumbnails = []
+            for img_path in msg['images']:
+                if os.path.exists(img_path):
+                    thumb = create_thumbnail(img_path)
+                    thumbnails.append({'name': os.path.basename(img_path), 'thumbnail': thumb})
+                else:
+                    thumbnails.append({'name': os.path.basename(img_path), 'thumbnail': None})
+            msg['images'] = thumbnails  # Replace file paths with thumbnail data for frontend
+        _chat_history.append(entry)
+    
+    print(f"Resumed conversation {conversation_id} with {len(_chat_history)} messages")
+    
+    # Notify client that conversation is loaded
+    token_usage = db.get_token_usage(conversation_id)
+    await broadcast_message("conversation_resumed", json.dumps({
+        "conversation_id": conversation_id,
+        "messages": messages,
+        "token_usage": token_usage
+    }))
+
 async def handle_submit_query(user_query: str, capture_mode: str = "none"):
     """Handle query submitted from a client. Screenshot is optional."""
-    global _screenshot_list, _is_streaming, _chat_history, _screenshot_counter
+    global _screenshot_list, _is_streaming, _chat_history, _screenshot_counter, _current_conversation_id
     
     print(f"[DEBUG] handle_submit_query called: capture_mode={capture_mode}, screenshots={len(_screenshot_list)}, history={len(_chat_history)}")
     
@@ -457,9 +573,11 @@ async def handle_submit_query(user_query: str, capture_mode: str = "none"):
             await asyncio.sleep(0.4)
             
             # Take fullscreen screenshot
-            image_path = take_fullscreen_screenshot("screenshots")
+            image_path = take_fullscreen_screenshot(SCREENSHOT_FOLDER)
             
             if image_path and os.path.exists(image_path):
+                # Convert to absolute path for reliable DB storage
+                image_path = os.path.abspath(image_path)
                 # Generate ID and thumbnail
                 _screenshot_counter += 1
                 ss_id = f"ss_{_screenshot_counter}"
@@ -486,15 +604,31 @@ async def handle_submit_query(user_query: str, capture_mode: str = "none"):
         except Exception as e:
             print(f"Error taking fullscreen screenshot: {e}")
 
-    # Get all image paths for the query
-    image_paths = [ss["path"] for ss in _screenshot_list if os.path.exists(ss["path"])]
+    # Get all image paths for the query (use absolute paths)
+    image_paths = [os.path.abspath(ss["path"]) for ss in _screenshot_list if os.path.exists(ss["path"])]
 
     # Echo query to clients (outside lock to not block other ops)
     await broadcast_message("query", user_query)
 
     try:
         # Pass current chat history to the streaming function
-        response_text = await _stream_ollama_chat(user_query, image_paths, _chat_history.copy())
+        response_text, token_stats = await _stream_ollama_chat(user_query, image_paths, _chat_history.copy())
+        
+        # Create conversation in DB on the first message (lazy creation)
+        if _current_conversation_id is None:
+            # Use the first ~50 chars of the user's query as the title
+            title = user_query[:50] + ('...' if len(user_query) > 50 else '')
+            _current_conversation_id = db.start_new_conversation(title)
+            print(f"Created new conversation: {_current_conversation_id}")
+        
+        # Persist token usage to database (now that conversation ID is guaranteed)
+        input_tokens = token_stats.get("prompt_eval_count", 0)
+        output_tokens = token_stats.get("eval_count", 0)
+        if input_tokens or output_tokens:
+            try:
+                db.add_token_usage(_current_conversation_id, input_tokens, output_tokens)
+            except Exception as e:
+                print(f"Error saving token usage: {e}")
         
         # Add this exchange to chat history for future follow-ups
         # Store images WITH the user message so they persist in history
@@ -503,13 +637,17 @@ async def handle_submit_query(user_query: str, capture_mode: str = "none"):
             user_msg['images'] = image_paths
         _chat_history.append(user_msg)
         _chat_history.append({'role': 'assistant', 'content': response_text})
-        # Function to print full chat history including content and how image gets embeddedin a readable format for debugging
-        # def print_chat_history():
-        #     print("Current chat history:")
-        #     for i, msg in enumerate(_chat_history):
-        #         print(f"  Message {i+1}: role={msg['role']}, content_length={len(msg['content'])}, images={len(msg.get('images', []))}")
-        # print_chat_history()
-        print(f"Chat history now has {len(_chat_history)} messages")
+        
+        # Persist to database
+        db.add_message(_current_conversation_id, 'user', user_query, image_paths if image_paths else None)
+        db.add_message(_current_conversation_id, 'assistant', response_text)
+        
+        # Broadcast the conversation_id to the frontend so it knows the active chat
+        await broadcast_message("conversation_saved", json.dumps({
+            "conversation_id": _current_conversation_id
+        }))
+        
+        print(f"Chat history now has {len(_chat_history)} messages (conversation: {_current_conversation_id})")
         
         # Clear screenshots from UI after they've been embedded in chat history
         # The images are now stored in _chat_history, so we can clear the screenshot list
@@ -574,13 +712,14 @@ async def _on_screenshot_captured(image_path: str):
     # Generate ID and thumbnail
     _screenshot_counter += 1
     ss_id = f"ss_{_screenshot_counter}"
-    thumbnail = create_thumbnail(image_path)
-    name = os.path.basename(image_path)
+    abs_image_path = os.path.abspath(image_path)
+    thumbnail = create_thumbnail(abs_image_path)
+    name = os.path.basename(abs_image_path)
     
-    # Add to list
+    # Add to list (use absolute path for reliable DB storage)
     ss_data = {
         "id": ss_id,
-        "path": image_path,
+        "path": abs_image_path,
         "name": name,
         "thumbnail": thumbnail
     }
@@ -668,7 +807,7 @@ def main():
         _screenshot_service = ScreenshotService(process_screenshot, process_screenshot_start)
         _service_thread = threading.Thread(
             target=_screenshot_service.start_listener, 
-            args=("screenshots",),
+            args=(SCREENSHOT_FOLDER,),
             daemon=True
         )
         _service_thread.start()

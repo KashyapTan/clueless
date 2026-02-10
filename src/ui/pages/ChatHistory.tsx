@@ -1,18 +1,135 @@
-import React from 'react';
-import { useOutletContext } from 'react-router-dom';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { useOutletContext, useNavigate } from 'react-router-dom';
 import TitleBar from '../components/TitleBar';
 import '../CSS/ChatHistory.css';
 
+interface Conversation {
+  id: string;
+  title: string;
+  date: number; // Unix timestamp
+}
+
 const ChatHistory: React.FC = () => {
   const { setMini } = useOutletContext<{ setMini: (val: boolean) => void }>();
+  const navigate = useNavigate();
+  const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [searchQuery, setSearchQuery] = useState<string>('');
+  const [loading, setLoading] = useState<boolean>(true);
+  const wsRef = useRef<WebSocket | null>(null);
+  const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Connect to WebSocket and fetch conversations
+  useEffect(() => {
+    let ws: WebSocket | null = null;
+
+    const connect = () => {
+      ws = new WebSocket('ws://localhost:8000/ws');
+      wsRef.current = ws;
+
+      ws.onopen = () => {
+        // Request conversations list on connect
+        ws?.send(JSON.stringify({ type: 'get_conversations', limit: 50, offset: 0 }));
+      };
+
+      ws.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          switch (data.type) {
+            case 'conversations_list': {
+              const convos = JSON.parse(data.content) as Conversation[];
+              setConversations(convos);
+              setLoading(false);
+              break;
+            }
+            case 'conversation_deleted': {
+              const deleteData = JSON.parse(data.content);
+              setConversations(prev => prev.filter(c => c.id !== deleteData.conversation_id));
+              break;
+            }
+          }
+        } catch (e) {
+          console.error('ChatHistory WS error:', e);
+        }
+      };
+
+      ws.onclose = () => {
+        // Reconnect after a brief delay
+        setTimeout(connect, 2000);
+      };
+    };
+
+    connect();
+
+    return () => {
+      if (ws) {
+        ws.onclose = null;
+        ws.close();
+      }
+    };
+  }, []);
+
+  // Debounced search
+  const handleSearchChange = useCallback((value: string) => {
+    setSearchQuery(value);
+
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+    }
+
+    searchTimeoutRef.current = setTimeout(() => {
+      if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+        if (value.trim()) {
+          wsRef.current.send(JSON.stringify({ type: 'search_conversations', query: value.trim() }));
+        } else {
+          wsRef.current.send(JSON.stringify({ type: 'get_conversations', limit: 50, offset: 0 }));
+        }
+      }
+    }, 300);
+  }, []);
+
+  const handleConversationClick = (conversationId: string) => {
+    // Navigate to the main chat page with the conversation ID in state
+    navigate('/', { state: { conversationId } });
+  };
+
+  const handleDeleteConversation = (e: React.MouseEvent, conversationId: string) => {
+    e.stopPropagation(); // Prevent triggering the click on the list item
+    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+      wsRef.current.send(JSON.stringify({ type: 'delete_conversation', conversation_id: conversationId }));
+    }
+  };
+
+  const formatDate = (timestamp: number): string => {
+    if (!timestamp) return '';
+    const date = new Date(timestamp * 1000); // Convert Unix timestamp (seconds) to ms
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+    if (diffDays === 0) {
+      return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    } else if (diffDays === 1) {
+      return 'Yesterday';
+    } else if (diffDays < 7) {
+      return date.toLocaleDateString([], { weekday: 'long' });
+    } else {
+      return date.toLocaleDateString([], { year: 'numeric', month: 'short', day: 'numeric' });
+    }
+  };
 
   return (
     <>
       <TitleBar onClearContext={() => {}} setMini={setMini} />
           <div className="chat-history-container">
               <div className="chat-history-search-box-container">
-                  <form className='chat-history-search-box-form'>
-                        <input type="text" placeholder="Search chat history..." className="chat-history-search-box-input"/>
+                  <form className='chat-history-search-box-form' onSubmit={(e) => e.preventDefault()}>
+                        <input 
+                          type="text" 
+                          placeholder="Search chat history..." 
+                          className="chat-history-search-box-input"
+                          value={searchQuery}
+                          onChange={(e) => handleSearchChange(e.target.value)}
+                        />
                   </form>
               </div>
               <div className="chat-history-list-title">
@@ -20,10 +137,33 @@ const ChatHistory: React.FC = () => {
                   <div className="chat-history-date">Date</div>
               </div>
               <div className="chat-history-list-container">
-                <div className="chat-history-list-item">
-                    <div className="chat-history-list-item-description">Chat with John about project updates</div>
-                    <div className="chat-history-list-item-date">2024-06-01 10:30 AM</div>
-                </div>
+                {loading ? (
+                  <div className="chat-history-empty-state">Loading conversations...</div>
+                ) : conversations.length === 0 ? (
+                  <div className="chat-history-empty-state">
+                    {searchQuery ? 'No conversations match your search.' : 'No conversations yet. Start chatting!'}
+                  </div>
+                ) : (
+                  conversations.map((convo) => (
+                    <div 
+                      key={convo.id} 
+                      className="chat-history-list-item"
+                      onClick={() => handleConversationClick(convo.id)}
+                    >
+                        <div className="chat-history-list-item-description">{convo.title}</div>
+                        <div className="chat-history-list-item-date-section">
+                          <span className="chat-history-list-item-date">{formatDate(convo.date)}</span>
+                          <button 
+                            className="chat-history-delete-btn"
+                            onClick={(e) => handleDeleteConversation(e, convo.id)}
+                            title="Delete conversation"
+                          >
+                            ×
+                          </button>
+                        </div>
+                    </div>
+                  ))
+                )}
               </div>
           </div>
     </>

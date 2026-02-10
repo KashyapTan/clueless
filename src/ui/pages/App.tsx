@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import type { FormEvent } from 'react';
-import { useOutletContext } from 'react-router-dom';
+import { useOutletContext, useLocation } from 'react-router-dom';
 import ReactMarkdown from 'react-markdown';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
@@ -45,8 +45,11 @@ function App() {
   const [captureMode, setCaptureMode] = useState<'fullscreen' | 'precision' | 'none'>('fullscreen');
   const [meetingRecordingMode, setMeetingRecordingMode] = useState<boolean>(false);
   // Chat history for multi-turn conversations
-  const [chatHistory, setChatHistory] = useState<Array<{role: 'user' | 'assistant', content: string, thinking?: string}>>([]);
+  const [chatHistory, setChatHistory] = useState<Array<{role: 'user' | 'assistant', content: string, thinking?: string, images?: Array<{name: string, thumbnail: string}>}>>([]);
   const [currentQuery, setCurrentQuery] = useState<string>('');
+  const [conversationId, setConversationId] = useState<string | null>(null);
+  
+  const location = useLocation();
   
   // Token usage states
   const [tokenUsage, setTokenUsage] = useState({
@@ -65,6 +68,12 @@ function App() {
   const currentQueryRef = useRef<string>('');
   const responseRef = useRef<string>('');
   const thinkingRef = useRef<string>('');
+  // Ref to capture current screenshots at response_complete time
+  const screenshotsRef = useRef<Array<{id: string, name: string, thumbnail: string}>>([]);
+  // Ref to hold a pending conversation ID to resume once WS is ready
+  const pendingConversationRef = useRef<string | null>(null);
+  // Ref to flag that a new chat was requested before WS was ready
+  const pendingNewChatRef = useRef<boolean>(false);
 
   const copyToClipboard = async (text: string) => {
     try {
@@ -110,6 +119,20 @@ function App() {
               setStatus(data.content || 'Ready to chat. Take a screenshot (Alt+.) or just type.');
               setCanSubmit(true);
               setError('');
+              // If there's a pending conversation to resume (navigated from ChatHistory), send it now
+              if (pendingConversationRef.current) {
+                ws?.send(JSON.stringify({
+                  type: 'resume_conversation',
+                  conversation_id: pendingConversationRef.current
+                }));
+                pendingConversationRef.current = null;
+                window.history.replaceState({}, '');
+              } else if (pendingNewChatRef.current) {
+                // New chat was requested before WS was ready — send clear_context now
+                ws?.send(JSON.stringify({ type: 'clear_context' }));
+                pendingNewChatRef.current = false;
+                window.history.replaceState({}, '');
+              }
               break;
             case 'screenshot_start':
               setIsHidden(true);
@@ -124,11 +147,15 @@ function App() {
               // New screenshot added to context
               try {
                 const ssData = typeof data.content === 'string' ? JSON.parse(data.content) : data.content;
-                setScreenshots(prev => [...prev, {
-                  id: ssData.id,
-                  name: ssData.name,
-                  thumbnail: ssData.thumbnail
-                }]);
+                setScreenshots(prev => {
+                  const updated = [...prev, {
+                    id: ssData.id,
+                    name: ssData.name,
+                    thumbnail: ssData.thumbnail
+                  }];
+                  screenshotsRef.current = updated;
+                  return updated;
+                });
                 setStatus('Screenshot added to context.');
                 setIsHidden(false);
               } catch (e) {
@@ -149,6 +176,7 @@ function App() {
             case 'screenshots_cleared':
               // Only clear screenshots, preserve chat history (used in fullscreen mode)
               setScreenshots([]);
+              screenshotsRef.current = [];
               break;
             case 'context_cleared':
               setStatus(data.content || 'Context cleared. Ready for new conversation.');
@@ -162,10 +190,14 @@ function App() {
               setChatHistory([]);
               setScreenshots([]);
               setCanSubmit(true);
+              setConversationId(null);
+              // Reset token usage for new conversation
+              setTokenUsage({ total: 0, input: 0, output: 0, limit: 128000 });
               // Reset refs
               currentQueryRef.current = '';
               responseRef.current = '';
               thinkingRef.current = '';
+              screenshotsRef.current = [];
               break;
             case 'query':
               // Server echoes the submitted query
@@ -193,11 +225,16 @@ function App() {
               const completedQuery = currentQueryRef.current;
               const completedResponse = responseRef.current;
               const completedThinking = thinkingRef.current;
+              // Capture screenshots that were attached to this query
+              const attachedImages = screenshotsRef.current.map(ss => ({
+                name: ss.name,
+                thumbnail: ss.thumbnail
+              }));
               
               // Add the completed exchange to chat history
               setChatHistory(prev => [
                 ...prev,
-                { role: 'user', content: completedQuery },
+                { role: 'user', content: completedQuery, images: attachedImages.length > 0 ? attachedImages : undefined },
                 { role: 'assistant', content: completedResponse, thinking: completedThinking || undefined }
               ]);
               // Clear current response/thinking for next turn
@@ -217,14 +254,57 @@ function App() {
               const stats = JSON.parse(data.content);
               const input = stats.prompt_eval_count || 0;
               const output = stats.eval_count || 0;
-              const total = input + output;
               
               setTokenUsage(prev => ({
                 ...prev,
-                total: total,
-                input: input,
-                output: output
+                total: prev.total + input + output,
+                input: prev.input + input,
+                output: prev.output + output
               }));
+              break;
+            }
+            case 'conversation_saved': {
+              try {
+                const saveData = JSON.parse(data.content);
+                setConversationId(saveData.conversation_id);
+              } catch (e) {
+                console.error('Error parsing conversation_saved:', e);
+              }
+              break;
+            }
+            case 'conversation_resumed': {
+              try {
+                const resumeData = JSON.parse(data.content);
+                setConversationId(resumeData.conversation_id);
+                // Load the conversation messages into chat history
+                const msgs = resumeData.messages.map((m: any) => ({
+                  role: m.role as 'user' | 'assistant',
+                  content: m.content,
+                  images: m.images && m.images.length > 0 ? m.images : undefined,
+                }));
+                setChatHistory(msgs);
+                // Restore token usage from database
+                if (resumeData.token_usage) {
+                  setTokenUsage(prev => ({
+                    ...prev,
+                    total: resumeData.token_usage.total || 0,
+                    input: resumeData.token_usage.input || 0,
+                    output: resumeData.token_usage.output || 0
+                  }));
+                }
+                setResponse('');
+                setThinking('');
+                setCurrentQuery('');
+                setScreenshots([]);
+                screenshotsRef.current = [];
+                currentQueryRef.current = '';
+                responseRef.current = '';
+                thinkingRef.current = '';
+                setStatus('Conversation loaded. Ask a follow-up question.');
+                setCanSubmit(true);
+              } catch (e) {
+                console.error('Error parsing conversation_resumed:', e);
+              }
               break;
             }
             case 'error':
@@ -263,6 +343,33 @@ function App() {
         }
       };
     }, []);
+
+  // Handle resuming a conversation or starting new chat when navigating
+  useEffect(() => {
+    const state = location.state as { conversationId?: string; newChat?: boolean } | null;
+    if (state?.conversationId) {
+      if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+        // WS already open — send immediately
+        wsRef.current.send(JSON.stringify({
+          type: 'resume_conversation',
+          conversation_id: state.conversationId
+        }));
+        window.history.replaceState({}, '');
+      } else {
+        // WS not open yet — stash the ID so the 'ready' handler picks it up
+        pendingConversationRef.current = state.conversationId;
+      }
+    } else if (state?.newChat) {
+      if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+        // WS already open — send clear_context immediately
+        wsRef.current.send(JSON.stringify({ type: 'clear_context' }));
+        window.history.replaceState({}, '');
+      } else {
+        // WS not open yet — stash the flag so the 'ready' handler picks it up
+        pendingNewChatRef.current = true;
+      }
+    }
+  }, [location.state]);
 
   // Focus the input field whenever canSubmit becomes true (new screenshot taken)
   useEffect(() => {
@@ -403,6 +510,34 @@ function App() {
                 <div className="query">
                   {/* <div className="user-header">You</div> */}
                   <p>{msg.content}</p>
+                  {msg.images && msg.images.length > 0 && (
+                    <div className="message-image-chips">
+                      {msg.images.map((img, imgIdx) => (
+                        <div key={imgIdx} className="message-image-chip">
+                          {img.thumbnail ? (
+                            <img 
+                              src={`data:image/png;base64,${img.thumbnail}`} 
+                              alt={img.name || `Image ${imgIdx + 1}`}
+                              className="message-chip-thumb"
+                            />
+                          ) : (
+                            <span className="message-chip-icon">📷</span>
+                          )}
+                          <span className="message-chip-name">{img.name || `Image ${imgIdx + 1}`}</span>
+                          {/* Hover preview popup */}
+                          {img.thumbnail && (
+                            <div className="message-chip-hover-preview">
+                              <img 
+                                src={`data:image/png;base64,${img.thumbnail}`} 
+                                alt={img.name || `Image ${imgIdx + 1}`}
+                              />
+                              <span>{img.name || `Image ${imgIdx + 1}`}</span>
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               ) : (
                 <div className="response">

@@ -30,7 +30,7 @@ const TitleBar: React.FC<TitleBarProps> = ({ onClearContext, setMini }) => {
       </div>
       <div className="blank-space-to-drag" onClick={() => navigate('/')}></div>
       <div className="nav-bar-right-side">
-        <div className="newChatButton" onClick={() => { onClearContext(); navigate('/'); }} title="Start new chat">
+        <div className="newChatButton" onClick={() => { onClearContext(); navigate('/', { state: { newChat: true } }); }} title="Start new chat">
           <img src={newChatIcon} alt="New Chat" className='new-chat-icon'/>
         </div>
         <div className="clueless-logo-holder">

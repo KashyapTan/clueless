@@ -558,6 +558,99 @@ input, textarea, [contenteditable="true"] {
   margin-bottom: 0;
 }
 
+/* Image chips on user messages in chat history */
+.message-image-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.message-image-chip {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 6px 2px 2px;
+  background-color: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+  font-size: 0.65rem;
+  color: rgba(255, 255, 255, 0.85);
+  cursor: default;
+  transition: all 0.15s ease;
+  height: 22px;
+}
+
+.message-image-chip:hover {
+  background-color: rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.35);
+}
+
+.message-chip-thumb {
+  width: 16px;
+  height: 16px;
+  object-fit: cover;
+  border-radius: 2px;
+  background-color: rgba(0, 0, 0, 0.3);
+}
+
+.message-chip-icon {
+  font-size: 0.6rem;
+  padding: 0 2px;
+}
+
+.message-chip-name {
+  max-width: 60px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Hover preview for message image chips */
+.message-chip-hover-preview {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background-color: rgba(30, 30, 30, 0.98);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 8px;
+  padding: 10px;
+  opacity: 0;
+  visibility: hidden;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  z-index: 9999;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.7);
+  pointer-events: none;
+  transition: opacity 0.15s ease, visibility 0.15s ease;
+}
+
+.message-image-chip:hover .message-chip-hover-preview {
+  opacity: 1;
+  visibility: visible;
+  display: flex;
+}
+
+.message-chip-hover-preview img {
+  max-width: 350px;
+  max-height: 250px;
+  border-radius: 4px;
+  object-fit: contain;
+}
+
+.message-chip-hover-preview span {
+  font-size: 0.7rem;
+  color: rgba(255, 255, 255, 0.7);
+  text-align: center;
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 /* Screenshot indicator styles */
 .screenshot-indicator {
   display: flex;

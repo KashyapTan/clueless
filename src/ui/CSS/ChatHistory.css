@@ -65,7 +65,7 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 0 5px 0 5px;
+    padding: 0 15px 0 10px;
     border-bottom: 1px solid rgba(255, 255, 255, 0.1);
     cursor: pointer;
     transition: background-color 0.15s ease;
@@ -74,7 +74,7 @@
     background-color: rgba(255, 255, 255, 0.06);
 }
 .chat-history-list-item-description{
-    width: 70%;
+    width: 80%;
     height: 100%;
     /* background-color: blue;    */
     display: flex;
@@ -84,7 +84,7 @@
     white-space: nowrap;
 }
 .chat-history-list-item-date-section{
-    width: 30%;
+    width: 20%;
     height: 100%;
     display: flex;
     align-items: center;
@@ -105,7 +105,7 @@
     align-items: center;
     /* margin: 20px 0 10px 0; */
     width: 100%;
-    padding: 0 8px;
+    padding: 0 10px;
 }
 .chat-history-date-separator::after {
     content: "";

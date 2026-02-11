@@ -153,7 +153,7 @@ const ChatHistory: React.FC = () => {
           >
               <div className="chat-history-list-item-description">{convo.title}</div>
               <div className="chat-history-list-item-date-section">
-                <span className="chat-history-list-item-time">{formatTime(convo.date)}</span>
+                
                 <button 
                   className="chat-history-delete-btn"
                   onClick={(e) => handleDeleteConversation(e, convo.id)}
@@ -161,6 +161,7 @@ const ChatHistory: React.FC = () => {
                 >
                   ×
                 </button>
+                <span className="chat-history-list-item-time">{formatTime(convo.date)}</span>
               </div>
           </div>
         </React.Fragment>

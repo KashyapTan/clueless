@@ -1,6 +1,7 @@
 import React from 'react';
 import { useOutletContext } from 'react-router-dom';
 import TitleBar from '../components/TitleBar';
+import '../CSS/Settings.css';
 
 const Settings: React.FC = () => {
   const { setMini } = useOutletContext<{ setMini: (val: boolean) => void }>();

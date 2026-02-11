@@ -1,0 +1,51 @@
+.settings-container{
+    width: 100%;
+    height: 100%;
+    /* background-color: red; */
+    margin-top: 60px;
+    display: flex;
+    border-top: 1px solid rgba(255, 255, 255, 0.2);
+}
+.settings-side-bar{
+    width: 140px;
+    height: 100%;
+    /* background-color: lightblue; */
+    display: flex;
+    flex-direction: column;
+    /* background-color: red; */
+    overflow-y: auto;
+    gap: 5px;
+    border-right: 1px solid rgba(255, 255, 255, 0.2);
+}
+.settings-models{
+    margin-top: 10px;
+}
+.settings-models, .settings-mcp-connections, .settings-ollama-model,
+.settings-anthropic-api-key, .settings-gemini-api-key, .settings-openai-api-key{
+    width: 130px;
+    height: 30px;
+    /* background-color: lightcoral; */
+    display: flex;
+    align-items: center;
+    /* justify-content: center; */
+    border-radius: 8px;
+    font-size: 0.95em;
+    gap: 5px;
+}
+.settings-models:hover, .settings-mcp-connections:hover, .settings-ollama-model:hover,
+.settings-anthropic-api-key:hover, .settings-gemini-api-key:hover, .settings-openai-api-key:hover{
+    cursor: pointer;
+    transition: background-color 0.2s ease-in-out;
+    background-color: rgba(255, 255, 255, 0.1);
+}
+.settings-content{
+    width: calc(100% - 140px);
+    height: 100%;
+    /* background-color: lightgreen; */
+}
+.settings-icons{
+    width: 18px;
+    height: 18px;
+    margin-left: 5px;
+    filter: brightness(0) saturate(100%) invert(100%) sepia(0%) saturate(7500%) hue-rotate(130deg) brightness(121%) contrast(115%);
+}

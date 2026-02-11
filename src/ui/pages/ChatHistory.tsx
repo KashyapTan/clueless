@@ -99,22 +99,73 @@ const ChatHistory: React.FC = () => {
     }
   };
 
-  const formatDate = (timestamp: number): string => {
-    if (!timestamp) return '';
-    const date = new Date(timestamp * 1000); // Convert Unix timestamp (seconds) to ms
+  const getRelativeDateGroup = (timestamp: number): string => {
+    const date = new Date(timestamp * 1000);
     const now = new Date();
-    const diffMs = now.getTime() - date.getTime();
-    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-
-    if (diffDays === 0) {
-      return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    } else if (diffDays === 1) {
+    
+    // Normalize to midnight for accurate comparison
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+    
+    const convoDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+    
+    if (convoDate.getTime() === today.getTime()) {
+      return 'Today';
+    } else if (convoDate.getTime() === yesterday.getTime()) {
       return 'Yesterday';
-    } else if (diffDays < 7) {
-      return date.toLocaleDateString([], { weekday: 'long' });
     } else {
-      return date.toLocaleDateString([], { year: 'numeric', month: 'short', day: 'numeric' });
+      return date.toLocaleDateString(undefined, { 
+        year: 'numeric', 
+        month: 'long', 
+        day: 'numeric' 
+      });
     }
+  };
+
+  const formatTime = (timestamp: number): string => {
+    const date = new Date(timestamp * 1000);
+    return date.toLocaleTimeString(undefined, { 
+      hour: '2-digit', 
+      minute: '2-digit',
+      hour12: true 
+    });
+  };
+
+  const renderConversations = () => {
+    let lastGroup = '';
+    
+    return conversations.map((convo) => {
+      const currentGroup = getRelativeDateGroup(convo.date);
+      const showHeader = currentGroup !== lastGroup;
+      lastGroup = currentGroup;
+      
+      return (
+        <React.Fragment key={convo.id}>
+          {showHeader && (
+            <div className="chat-history-date-separator">
+              <span>{currentGroup}</span>
+            </div>
+          )}
+          <div 
+            className="chat-history-list-item"
+            onClick={() => handleConversationClick(convo.id)}
+          >
+              <div className="chat-history-list-item-description">{convo.title}</div>
+              <div className="chat-history-list-item-date-section">
+                <span className="chat-history-list-item-time">{formatTime(convo.date)}</span>
+                <button 
+                  className="chat-history-delete-btn"
+                  onClick={(e) => handleDeleteConversation(e, convo.id)}
+                  title="Delete conversation"
+                >
+                  ×
+                </button>
+              </div>
+          </div>
+        </React.Fragment>
+      );
+    });
   };
 
   return (
@@ -132,10 +183,6 @@ const ChatHistory: React.FC = () => {
                         />
                   </form>
               </div>
-              <div className="chat-history-list-title">
-                  <div className="chat-history-description">Description</div>
-                  <div className="chat-history-date">Date</div>
-              </div>
               <div className="chat-history-list-container">
                 {loading ? (
                   <div className="chat-history-empty-state">Loading conversations...</div>
@@ -143,27 +190,7 @@ const ChatHistory: React.FC = () => {
                   <div className="chat-history-empty-state">
                     {searchQuery ? 'No conversations match your search.' : 'No conversations yet. Start chatting!'}
                   </div>
-                ) : (
-                  conversations.map((convo) => (
-                    <div 
-                      key={convo.id} 
-                      className="chat-history-list-item"
-                      onClick={() => handleConversationClick(convo.id)}
-                    >
-                        <div className="chat-history-list-item-description">{convo.title}</div>
-                        <div className="chat-history-list-item-date-section">
-                          <span className="chat-history-list-item-date">{formatDate(convo.date)}</span>
-                          <button 
-                            className="chat-history-delete-btn"
-                            onClick={(e) => handleDeleteConversation(e, convo.id)}
-                            title="Delete conversation"
-                          >
-                            ×
-                          </button>
-                        </div>
-                    </div>
-                  ))
-                )}
+                ) : renderConversations()}
               </div>
           </div>
     </>

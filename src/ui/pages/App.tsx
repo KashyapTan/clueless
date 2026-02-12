@@ -45,7 +45,7 @@ function App() {
   const [captureMode, setCaptureMode] = useState<'fullscreen' | 'precision' | 'none'>('fullscreen');
   const [meetingRecordingMode, setMeetingRecordingMode] = useState<boolean>(false);
   // Chat history for multi-turn conversations
-  const [chatHistory, setChatHistory] = useState<Array<{role: 'user' | 'assistant', content: string, thinking?: string, images?: Array<{name: string, thumbnail: string}>}>>([]);
+  const [chatHistory, setChatHistory] = useState<Array<{role: 'user' | 'assistant', content: string, thinking?: string, images?: Array<{name: string, thumbnail: string}>, toolCalls?: Array<{name: string, args: Record<string, unknown>, result: string, server: string}>}>>([]);
   const [currentQuery, setCurrentQuery] = useState<string>('');
   const [conversationId, setConversationId] = useState<string | null>(null);
   
@@ -70,6 +70,8 @@ function App() {
   const thinkingRef = useRef<string>('');
   // Ref to capture current screenshots at response_complete time
   const screenshotsRef = useRef<Array<{id: string, name: string, thumbnail: string}>>([]);
+  // Ref to capture tool calls during the current response
+  const toolCallsRef = useRef<Array<{name: string, args: Record<string, unknown>, result: string, server: string}>>([]);
   // Ref to hold a pending conversation ID to resume once WS is ready
   const pendingConversationRef = useRef<string | null>(null);
   // Ref to flag that a new chat was requested before WS was ready
@@ -207,7 +209,41 @@ function App() {
               setStatus('Thinking...');
               setIsThinking(true);
               setCanSubmit(false);
+              // Reset tool calls for this new query
+              toolCallsRef.current = [];
               break;
+            case 'tool_call': {
+              // MCP tool call event — accumulate completed calls
+              try {
+                const tc = typeof data.content === 'string' ? JSON.parse(data.content) : data.content;
+                if (tc.status === 'calling') {
+                  setStatus(`Calling tool: ${tc.name}...`);
+                } else if (tc.status === 'complete') {
+                  toolCallsRef.current = [...toolCallsRef.current, {
+                    name: tc.name,
+                    args: tc.args,
+                    result: tc.result,
+                    server: tc.server
+                  }];
+                  setStatus('Tool call complete. Generating response...');
+                }
+              } catch (e) {
+                console.error('Error parsing tool_call:', e);
+              }
+              break;
+            }
+            case 'tool_calls_summary': {
+              // Full summary of all tool calls (backup in case individual events were missed)
+              try {
+                const calls = typeof data.content === 'string' ? JSON.parse(data.content) : data.content;
+                if (Array.isArray(calls) && calls.length > 0) {
+                  toolCallsRef.current = calls;
+                }
+              } catch (e) {
+                console.error('Error parsing tool_calls_summary:', e);
+              }
+              break;
+            }
             case 'thinking_chunk':
               setThinking(prev => prev + data.content);
               thinkingRef.current += data.content;
@@ -230,12 +266,14 @@ function App() {
                 name: ss.name,
                 thumbnail: ss.thumbnail
               }));
+              // Capture tool calls made during this response
+              const completedToolCalls = toolCallsRef.current.length > 0 ? [...toolCallsRef.current] : undefined;
               
               // Add the completed exchange to chat history
               setChatHistory(prev => [
                 ...prev,
                 { role: 'user', content: completedQuery, images: attachedImages.length > 0 ? attachedImages : undefined },
-                { role: 'assistant', content: completedResponse, thinking: completedThinking || undefined }
+                { role: 'assistant', content: completedResponse, thinking: completedThinking || undefined, toolCalls: completedToolCalls }
               ]);
               // Clear current response/thinking for next turn
               setResponse('');
@@ -246,6 +284,7 @@ function App() {
               currentQueryRef.current = '';
               responseRef.current = '';
               thinkingRef.current = '';
+              toolCallsRef.current = [];
               setStatus('Ready for follow-up question.');
               setCanSubmit(true); // Allow follow-up questions
               break;
@@ -542,6 +581,28 @@ function App() {
               ) : (
                 <div className="response">
                   <div className="assistant-header">Clueless • {selectedModel}</div>
+                  {/* Tool calls display */}
+                  {msg.toolCalls && msg.toolCalls.length > 0 && (
+                    <div className="tool-calls-section">
+                      <div className="tool-calls-header">
+                        <span className="tool-calls-icon">&#9881;</span>
+                        <span>Used {msg.toolCalls.length} tool{msg.toolCalls.length > 1 ? 's' : ''}</span>
+                      </div>
+                      <div className="tool-calls-list">
+                        {msg.toolCalls.map((tc, tcIdx) => (
+                          <div key={tcIdx} className="tool-call-item">
+                            <div className="tool-call-name">
+                              <span className="tool-call-badge">{tc.server}</span>
+                              <code>{tc.name}({Object.entries(tc.args).map(([k, v]) => `${k}: ${JSON.stringify(v)}`).join(', ')})</code>
+                            </div>
+                            <div className="tool-call-result">
+                              <span className="tool-result-label">Result:</span> <code>{tc.result}</code>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                   <ReactMarkdown
                     components={{
                       // eslint-disable-next-line @typescript-eslint/no-explicit-any

@@ -1,0 +1,54 @@
+{
+    "servers": {
+        "demo": {
+            "enabled": true,
+            "description": "Demo calculator server (add two numbers)",
+            "module": "mcp_servers.servers.demo.server"
+        },
+        "filesystem": {
+            "enabled": false,
+            "description": "File system tools (read, write, move, rename files)",
+            "module": "mcp_servers.servers.filesystem.server"
+        },
+        "gmail": {
+            "enabled": false,
+            "description": "Gmail tools (read, send, delete, label mail)",
+            "module": "mcp_servers.servers.gmail.server",
+            "env": {
+                "GOOGLE_CREDENTIALS_FILE": "path/to/credentials.json",
+                "GOOGLE_TOKEN_FILE": "path/to/token.json"
+            }
+        },
+        "calendar": {
+            "enabled": false,
+            "description": "Google Calendar tools (create, read events)",
+            "module": "mcp_servers.servers.calendar.server",
+            "env": {
+                "GOOGLE_CREDENTIALS_FILE": "path/to/credentials.json",
+                "GOOGLE_TOKEN_FILE": "path/to/token.json"
+            }
+        },
+        "discord": {
+            "enabled": false,
+            "description": "Discord tools (send, read messages)",
+            "env": {
+                "DISCORD_BOT_TOKEN": "your-bot-token-here"
+            },
+            "module": "mcp_servers.servers.discord.server"
+        },
+        "canvas": {
+            "enabled": false,
+            "description": "Canvas LMS tools (assignments, grades, due dates)",
+            "env": {
+                "CANVAS_URL": "https://your-university.instructure.com",
+                "CANVAS_TOKEN": "your-access-token-here"
+            },
+            "module": "mcp_servers.servers.canvas.server"
+        },
+        "websearch": {
+            "enabled": false,
+            "description": "Web search and scraping tools",
+            "module": "mcp_servers.servers.websearch.server"
+        }
+    }
+}

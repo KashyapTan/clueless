@@ -4,6 +4,7 @@ import os
 import socket
 import signal
 import atexit
+from pathlib import Path
 
 # Add current directory to path for imports when run as script
 if __name__ == "__main__":
@@ -47,10 +48,211 @@ _screenshot_service = None
 _server_thread = None
 _service_thread = None
 
+#############################################
+# MCP (Model Context Protocol) Integration  #
+#############################################
+
+class McpToolManager:
+    """
+    Manages MCP server connections and tool routing for the main app.
+    
+    This is the in-app version of the bridge. It:
+    1. Launches MCP servers as child processes (stdio transport)
+    2. Discovers their tools and converts schemas to Ollama format
+    3. Routes tool calls from Ollama to the correct MCP server
+    4. Returns results back so Ollama can form a final answer
+    
+    HOW TO ADD A NEW TOOL SERVER:
+    ─────────────────────────────
+    1. Create your server in mcp_servers/servers/<name>/server.py
+       (use @mcp.tool() decorators — see demo/server.py for example)
+    
+    2. In this file's _init_mcp_servers() function, add:
+       await _mcp_manager.connect_server(
+           "your_server_name",
+           sys.executable,
+           [str(PROJECT_ROOT / "mcp_servers" / "servers" / "your_name" / "server.py")]
+       )
+    
+    3. That's it! The tools will automatically be:
+       - Discovered and registered
+       - Sent to Ollama with every chat request
+       - Routed and executed when Ollama calls them
+       - Displayed in the UI response
+    """
+    
+    def __init__(self):
+        self._tool_registry: Dict[str, Any] = {}   # tool_name -> {session, server_name}
+        self._connections: Dict[str, Any] = {}      # server_name -> {session, stdio_ctx, session_ctx}
+        self._ollama_tools: List[Dict] = []          # Ollama-formatted tool definitions
+        self._initialized = False
+    
+    async def connect_server(self, server_name: str, command: str, args: list, env: dict = None):
+        """Connect to an MCP server by launching it as a subprocess."""
+        try:
+            from mcp import ClientSession, StdioServerParameters
+            from mcp.client.stdio import stdio_client
+        except ImportError:
+            print(f"[MCP] WARNING: mcp package not installed. Run: pip install 'mcp[cli]'")
+            print(f"[MCP] Skipping server '{server_name}'. Tools will not be available.")
+            return
+        
+        try:
+            server_params = StdioServerParameters(command=command, args=args, env=env)
+            
+            # Launch the MCP server subprocess and connect
+            stdio_ctx = stdio_client(server_params)
+            read, write = await stdio_ctx.__aenter__()
+            
+            session_ctx = ClientSession(read, write)
+            session = await session_ctx.__aenter__()
+            await session.initialize()
+            
+            self._connections[server_name] = {
+                "session": session,
+                "stdio_ctx": stdio_ctx,
+                "session_ctx": session_ctx,
+            }
+            
+            # Discover tools
+            tools_result = await session.list_tools()
+            for tool in tools_result.tools:
+                self._tool_registry[tool.name] = {
+                    "session": session,
+                    "server_name": server_name,
+                }
+                ollama_tool = {
+                    "type": "function",
+                    "function": {
+                        "name": tool.name,
+                        "description": tool.description or "",
+                        "parameters": tool.inputSchema if tool.inputSchema else {"type": "object", "properties": {}},
+                    },
+                }
+                self._ollama_tools.append(ollama_tool)
+                print(f"[MCP] Registered tool: {tool.name} (from {server_name})")
+            
+            print(f"[MCP] Connected to '{server_name}' — {len(tools_result.tools)} tool(s)")
+        except Exception as e:
+            print(f"[MCP] ERROR connecting to '{server_name}': {e}")
+            print(f"[MCP] The server will work without '{server_name}' tools.")
+    
+    async def call_tool(self, tool_name: str, arguments: dict) -> str:
+        """Route a tool call to the correct MCP server."""
+        if tool_name not in self._tool_registry:
+            return f"Error: Unknown tool '{tool_name}'"
+        
+        entry = self._tool_registry[tool_name]
+        session = entry["session"]
+        
+        result = await session.call_tool(tool_name, arguments=arguments)
+        
+        output_parts = []
+        for block in result.content:
+            if hasattr(block, "text"):
+                output_parts.append(block.text)
+            else:
+                output_parts.append(str(block))
+        
+        return "\n".join(output_parts) if output_parts else "Tool returned no output."
+    
+    def get_ollama_tools(self) -> List[Dict] | None:
+        """Return tool definitions in Ollama format, or None if no tools."""
+        return self._ollama_tools if self._ollama_tools else None
+    
+    def get_tool_server_name(self, tool_name: str) -> str:
+        """Get the server name that owns a tool."""
+        entry = self._tool_registry.get(tool_name)
+        return entry["server_name"] if entry else "unknown"
+    
+    def has_tools(self) -> bool:
+        return len(self._ollama_tools) > 0
+    
+    async def cleanup(self):
+        """Disconnect from all MCP servers."""
+        for name, conn in self._connections.items():
+            try:
+                await conn["session_ctx"].__aexit__(None, None, None)
+                await conn["stdio_ctx"].__aexit__(None, None, None)
+                print(f"[MCP] Disconnected from '{name}'")
+            except Exception as e:
+                print(f"[MCP] Error disconnecting from '{name}': {e}")
+        self._connections.clear()
+        self._tool_registry.clear()
+        self._ollama_tools.clear()
+
+# Global MCP tool manager
+_mcp_manager = McpToolManager()
+
+# Project root (for resolving MCP server paths)
+PROJECT_ROOT = Path(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+async def _init_mcp_servers():
+    """
+    Connect to all enabled MCP servers.
+    
+    ╔══════════════════════════════════════════════════════════════════╗
+    ║  HOW TO ADD YOUR OWN MCP TOOL SERVER:                          ║
+    ║                                                                 ║
+    ║  1. Create mcp_servers/servers/<name>/server.py                 ║
+    ║  2. Add @mcp.tool() functions in it                            ║
+    ║  3. Add a connect_server() call below                          ║
+    ║  4. Restart the app — your tools are now available!             ║
+    ╚══════════════════════════════════════════════════════════════════╝
+    """
+    global _mcp_manager
+    
+    # ── Demo server (add two numbers) ──────────────────────────────
+    await _mcp_manager.connect_server(
+        "demo",
+        sys.executable,
+        [str(PROJECT_ROOT / "mcp_servers" / "servers" / "demo" / "server.py")]
+    )
+    
+    # ── Add more servers here as you implement them ────────────────
+    # Example:
+    # await _mcp_manager.connect_server(
+    #     "filesystem",
+    #     sys.executable,
+    #     [str(PROJECT_ROOT / "mcp_servers" / "servers" / "filesystem" / "server.py")]
+    # )
+    #
+    # await _mcp_manager.connect_server(
+    #     "gmail",
+    #     sys.executable,
+    #     [str(PROJECT_ROOT / "mcp_servers" / "servers" / "gmail" / "server.py")],
+    #     env={"GOOGLE_CREDENTIALS_FILE": "path/to/creds.json"}
+    # )
+    
+    _mcp_manager._initialized = True
+    print(f"[MCP] Ready — {len(_mcp_manager._ollama_tools)} total tool(s) available")
+
 def cleanup_resources():
     """Clean up all resources when shutting down."""
     global _screenshot_service, _server_thread, _service_thread
     print("Cleaning up resources...")
+    
+    # Clean up MCP servers
+    try:
+        loop = _server_loop_holder.get("loop")
+        if loop and loop.is_running():
+            import concurrent.futures
+            fut = concurrent.futures.Future()
+            async def _do_cleanup():
+                try:
+                    await _mcp_manager.cleanup()
+                    fut.set_result(True)
+                except Exception as e:
+                    fut.set_result(False)
+                    print(f"MCP cleanup error: {e}")
+            loop.call_soon_threadsafe(asyncio.ensure_future, _do_cleanup())
+            try:
+                fut.result(timeout=5)
+            except Exception:
+                pass
+        print("MCP servers cleaned up")
+    except Exception as e:
+        print(f"Error cleaning up MCP: {e}")
     
     # Stop screenshot service
     if _screenshot_service:
@@ -145,6 +347,7 @@ async def websocket_endpoint(websocket: WebSocket):
       screenshots_cleared         : All screenshots cleared
       query                       : Echo of submitted query
       response_chunk              : Streaming model token/content fragment
+      tool_call                   : MCP tool call event (calling / complete)
       response_complete           : Model finished
       error                       : Error message
     """
@@ -261,17 +464,123 @@ def clear_screenshots_folder(folder_path="screenshots"):
     except Exception as e:
         print(f"Error clearing folder: {e}")
 
-async def _stream_ollama_chat(user_query: str, image_paths: List[str], chat_history: List[Dict[str, Any]]) -> tuple[str, Dict[str, int]]:
+async def _handle_mcp_tool_calls(messages: List[Dict[str, Any]], image_paths: List[str]) -> tuple[List[Dict[str, Any]], List[Dict[str, Any]]]:
+    """Do a non-streamed Ollama call to check for tool calls.
+    
+    If Ollama wants to call MCP tools, this function:
+    1. Makes the tool calls via MCP servers
+    2. Broadcasts tool_call events to the UI so users see what happened
+    3. Appends tool call + result messages to the conversation
+    4. Repeats until Ollama stops requesting tools
+    
+    Returns:
+        (updated_messages, tool_calls_made)
+        - updated_messages: the messages list with tool exchanges appended
+        - tool_calls_made: list of {name, args, result, server} for UI display
+    """
+    tool_calls_made = []
+    
+    if not _mcp_manager.has_tools():
+        return messages, tool_calls_made
+    
+    # Only do tool detection for text-only queries (no images)
+    # Vision models + tool calling don't always mix well
+    has_images = any(msg.get('images') for msg in messages) or bool(image_paths)
+    if has_images:
+        return messages, tool_calls_made
+    
+    # Non-streamed call to detect tool requests
+    try:
+        response = chat(
+            model='qwen3-vl:8b-instruct',
+            messages=messages,
+            tools=_mcp_manager.get_ollama_tools(),
+        )
+    except Exception as e:
+        print(f"[MCP] Error in tool detection call: {e}")
+        return messages, tool_calls_made
+    
+    # Loop: keep calling tools until Ollama gives a final text answer
+    max_rounds = 5  # Safety limit to prevent infinite loops
+    rounds = 0
+    while response.message.tool_calls and rounds < max_rounds:
+        rounds += 1
+        for tool_call in response.message.tool_calls:
+            fn_name = tool_call.function.name
+            fn_args = tool_call.function.arguments
+            server_name = _mcp_manager.get_tool_server_name(fn_name)
+            
+            print(f"[MCP] Tool call: {fn_name}({fn_args}) from server '{server_name}'")
+            
+            # Broadcast to UI so users see the tool being called
+            await broadcast_message("tool_call", json.dumps({
+                "name": fn_name,
+                "args": fn_args,
+                "server": server_name,
+                "status": "calling"
+            }))
+            
+            # Execute the tool via MCP
+            try:
+                result = await _mcp_manager.call_tool(fn_name, fn_args)
+            except Exception as e:
+                result = f"Error executing tool: {e}"
+            
+            print(f"[MCP] Tool result: {result}")
+            
+            # Broadcast result to UI
+            await broadcast_message("tool_call", json.dumps({
+                "name": fn_name,
+                "args": fn_args,
+                "result": str(result),
+                "server": server_name,
+                "status": "complete"
+            }))
+            
+            tool_calls_made.append({
+                "name": fn_name,
+                "args": fn_args,
+                "result": str(result),
+                "server": server_name,
+            })
+            
+            # Add tool exchange to messages for context
+            messages.append(response.message.model_dump())
+            messages.append({
+                "role": "tool",
+                "content": str(result),
+            })
+        
+        # Ask Ollama again with tool results
+        try:
+            response = chat(
+                model='qwen3-vl:8b-instruct',
+                messages=messages,
+                tools=_mcp_manager.get_ollama_tools(),
+            )
+        except Exception as e:
+            print(f"[MCP] Error in follow-up call: {e}")
+            break
+    
+    # If we got a final text response from the tool-calling loop (non-streamed),
+    # we DON'T add it to messages here — the streaming call will generate the 
+    # final response so we get token-by-token streaming in the UI.
+    # But we DO need to keep the messages updated with tool exchanges.
+    
+    return messages, tool_calls_made
+
+
+async def _stream_ollama_chat(user_query: str, image_paths: List[str], chat_history: List[Dict[str, Any]]) -> tuple[str, Dict[str, int], List[Dict[str, Any]]]:
     """Stream Ollama response without blocking the event loop.
 
     A background thread iterates the blocking Ollama generator and schedules
     WebSocket broadcasts for each incremental token. Returns a tuple of
-    (full_output_text, token_stats_dict) once streaming completes.
+    (full_output_text, token_stats_dict, tool_calls_list) once streaming completes.
     
     image_paths can be empty list for text-only queries, or contain multiple images.
     """
     loop = asyncio.get_running_loop()
-    done_future: asyncio.Future[tuple[str, Dict[str, int]]] = loop.create_future()
+    done_future: asyncio.Future[tuple[str, Dict[str, int], List[Dict[str, Any]]]] = loop.create_future()
 
     def safe_schedule(coro):
         try:
@@ -362,6 +671,36 @@ async def _stream_ollama_chat(user_query: str, image_paths: List[str], chat_hist
                 'content': user_query,
             })
         
+        # ── MCP Tool Calling Phase ─────────────────────────────────
+        # Before streaming, check if Ollama wants to call any MCP tools.
+        # This is done synchronously (non-streamed) because tool calls
+        # need the full response to detect tool_calls in the message.
+        # The tool results get appended to `messages` so the streamed
+        # response below already has tool context.
+        tool_calls_list = []
+        if _mcp_manager.has_tools():
+            # We need to run the async MCP calls from inside this thread.
+            # Schedule onto the server's event loop and wait for the result.
+            import concurrent.futures
+            future = concurrent.futures.Future()
+            
+            async def _do_tool_calls():
+                try:
+                    updated, calls = await _handle_mcp_tool_calls(messages.copy(), image_paths)
+                    future.set_result((updated, calls))
+                except Exception as e:
+                    future.set_exception(e)
+            
+            try:
+                loop.call_soon_threadsafe(asyncio.ensure_future, _do_tool_calls())
+                # Wait for the tool calls to complete (with timeout)
+                updated_messages, tool_calls_list = future.result(timeout=60)
+                # Replace messages with the updated version that includes tool exchanges
+                messages = updated_messages
+            except Exception as e:
+                print(f"[MCP] Tool calling phase failed: {e}")
+                # Continue without tools — the model will respond normally
+        
         try:
             # Use vision model if we have an image, otherwise use text model
             model_name = 'qwen3-vl:8b-instruct'
@@ -416,13 +755,13 @@ async def _stream_ollama_chat(user_query: str, image_paths: List[str], chat_hist
                 # Nothing at all extracted
                 safe_schedule(broadcast_message("error", "No content tokens extracted from stream."))
             safe_schedule(broadcast_message("response_complete", ""))
-            loop.call_soon_threadsafe(done_future.set_result, (''.join(accumulated), collected_token_stats))
+            loop.call_soon_threadsafe(done_future.set_result, (''.join(accumulated), collected_token_stats, tool_calls_list))
         except Exception as e:
             err = f"Error streaming from Ollama: {e}"
             print(err)
             safe_schedule(broadcast_message("error", err))
             if not done_future.done():
-                loop.call_soon_threadsafe(done_future.set_result, (err, collected_token_stats))
+                loop.call_soon_threadsafe(done_future.set_result, (err, collected_token_stats, tool_calls_list))
 
     threading.Thread(target=producer, daemon=True).start()
     return await done_future
@@ -612,7 +951,7 @@ async def handle_submit_query(user_query: str, capture_mode: str = "none"):
 
     try:
         # Pass current chat history to the streaming function
-        response_text, token_stats = await _stream_ollama_chat(user_query, image_paths, _chat_history.copy())
+        response_text, token_stats, tool_calls = await _stream_ollama_chat(user_query, image_paths, _chat_history.copy())
         
         # Create conversation in DB on the first message (lazy creation)
         if _current_conversation_id is None:
@@ -630,13 +969,20 @@ async def handle_submit_query(user_query: str, capture_mode: str = "none"):
             except Exception as e:
                 print(f"Error saving token usage: {e}")
         
+        # Broadcast tool calls summary so the frontend can display them
+        if tool_calls:
+            await broadcast_message("tool_calls_summary", json.dumps(tool_calls))
+        
         # Add this exchange to chat history for future follow-ups
         # Store images WITH the user message so they persist in history
         user_msg = {'role': 'user', 'content': user_query}
         if image_paths:
             user_msg['images'] = image_paths
         _chat_history.append(user_msg)
-        _chat_history.append({'role': 'assistant', 'content': response_text})
+        assistant_msg: Dict[str, Any] = {'role': 'assistant', 'content': response_text}
+        if tool_calls:
+            assistant_msg['tool_calls'] = tool_calls
+        _chat_history.append(assistant_msg)
         
         # Persist to database
         db.add_message(_current_conversation_id, 'user', user_query, image_paths if image_paths else None)
@@ -771,6 +1117,13 @@ def start_fastapi_server():
     _server_loop_holder["loop"] = loop
     _server_loop_holder["port"] = port  # Store the port for reference
     asyncio.set_event_loop(loop)
+    
+    # Initialize MCP tool servers on this event loop before serving
+    try:
+        loop.run_until_complete(_init_mcp_servers())
+    except Exception as e:
+        print(f"[MCP] Failed to initialize servers (non-fatal): {e}")
+    
     config = uvicorn.Config(app, host="0.0.0.0", port=port, log_level="warning", loop="asyncio")
     server = uvicorn.Server(config)
     loop.run_until_complete(server.serve())

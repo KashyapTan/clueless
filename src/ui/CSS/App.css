@@ -986,4 +986,88 @@ input, textarea, [contenteditable="true"] {
   border-color: rgba(255, 255, 255, 0.3) transparent transparent transparent;
 }
 
+/* ── MCP Tool Calls Display ───────────────────────────────── */
+.tool-calls-section {
+  margin: 8px 0 12px 0;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.04);
+  overflow: hidden;
+}
+
+.tool-calls-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.7);
+  background: rgba(255, 255, 255, 0.06);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.tool-calls-icon {
+  font-size: 1rem;
+  opacity: 0.8;
+}
+
+.tool-calls-list {
+  padding: 6px 0;
+}
+
+.tool-call-item {
+  padding: 6px 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.tool-call-item:last-child {
+  border-bottom: none;
+}
+
+.tool-call-name {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.78rem;
+  color: rgba(255, 255, 255, 0.85);
+  margin-bottom: 3px;
+}
+
+.tool-call-name code {
+  font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+  font-size: 0.76rem;
+  color: #c9d1d9;
+}
+
+.tool-call-badge {
+  display: inline-block;
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: rgba(88, 166, 255, 0.15);
+  color: #58a6ff;
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  white-space: nowrap;
+}
+
+.tool-call-result {
+  font-size: 0.76rem;
+  color: rgba(255, 255, 255, 0.6);
+  padding-left: 4px;
+}
+
+.tool-result-label {
+  color: rgba(255, 255, 255, 0.45);
+  font-weight: 500;
+}
+
+.tool-call-result code {
+  font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+  font-size: 0.74rem;
+  color: #7ee787;
+}
+
 

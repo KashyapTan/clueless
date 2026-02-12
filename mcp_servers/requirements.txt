@@ -1,0 +1,24 @@
+# Core MCP dependency (the official Python SDK)
+mcp[cli]>=1.26.0
+
+# Ollama client (already in your main requirements.txt, but listed here for completeness)
+ollama>=0.5.3
+
+# ── OPTIONAL: Uncomment as you implement each server ──────────────────
+
+# Gmail & Google Calendar
+# google-auth>=2.0.0
+# google-auth-oauthlib>=1.0.0
+# google-api-python-client>=2.0.0
+
+# Discord (REST API approach - lighter than discord.py)
+# aiohttp>=3.9.0
+
+# Canvas LMS
+# requests>=2.32.0
+
+# Web Search (DuckDuckGo - no API key needed)
+# duckduckgo-search>=6.0.0
+
+# Web Scraping
+# beautifulsoup4>=4.12.0

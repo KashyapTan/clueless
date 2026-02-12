@@ -47,6 +47,7 @@ os.makedirs(SCREENSHOT_FOLDER, exist_ok=True)
 _screenshot_service = None
 _server_thread = None
 _service_thread = None
+_stop_streaming = False
 
 #############################################
 # MCP (Model Context Protocol) Integration  #
@@ -211,11 +212,11 @@ async def _init_mcp_servers():
     
     # ── Add more servers here as you implement them ────────────────
     # Example:
-    # await _mcp_manager.connect_server(
-    #     "filesystem",
-    #     sys.executable,
-    #     [str(PROJECT_ROOT / "mcp_servers" / "servers" / "filesystem" / "server.py")]
-    # )
+    await _mcp_manager.connect_server(
+        "filesystem",
+        sys.executable,
+        [str(PROJECT_ROOT / "mcp_servers" / "servers" / "filesystem" / "server.py")]
+    )
     #
     # await _mcp_manager.connect_server(
     #     "gmail",
@@ -381,7 +382,8 @@ async def websocket_endpoint(websocket: WebSocket):
                 if not query_text:
                     await websocket.send_text(json.dumps({"type": "error", "content": "Empty query"}))
                     continue
-                await handle_submit_query(query_text, capture_mode)
+                # Run as background task so the receive loop stays free for stop_streaming
+                asyncio.create_task(handle_submit_query(query_text, capture_mode))
             elif msg_type == "clear_context":
                 # Clear screenshots and chat history for fresh start
                 await handle_clear_context()
@@ -394,6 +396,9 @@ async def websocket_endpoint(websocket: WebSocket):
                 # Update the capture mode for hotkey behavior
                 mode = data.get("mode", "fullscreen")
                 await handle_set_capture_mode(mode)
+            elif msg_type == "stop_streaming":
+                global _stop_streaming
+                _stop_streaming = True
             elif msg_type == "get_conversations":
                 # Fetch conversation list for chat history page
                 limit = data.get("limit", 50)
@@ -710,6 +715,9 @@ async def _stream_ollama_chat(user_query: str, image_paths: List[str], chat_hist
                 stream=True,
             )
             for idx, chunk in enumerate(generator):
+                # Check if stop was requested
+                if _stop_streaming:
+                    break
                 content_token, thinking_token = extract_token(chunk)
                 
                 # Handle thinking tokens - they come one at a time
@@ -751,8 +759,8 @@ async def _stream_ollama_chat(user_query: str, image_paths: List[str], chat_hist
             if not accumulated and final_message_content:
                 accumulated.append(final_message_content)
                 safe_schedule(broadcast_message("response_chunk", final_message_content))
-            elif not accumulated:
-                # Nothing at all extracted
+            elif not accumulated and not _stop_streaming:
+                # Nothing at all extracted (only error if not intentionally stopped)
                 safe_schedule(broadcast_message("error", "No content tokens extracted from stream."))
             safe_schedule(broadcast_message("response_complete", ""))
             loop.call_soon_threadsafe(done_future.set_result, (''.join(accumulated), collected_token_stats, tool_calls_list))
@@ -889,7 +897,7 @@ async def handle_resume_conversation(conversation_id: str):
 
 async def handle_submit_query(user_query: str, capture_mode: str = "none"):
     """Handle query submitted from a client. Screenshot is optional."""
-    global _screenshot_list, _is_streaming, _chat_history, _screenshot_counter, _current_conversation_id
+    global _screenshot_list, _is_streaming, _chat_history, _screenshot_counter, _current_conversation_id, _stop_streaming
     
     print(f"[DEBUG] handle_submit_query called: capture_mode={capture_mode}, screenshots={len(_screenshot_list)}, history={len(_chat_history)}")
     
@@ -949,6 +957,9 @@ async def handle_submit_query(user_query: str, capture_mode: str = "none"):
     # Echo query to clients (outside lock to not block other ops)
     await broadcast_message("query", user_query)
 
+    # Reset the stop flag before starting
+    _stop_streaming = False
+    
     try:
         # Pass current chat history to the streaming function
         response_text, token_stats, tool_calls = await _stream_ollama_chat(user_query, image_paths, _chat_history.copy())
@@ -979,14 +990,18 @@ async def handle_submit_query(user_query: str, capture_mode: str = "none"):
         if image_paths:
             user_msg['images'] = image_paths
         _chat_history.append(user_msg)
-        assistant_msg: Dict[str, Any] = {'role': 'assistant', 'content': response_text}
-        if tool_calls:
-            assistant_msg['tool_calls'] = tool_calls
-        _chat_history.append(assistant_msg)
+        
+        # Only save assistant message if there's actual content (skip empty stopped responses)
+        if response_text.strip():
+            assistant_msg: Dict[str, Any] = {'role': 'assistant', 'content': response_text}
+            if tool_calls:
+                assistant_msg['tool_calls'] = tool_calls
+            _chat_history.append(assistant_msg)
         
         # Persist to database
         db.add_message(_current_conversation_id, 'user', user_query, image_paths if image_paths else None)
-        db.add_message(_current_conversation_id, 'assistant', response_text)
+        if response_text.strip():
+            db.add_message(_current_conversation_id, 'assistant', response_text)
         
         # Broadcast the conversation_id to the frontend so it knows the active chat
         await broadcast_message("conversation_saved", json.dumps({

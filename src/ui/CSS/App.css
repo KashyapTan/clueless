@@ -407,6 +407,35 @@ input, textarea, [contenteditable="true"] {
 .query-input:focus {
   outline: none;
 }
+
+/* Stop streaming button */
+.stop-streaming-button {
+  width: 20px;
+  height: 20px;
+  border-radius: 8px;
+  border: 1.5px solid rgba(255, 255, 255, 0.4);
+  background-color: rgba(255, 255, 255, 0.08);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  margin-right: 4px;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.stop-streaming-button:hover {
+  background-color: rgba(255, 255, 255, 0.18);
+  border-color: rgba(255, 255, 255, 1);
+}
+
+.stop-icon {
+  width: 7px;
+  height: 7px;
+  background-color: white;
+  border-radius: 2px;
+}
+
 .code-block-container {
   position: relative;
 }

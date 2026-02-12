@@ -24,7 +24,7 @@ Example:
 """
 
 from mcp.server.fastmcp import FastMCP
-
+import os
 mcp = FastMCP("Filesystem Tools")
 
 # ── YOUR TOOLS GO HERE ─────────────────────────────────────────────────
@@ -32,6 +32,27 @@ mcp = FastMCP("Filesystem Tools")
 # def read_file(path: str) -> str:
 #     ...
 
+USERNAME = 'Kashyap Tanuku'
+BASE_PATH = f"C:/Users/{USERNAME}"
+
+list_directory_description = f"""
+List files/folders in a directory.
+CURRENT CONTEXT:
+- Username: {USERNAME}
+- Base Path: {BASE_PATH}
+"""
+
+# 3. Pass the description into the decorator
+# This keeps the decorator on top, but feeds it the dynamic text!
+@mcp.tool(description=list_directory_description)
+def list_directory(path: str) -> list:
+    """Lists files for the current user."""
+    clean_path = os.path.expanduser(path)
+
+    try:
+        return os.listdir(clean_path)
+    except FileNotFoundError:
+        return [f"Error: Could not find path '{clean_path}'. Check if it exists."]
 
 if __name__ == "__main__":
     mcp.run()

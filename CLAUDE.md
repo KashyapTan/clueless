@@ -1,295 +1,391 @@
-# CLAUDE.md - Clueless Project Documentation
-
-This file provides guidance to Claude Code (claude.ai/code) when working with this codebase.
+# Claude.MD - LLM Development Guide
 
 ## Project Overview
 
-**Clueless** is an AI-powered desktop assistant built with Electron, React, and Python. It provides a floating, always-on-top window that allows users to:
-- Chat with an LLM (Ollama) with or without screenshots
-- Take region-selective screenshots via hotkey (Ctrl+Shift+Alt+S)
-- Stream AI responses in real-time via WebSocket
-- Multi-turn conversations with persistent chat history
-- Multiple capture modes (fullscreen, region, meeting recording — UI scaffolded)
+Electron + React + Python desktop app for AI chat with screenshot capabilities. Key features:
+- Ollama LLM integration (qwen3-vl:8b) with streaming
+- Screenshot capture (hotkey + fullscreen) with vision model processing
+- WebSocket-based bidirectional communication (FastAPI backend)
+- SQLite chat history persistence
+- MCP (Model Context Protocol) tool integration for extensible LLM capabilities
+- Always-on-top frameless window with mini mode (52×52)
 
 ## Architecture
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                    Electron Main Process                     │
-│  (src/electron/main.ts)                                      │
-│  - Creates frameless, transparent, always-on-top window     │
-│  - Manages Python server lifecycle (prod only)              │
-│  - Content protection enabled, skips taskbar                │
-└────────────────────┬────────────────────────────────────────┘
-                     │
-         ┌───────────┴───────────┐
-         ▼                       ▼
-┌─────────────────────┐  ┌─────────────────────────────────────┐
-│   React Frontend    │  │         Python Backend               │
-│   (src/ui/)         │◄─┤         (source/)                    │
-│                     │  │                                      │
-│ - App.tsx: Main UI  │  │ - main.py: FastAPI WebSocket server │
-│ - WebSocket client  │  │ - ss.py: Screenshot service          │
-│ - Markdown render   │  │ - Ollama integration                 │
-│ - Nav bar & modes   │  │ - Multi-turn chat history            │
-└─────────────────────┘  └─────────────────────────────────────┘
-         │                           │
-         │    WebSocket (ws://localhost:8000/ws)
-         └───────────────────────────┘
+Electron (main.ts) → Window mgmt, Python lifecycle
+    ↓
+    ├─→ React (src/ui/) → WebSocket client, UI rendering
+    └─→ Python (source/main.py) → FastAPI WS server, Ollama, MCP manager
+            ↓
+            ├─→ database.py → SQLite (conversations, messages)
+            ├─→ ss.py → Screenshot capture (hotkey, tkinter overlay)
+            └─→ MCP servers → stdio child processes (demo, filesystem)
 ```
 
 ## Tech Stack
 
-### Frontend
-- **React 19** with TypeScript
-- **Vite** for bundling
-- **react-markdown** + **react-syntax-highlighter** for rendering
-- WebSocket for real-time communication
+**Frontend**: React 19 + TypeScript + Vite 6 + React Router 7 + react-markdown  
+**Backend**: Python 3.11+ + FastAPI + Ollama (qwen3-vl:8b) + SQLite3 + MCP  
+**Desktop**: Electron 37+ (frameless, always-on-top, screen-saver level)  
+**Utils**: pynput (hotkeys), Pillow (images), tkinter (overlays), PyInstaller (bundling)
 
-### Backend
-- **Python 3.11+** with FastAPI
-- **Ollama** for LLM inference (uses `qwen3-vl:8b-instruct` for all queries)
-- **pynput** for global hotkey detection
-- **Pillow** for screenshot capture
-- **tkinter** for region selection UI
-
-### Desktop
-- **Electron 37+** for cross-platform desktop app
-- Frameless, transparent window with always-on-top (`screen-saver` level)
-- Content protection enabled, skips taskbar
-
-## Directory Structure
+## Directory Structure (Essential Paths)
 
 ```
-clueless/
-├── src/
-│   ├── electron/           # Electron main process
-│   │   ├── main.ts         # Window creation, Python lifecycle
-│   │   ├── pythonApi.ts    # Python server management
-│   │   ├── pcResources.ts  # Resource path helpers
-│   │   ├── utils.ts        # Dev/prod helpers
-│   │   └── tsconfig.json   # Electron-specific TS config
-│   └── ui/                 # React frontend
-│       ├── App.tsx         # Main component, WebSocket logic
-│       ├── App.css         # Styles
-│       ├── main.tsx        # React entry point
-│       └── assets/         # UI icons and images
-│           ├── transparent-clueless-logo.png
-│           ├── settings-icon.svg
-│           ├── chat-history-icon.svg
-│           ├── new-chat-icon.svg
-│           ├── plus-icon.svg
-│           ├── mic-icon.svg
-│           ├── entire-screen-shot-icon.svg
-│           ├── region-screen-shot-icon.svg
-│           ├── meeting-record-icon.svg
-│           └── recorded-meetings-album-icon.svg
-├── source/                 # Python backend
-│   ├── main.py             # FastAPI server, Ollama streaming
-│   └── ss.py               # Screenshot service, region selector
-├── dist-electron/          # Compiled Electron code
-├── dist-react/             # Built React app
-├── dist-python/            # Bundled Python (PyInstaller)
-├── screenshots/            # Temporary screenshot storage
-├── scripts/                # Build scripts
-│   ├── build-python.mjs    # Python bundling
-│   └── build-python-exe.py # PyInstaller config
-└── package.json            # Node dependencies & scripts
+src/
+  ├─ electron/          # main.ts, pythonApi.ts, preload.ts, utils.ts
+  └─ ui/
+      ├─ pages/         # App.tsx, ChatHistory.tsx, Settings.tsx
+      ├─ components/    # Layout.tsx, TitleBar.tsx, WebSocketContext.tsx
+      └─ CSS/           # Stylesheets
+source/              # Python backend
+  ├─ main.py          # FastAPI server, Ollama, MCP manager (1195 lines)
+  ├─ database.py      # SQLite ops (314 lines)
+  ├─ ss.py            # Screenshot service (478 lines)
+  └─ user_data/       # clueless_app.db, screenshots/
+mcp_servers/
+  ├─ client/          # ollama_bridge.py (standalone bridge)
+  ├─ config/          # servers.json
+  └─ servers/         # demo/, filesystem/, gmail/, etc.
+dist-electron/       # Compiled TS → JS
+dist-react/          # Built React app
+dist-python/         # PyInstaller output (main.exe)
+user_data/           # Persistent app data (DB, screenshots)
 ```
 
-## Key Files
+## Key Files & Implementation Details
 
-### `source/main.py`
-- FastAPI WebSocket server on port 8000 (auto-finds available port)
-- Handles bidirectional messaging:
-  - Client → Server: `submit_query`, `clear_context`
-  - Server → Client: `ready`, `screenshot_start`, `screenshot_ready`, `query`, `thinking_chunk`, `thinking_complete`, `response_chunk`, `response_complete`, `error`, `context_cleared`
-- Streams Ollama responses token-by-token
-- Manages screenshot lifecycle and multi-turn chat history
-- Uses a dedicated event loop holder (`_server_loop_holder`) so worker threads can schedule coroutines on the server's asyncio loop
-- Graceful cleanup via `atexit`, `SIGINT`, and `SIGTERM` handlers
+### `source/main.py` (1195 lines)
+**FastAPI WebSocket server, Ollama integration, MCP manager**
 
-### `source/ss.py`
-- `ScreenshotService`: Global hotkey listener (Ctrl+Shift+Alt+S)
-  - Thread-safe capture gating via `_lock` to prevent concurrent captures
-  - Supports `callback` (on capture complete) and `start_callback` (on capture begin)
-- `RegionSelector`: Full-screen overlay with:
-  - Dimmed background
-  - Click-and-drag selection
-  - Live preview of selected region
-  - High-DPI support for Windows
-- Handles coordinate transformation for scaled displays
+Critical components:
+- `McpToolManager`: Manages MCP server lifecycle (stdio child processes), discovers tools, routes calls
+- `_init_mcp_servers()`: Registers all MCP servers (modify here to add new servers)
+- `websocket_endpoint()`: Main WS handler, message type router
+- `_handle_mcp_tool_calls()`: Intercepts Ollama tool calls, routes to MCP, returns results
+- `_server_loop_holder`: Global asyncio loop reference for scheduling coroutines from worker threads (Windows Proactor requirement)
+- `_chat_history`: Multi-turn conversation state (list of message dicts)
+- Screenshot lifecycle: `_on_screenshot_start()`, `_on_screenshot_captured()` scheduled on server loop
+- Auto-port detection: Falls back from 8000 if busy
+- Graceful cleanup: `atexit`, `SIGINT`, `SIGTERM` handlers
 
-### `src/ui/App.tsx`
-- Main React component with full navigation bar:
-  - **Left nav**: Settings, Chat History, Recorded Meetings Album buttons
-  - **Right nav**: New Chat, Clueless logo
-  - **Draggable title bar** (blank space between nav items)
-- Multi-turn chat history display with markdown rendering
-- Collapsible "thinking" section for model reasoning
-- Screenshot indicator with clear context button
-- **Mode selection bar** (bottom): Fullscreen SS, Region SS, Meeting Recorder (UI scaffolded, toggle state only)
-- **Model selection dropdown** (UI placeholder: GPT-4, GPT-3.5 — not yet wired to backend)
-- **Voice input button** (UI placeholder — not yet implemented)
-- **Attachments button** (UI placeholder — not yet implemented)
-- `electronAPI` bridge for window focus (`window.electronAPI.focusWindow()`)
-- Uses refs (`currentQueryRef`, `responseRef`, `thinkingRef`) to capture values correctly during async WebSocket handling
+**Key patterns**:
+- Use `asyncio.run_coroutine_threadsafe(coro, _server_loop_holder.loop)` from non-async threads
+- Refs in callbacks capture state; schedule on server loop to access current state
+- Tool schemas auto-converted to Ollama format from MCP discovery
+- Images preprocessed (max 800x600) before sending to Ollama
 
-### `src/electron/main.ts`
-- Creates BrowserWindow: 400×400, frameless, transparent, always-on-top (`screen-saver` level)
-- `setContentProtection(true)` — prevents screen capture of the window
-- `skipTaskbar: true` — window hidden from taskbar
-- Starts/stops Python server in production mode only (dev uses `dev:pyserver` script)
-- Multiple cleanup handlers: `closed`, `close`, `window-all-closed`, `before-quit`, `will-quit`
-- No preload script currently configured in `webPreferences`
+### `source/database.py` (314 lines)
+**SQLite operations with thread safety**
+
+Critical patterns:
+- `check_same_thread=False` enables FastAPI thread pool access
+- JSON serialization for image arrays (SQLite has no array type)
+- `add_message()` updates parent conversation `updated_at` timestamp
+- Migration pattern: Try `ALTER TABLE`, catch `OperationalError` if column exists
+- UUIDs for conversation IDs (generated in Python, not DB)
+
+Tables:
+- `conversations`: id (TEXT/UUID), title, created_at, updated_at, total_input_tokens, total_output_tokens
+- `messages`: num_messages (AUTOINCREMENT), conversation_id (FK), role, content, images (JSON TEXT), created_at
+
+### `source/ss.py` (478 lines)
+**Screenshot service with hotkey and overlay**
+
+Components:
+1. `ScreenshotService`: Global hotkey listener (Ctrl+Shift+Alt+S)
+   - Thread-safe with `_lock` (prevents concurrent captures)
+   - Callbacks: `start_callback` (on capture begin), `callback` (on complete)
+   - Runs in dedicated background thread
+2. `RegionSelector`: Tkinter fullscreen overlay
+   - Click-drag rectangle selection
+   - DPI-aware coordinate transformation
+   - ESC to cancel
+3. Helper functions: `take_fullscreen_screenshot()`, `take_region_screenshot()`, `create_thumbnail()`, `copy_image_to_clipboard()`
+
+**Critical**: DPI scaling on Windows requires coordinate transformation for multi-monitor setups
+
+### `src/ui/pages/App.tsx` (892 lines)
+**Main React component with WebSocket integration**
+
+**Critical patterns**:
+- Uses **refs** for values captured in async WS callbacks: `currentQueryRef`, `responseRef`, `thinkingRef`, `screenshotsRef`, `toolCallsRef`
+  - WHY: State updates don't re-register WS handler, callbacks capture stale state
+  - SOLUTION: Update both state and ref simultaneously
+- WebSocket message router in `ws.onmessage` event handler
+- Screenshot thumbnails stored as base64 data URIs
+- Tool calls displayed as cards: `⚙ Used X tools: server > tool(args) → result`
+- `electronAPI.focusWindow()` and `electronAPI.setMiniMode()` for IPC
+
+**State management**:
+- `messages`: Chat history array
+- `screenshots`: Current screenshot carousel (cleared after query completes)
+- `captureMode`: 'fullscreen' | 'precision' | 'none'
+- `currentConversationId`: UUID or null
+
+### `src/electron/main.ts` (148 lines)
+**Electron main process**
+
+Window config:
+- 450×450 normal, 52×52 mini
+- `frame: false`, `transparent: true`, `alwaysOnTop: true`, `level: 'screen-saver'`
+- `skipTaskbar: true`, `setContentProtection(true)`
+
+IPC handlers:
+- `set-mini-mode`: Resizes window, repositions to top-right
+- `focus-window`: Brings to foreground
+
+**Python lifecycle** (prod only):
+- Starts Python server on `app.whenReady()`
+- Stops on `app.quit()`
+- Dev mode skips (dev:pyserver script handles it)
+
+### `mcp_servers/servers/demo/server.py` (63 lines)
+**Reference MCP server implementation**
+
+Pattern for adding tools:
+```python
+from mcp.server.fastmcp import FastMCP
+
+mcp = FastMCP("ServerName")
+
+@mcp.tool()
+def function_name(param: type) -> return_type:
+    """Description visible to LLM (critical for tool discovery)"""
+    return result
+
+if __name__ == "__main__":
+    mcp.run()  # stdio transport
+```
+
+**Requirements**: Type hints mandatory (schema generation), docstrings become tool descriptions
 
 ## Development Commands
 
 ```bash
-# Full development mode (all services)
-npm run dev
-
-# Individual services
-npm run dev:react      # Vite dev server (port 5123)
-npm run dev:electron   # Electron app
-npm run dev:pyserver   # Python FastAPI server (.venv activated)
-npm run dev:ollama     # Ollama server (auto-detects if already running)
-
-# Build
-npm run build          # Full build (Python exe + React + Electron transpile)
-npm run build:react    # Vite build only
-npm run build:python-exe  # PyInstaller build only
-npm run dist:win       # Build Windows installer
-npm run dist:mac       # Build macOS installer
-npm run dist:linux     # Build Linux installer
-
-# Other
-npm run lint           # ESLint
-npm run install:python # Install Python deps in .venv
-npm run test:ollama    # Check if Ollama is running
+npm run dev                # Full dev mode (all services)
+npm run dev:react          # Vite dev server (port 5123)
+npm run dev:electron       # Electron app
+npm run dev:pyserver       # Python FastAPI (.venv activated)
+npm run build              # Full build (Python exe + React + Electron)
+npm run dist:win           # Windows installer
 ```
+
+## MCP (Model Context Protocol) Integration
+
+**Purpose**: Give LLM access to external tools via stdio child processes (JSON-RPC).
+
+### How Tool Calls Work
+1. User query → Ollama receives tools array (all registered MCP tools)
+2. Ollama returns `tool_call` if needed
+3. Backend intercepts in `_handle_mcp_tool_calls()`
+4. McpToolManager routes to correct server
+5. Result goes back to Ollama for final response
+
+### Adding New MCP Tools (3 Steps)
+
+**Step 1**: Create `mcp_servers/servers/<name>/server.py`
+```python
+from mcp.server.fastmcp import FastMCP
+
+mcp = FastMCP("ToolName")
+
+@mcp.tool()
+def function_name(param: str) -> str:
+    """LLM-visible description of when to use this tool."""
+    return f"Result: {param}"
+
+if __name__ == "__main__":
+    mcp.run()
+```
+
+**Step 2**: Register in `source/main.py` → `_init_mcp_servers()`
+```python
+await _mcp_manager.connect_server(
+    "tool_name",
+    sys.executable,
+    [str(PROJECT_ROOT / "mcp_servers" / "servers" / "tool_name" / "server.py")]
+)
+```
+
+**Step 3**: Restart app — tools auto-register!
+
+### Current Servers
+- ✅ **demo**: add, divide
+- ✅ **filesystem**: list_directory (partial)
+- 📝 Placeholders: gmail, calendar, discord, canvas, websearch
+
+### Debugging
+- Check `[MCP]` logs in console
+- Test standalone: `python -m mcp_servers.servers.demo.server`
+- Tool calls show as cards in UI: `⚙ Used 1 tool: demo > add(a: 42, b: 58) → 100.0`
 
 ## WebSocket Protocol
 
-### Client → Server
+The WebSocket connection at `ws://localhost:8000/ws` uses JSON messages with `type` and `content` fields.
+
+### Client → Server Messages
+
 ```json
+// Submit a query (with or without images)
 {"type": "submit_query", "content": "Your question here"}
+
+// Clear conversation context (start new chat)
 {"type": "clear_context"}
+
+// Set capture mode
+{"type": "set_capture_mode", "mode": "fullscreen" | "precision" | "none"}
+
+// Resume a previous conversation
+{"type": "resume_conversation", "conversation_id": "uuid-string"}
+
+// Get list of conversations (for ChatHistory page)
+{"type": "get_conversations", "limit": 50, "offset": 0}
+
+// Search conversations
+{"type": "search_conversations", "query": "search terms"}
+
+// Delete a conversation
+{"type": "delete_conversation", "conversation_id": "uuid-string"}
+
+// Remove a screenshot from context
+{"type": "remove_screenshot", "screenshot_id": "ss_1"}
 ```
 
-### Server → Client
+### Server → Client Messages
+
 ```json
+// Server ready to receive queries
 {"type": "ready", "content": "Server ready..."}
-{"type": "screenshot_start", "content": "..."}
+
+// Screenshot capture starting (UI should hide)
+{"type": "screenshot_start", "content": "Screenshot capture starting"}
+
+// Screenshot added to context (with thumbnail)
+{"type": "screenshot_added", "content": "{\"id\": \"ss_1\", \"name\": \"screenshot.png\", \"thumbnail\": \"data:image/png;base64,...\"}"}
+
+// Screenshot removed from context
+{"type": "screenshot_removed", "content": "{\"id\": \"ss_1\"}"}
+
+// All screenshots cleared from context
+{"type": "screenshots_cleared", "content": ""}
+
+// Legacy screenshot ready message
 {"type": "screenshot_ready", "content": "Screenshot captured..."}
-{"type": "query", "content": "Echo of user query"}
+
+// Echo of user query
+{"type": "query", "content": "User's question"}
+
+// Streaming thinking/reasoning chunks
 {"type": "thinking_chunk", "content": "...partial thinking..."}
 {"type": "thinking_complete", "content": ""}
+
+// Streaming response chunks
 {"type": "response_chunk", "content": "...partial response..."}
 {"type": "response_complete", "content": ""}
+
+// MCP tool call initiated
+{"type": "tool_call", "content": "{\"name\": \"add\", \"arguments\": {\"a\": 42, \"b\": 58}, \"server\": \"demo\"}"}
+
+// MCP tool call result
+{"type": "tool_result", "content": "{\"name\": \"add\", \"result\": \"100.0\", \"server\": \"demo\"}"}
+
+// Context cleared confirmation
 {"type": "context_cleared", "content": "Context cleared..."}
+
+// Conversation saved to database
+{"type": "conversation_saved", "content": "{\"conversation_id\": \"uuid-string\"}"}
+
+// List of conversations (response to get_conversations)
+{"type": "conversations_list", "content": "[{\"id\": \"uuid\", \"title\": \"...\", \"date\": 1234567890}, ...]"}
+
+// Conversation loaded (response to resume_conversation)
+{"type": "conversation_loaded", "content": "{\"conversation_id\": \"uuid\", \"messages\": [...]}"}
+
+// Conversation deleted confirmation
+{"type": "conversation_deleted", "content": "{\"conversation_id\": \"uuid\"}"}
+
+// Token usage update (sent after each response)
+{"type": "token_update", "content": "{\"input\": 123, \"output\": 456, \"total\": 579}"}
+
+// Error message
 {"type": "error", "content": "Error message"}
 ```
 
-## Screenshot Flow
+## Database Schema
 
-1. User presses Ctrl+Shift+Alt+S
-2. Python sends `screenshot_start` → UI hides (opacity 0)
-3. Region selector overlay appears (tkinter)
-4. User drags to select region
-5. Screenshot saved to `screenshots/` folder
-6. Python sends `screenshot_ready` → UI shows with screenshot indicator
-7. Chat history is cleared for the new screenshot context
-8. User types query → sent with screenshot to Ollama
-9. Response streamed back via WebSocket
-10. Follow-up questions retain the screenshot and build on chat history
+```sql
+CREATE TABLE conversations (
+    id TEXT PRIMARY KEY,              -- UUID
+    title TEXT,                       -- Auto-generated from first message
+    created_at REAL,
+    updated_at REAL,                  -- Updated on every new message
+    total_input_tokens INTEGER DEFAULT 0,
+    total_output_tokens INTEGER DEFAULT 0
+)
 
-## Multi-Turn Chat
-
-- Chat history is maintained in both frontend (`chatHistory` state) and backend (`_chat_history` list)
-- The first message in history includes the screenshot image (if available); follow-ups are text-only
-- `clear_context` resets both screenshot and chat history on both sides
-- Taking a new screenshot automatically clears previous chat history
-- Completed exchanges are added to history on `response_complete`
-
-## Model Selection
-
-- Currently always uses `qwen3-vl:8b-instruct` (vision-language model) for all queries
-- The UI has a model selector dropdown (GPT-4 / GPT-3.5) but it is **not yet connected** to the backend
-
-## Important Patterns
-
-### High-DPI Handling (Windows)
-```python
-# In ss.py - multiple fallback methods for DPI awareness
-ctypes.windll.shcore.SetProcessDpiAwarenessContext(-4)  # Best
-ctypes.windll.shcore.SetProcessDpiAwareness(2)          # Fallback
-ctypes.windll.user32.SetProcessDPIAware()               # Legacy
+CREATE TABLE messages (
+    num_messages INTEGER PRIMARY KEY AUTOINCREMENT,
+    conversation_id TEXT,             -- FK to conversations.id
+    role TEXT,                        -- 'user' or 'assistant'
+    content TEXT,
+    images TEXT,                      -- JSON array: ["path1.png", "path2.png"]
+    created_at REAL,
+    FOREIGN KEY(conversation_id) REFERENCES conversations(id)
+)
 ```
 
-### Thread-Safe WebSocket Broadcasting
-```python
-# In main.py - schedule coroutines from background threads onto the server loop
-_server_loop_holder: Dict[str, Any] = {}
+**Critical**: `check_same_thread=False` for FastAPI thread pool access, JSON serialization for image arrays
 
-def safe_schedule(coro):
-    loop.call_soon_threadsafe(asyncio.create_task, coro)
-```
+## Common Development Tasks
 
-### Coordinate Transformation
-```python
-# Screenshot coordinates vs Tkinter coordinates
-scale_x = screen_width / tk_width
-actual_x = int(tk_x * scale_x)
-```
+### Add New UI Page
+1. Create `src/ui/pages/<PageName>.tsx`
+2. Add route in `src/ui/main.tsx`: `<Route path="/path" element={<Page />} />`
+3. Add CSS in `src/ui/CSS/<PageName>.css`
 
-### Streaming Lock
-```python
-# In main.py - prevents concurrent Ollama streams
-_stream_lock = asyncio.Lock()
-```
+### Add New WebSocket Message Type
+1. Backend: Add case in `websocket_endpoint()`, use `await broadcast_message("type", content)`
+2. Frontend: Add case in `ws.onmessage` switch in App.tsx
 
-## Configuration
+### Add New MCP Tool
+See MCP section above.
 
-### Python Dependencies (`requirements.txt`)
-- fastapi, uvicorn, websockets
-- ollama
-- pillow
-- pynput
-- python-multipart, requests
-- pyinstaller (build tool)
+### Modify Database Schema
+1. Edit `_init_db()` in database.py
+2. Add migration: `try: cursor.execute("ALTER TABLE...") except sqlite3.OperationalError: pass`
+3. Update read/write methods
 
-### Node Dependencies (`package.json`)
-- react 19, react-dom
-- react-markdown, react-syntax-highlighter
-- electron 37+, electron-builder
-- vite, typescript, cross-env, npm-run-all
+### Change Ollama Model
+1. `ollama pull model-name`
+2. Search/replace `qwen3-vl:8b-instruct` in main.py
+3. Update context limit (token tracking code: `limit: 128000`)
+4. Verify tool support (not all models support function calling)
 
-## Notes for Development
+## Architecture Decisions (Critical for LLMs)
 
-1. **Always run Ollama first**: The app expects Ollama to be running on port 11434
-2. **Screenshot folder**: Temporary files stored in `screenshots/`, auto-cleaned on new capture and shutdown
-3. **Port handling**: FastAPI auto-finds available port starting from 8000 (up to 10 attempts)
-4. **Graceful shutdown**: Multiple cleanup handlers (atexit, signals, Electron events) ensure Python processes terminate
-5. **Virtual environment**: Uses `.venv` — activate before running Python commands
-6. **Dev mode**: `npm run dev` starts all 4 services in parallel (React, Electron, Python, Ollama)
+**Why `check_same_thread=False` in SQLite?**  
+FastAPI uses thread pools; SQLite needs multi-thread access.
 
-## Planned / Scaffolded Features (UI exists, not yet wired)
+**Why refs in App.tsx?**  
+WebSocket callbacks capture stale state; refs ensure current values in async operations.
 
-- **Fullscreen screenshot mode**: Toggle exists in UI
-- **Meeting recording mode**: Toggle exists in UI
-- **Voice input**: Mic button in input area
-- **File attachments**: Plus button in input area
-- **Model selection**: Dropdown in input area (GPT-4 / GPT-3.5 options)
-- **Settings panel**: Button in nav bar
-- **Chat history browser**: Button in nav bar
-- **Recorded meetings album**: Button in nav bar
-- **New chat**: Button in nav bar (could trigger `clear_context`)
+**Why `_server_loop_holder`?**  
+Windows Proactor loop can't be accessed from other threads; we schedule coroutines instead.
 
-## Common Issues
+**Why stdio transport for MCP?**  
+Standard MCP protocol; enables child process isolation.
 
-1. **"Ollama not found"**: Ensure Ollama is installed and `ollama serve` is running
-2. **Screenshot coordinates off**: Check DPI scaling, the code handles multiple Windows versions
-3. **WebSocket disconnects**: Auto-reconnects after 2 seconds, state preserved
-4. **Window not showing**: Check if hidden due to screenshot capture (opacity 0)
-5. **electronAPI undefined**: Preload script not currently configured in BrowserWindow; `window.electronAPI` will be undefined
+**Why PyInstaller?**  
+Bundles Python + deps into single exe for production.
+
+**Why Electron `screen-saver` level?**  
+Ensures always-on-top even above full-screen apps.
+
+**Why DPI scaling in ss.py?**  
+Windows multi-monitor setups require coordinate transformation for accurate region selection.
+
+---
+
+*Last updated: February 12 2026 | Version: 0.0.0 (pre-release)*

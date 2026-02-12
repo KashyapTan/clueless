@@ -29,8 +29,23 @@ mcp = FastMCP("Demo Calculator")
 
 # ── Register tools ─────────────────────────────────────────────────────
 @mcp.tool()
-def add(a: float, b: float) -> float:
-    """Add two numbers together and return the result.
+def divide(a: float, b: float) -> str:
+    """
+    Divide two numbers and return the result rounded to up to 50 decimal places.
+    
+    Args:
+        a: The first number
+        b: The second number
+    
+    Returns:
+        The result of dividing a by b
+    """
+    return f"{a / b:.50f}"
+
+@mcp.tool()
+def add(a: float, b: float) -> str:
+    """
+    Add two numbers and return the result.
     
     Args:
         a: The first number
@@ -39,7 +54,7 @@ def add(a: float, b: float) -> float:
     Returns:
         The sum of a and b
     """
-    return a + b
+    return f"{a + b}"
 
 
 # ── Entry point ────────────────────────────────────────────────────────

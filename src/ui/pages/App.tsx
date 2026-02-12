@@ -484,6 +484,11 @@ function App() {
     }));
   };
 
+  const handleStopStreaming = () => {
+    if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) return;
+    wsRef.current.send(JSON.stringify({ type: 'stop_streaming' }));
+  };
+
   const handleClearContext = () => {
     if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) return;
     wsRef.current.send(JSON.stringify({ type: 'clear_context' }));
@@ -744,6 +749,11 @@ function App() {
                   onChange={e => setQuery(e.target.value)}
                 />
               </form>
+              {!canSubmit && (
+                <button className="stop-streaming-button" onClick={handleStopStreaming} title="Stop generating">
+                  <div className="stop-icon" />
+                </button>
+              )}
             </div>
 
             <div className="input-options-section">

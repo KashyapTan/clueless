@@ -59,7 +59,7 @@ input, textarea, [contenteditable="true"] {
   justify-content: center;
   align-items: center;
   /* padding-top: 30px; */
-  transition: all 0.4s cubic-bezier(0.19, 1, 0.22, 1);
+  transition: all 0.2s cubic-bezier(0.19, 1, 0.22, 1);
 }
 
 .app-wrapper {

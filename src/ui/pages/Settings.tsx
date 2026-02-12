@@ -1,6 +1,7 @@
 import React from 'react';
 import { useOutletContext } from 'react-router-dom';
 import TitleBar from '../components/TitleBar';
+import SettingsModels from '../components/SettingsModels';
 import '../CSS/Settings.css';
 import modelsIcon from '../assets/models.svg';
 import connectionsIcon from '../assets/mcp.svg';
@@ -43,7 +44,7 @@ const Settings: React.FC = () => {
           </div>
         </div>
         <div className="settings-content">
-
+          <SettingsModels />
         </div>
       </div>
     </>

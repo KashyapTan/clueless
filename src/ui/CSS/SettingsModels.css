@@ -1,0 +1,63 @@
+.settings-models-section{
+    width: 100%;
+    height: 100%;
+    overflow-y: auto;
+    padding-bottom: 40px;
+    /* background-color: red; */
+      scrollbar-width: none; /* For Firefox */
+     -ms-overflow-style: none;  /* For Internet Explorer and Edge */
+}
+.settings-models-ollama-section{
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    /* gap: 5px; */
+}
+.settings-models-ollama-header, .settings-models-anthropic-header, .settings-models-gemini-header, .settings-models-openai-header{
+    width: 100%;
+    height: 30px;
+    /* background-color: lightcoral; */
+    display: flex;
+    align-items: center;
+    padding-left: 5px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.3);
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    white-space: nowrap;
+}
+.settings-models-ollama-content, .settings-models-anthropic-content, .settings-models-gemini-content, .settings-models-openai-content{
+    width: calc(100% - 10px);
+    height: fit-content;
+    /* background-color: lightgreen; */
+    display: flex;
+    flex-direction: column;
+    margin-left: 5px;
+    /* gap: 5px; */
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+.settings-models-ollama-model, .settings-models-anthropic-model, .settings-models-gemini-model, .settings-models-openai-model{
+    height: 30px;
+    margin-bottom: 5px;
+    padding-left: 5px;
+    display: flex;
+    align-items: center;
+}
+.settings-models-ollama-model:last-child, .settings-models-anthropic-model:last-child, .settings-models-gemini-model:last-child, .settings-models-openai-model:last-child{
+    margin-bottom: 0px;
+}
+.settings-models-ollama-model:hover, .settings-models-anthropic-model:hover, .settings-models-gemini-model:hover, .settings-models-openai-model:hover{
+    cursor: pointer;
+    transition: background-color 0.2s ease-in-out;
+    background-color: rgba(255, 255, 255, 0.1);
+}
+.settings-models-ollama-model:first-child:hover, .settings-models-anthropic-model:first-child:hover, .settings-models-gemini-model:first-child:hover, .settings-models-openai-model:first-child:hover{
+    border-top-left-radius : 8px;
+    border-top-right-radius : 8px;
+}
+.settings-models-ollama-model:last-child:hover, .settings-models-anthropic-model:last-child:hover, .settings-models-gemini-model:last-child:hover, .settings-models-openai-model:last-child:hover{
+    border-bottom-left-radius : 8px;
+    border-bottom-right-radius : 8px;
+}

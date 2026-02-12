@@ -6,6 +6,9 @@
     display: flex;
     border-top: 1px solid rgba(255, 255, 255, 0.2);
 }
+.settings-container::-webkit-scrollbar {
+    display: none;
+}
 .settings-side-bar{
     width: 140px;
     height: 100%;
@@ -24,7 +27,7 @@
 .settings-anthropic-api-key, .settings-gemini-api-key, .settings-openai-api-key{
     width: 130px;
     height: 30px;
-    background-color: lightcoral;
+    /* background-color: lightcoral; */
     display: flex;
     align-items: center;
     /* justify-content: center; */

@@ -5,7 +5,7 @@ import shutil
 from pathlib import Path
 
 def build_python_server():
-    """Build the Python server using PyInstaller"""
+    """Build the Python server using PyInstaller (venv managed by UV)"""
     
     # Ensure we're in the project root
     project_root = Path(__file__).parent.parent
@@ -17,11 +17,11 @@ def build_python_server():
         shutil.rmtree(dist_dir)
     dist_dir.mkdir(exist_ok=True)
     
-    # Activate virtual environment and run PyInstaller
+    # Use the venv python that UV created/manages
     venv_python = project_root / ".venv" / "Scripts" / "python.exe"
     if not venv_python.exists():
         print(f"Virtual environment not found at: {venv_python}")
-        print("Please run 'npm run install:python' first.")
+        print("Please run 'uv sync --group dev' or 'npm run install:python' first.")
         sys.exit(1)
     
     # Build command

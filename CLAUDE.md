@@ -28,7 +28,7 @@ Electron (main.ts) → Window mgmt, Python lifecycle
 **Frontend**: React 19 + TypeScript + Vite 6 + React Router 7 + react-markdown  
 **Backend**: Python 3.11+ + FastAPI + Ollama (qwen3-vl:8b) + SQLite3 + MCP  
 **Desktop**: Electron 37+ (frameless, always-on-top, screen-saver level)  
-**Utils**: pynput (hotkeys), Pillow (images), tkinter (overlays), PyInstaller (bundling)
+**Utils**: pynput (hotkeys), Pillow (images), tkinter (overlays), PyInstaller (bundling), UV (package manager)
 
 ## Directory Structure (Essential Paths)
 
@@ -167,9 +167,11 @@ if __name__ == "__main__":
 npm run dev                # Full dev mode (all services)
 npm run dev:react          # Vite dev server (port 5123)
 npm run dev:electron       # Electron app
-npm run dev:pyserver       # Python FastAPI (.venv activated)
+npm run dev:pyserver       # Python FastAPI (via uv run)
 npm run build              # Full build (Python exe + React + Electron)
 npm run dist:win           # Windows installer
+uv sync --group dev        # Install all Python deps (fast!)
+uv add <package>           # Add a new Python dependency
 ```
 
 ## MCP (Model Context Protocol) Integration

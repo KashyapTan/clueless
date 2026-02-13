@@ -26,3 +26,6 @@ build-temp
 *.sln
 *.sw?
 __pycache__/
+
+# Data
+source/user_data

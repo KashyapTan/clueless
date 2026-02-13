@@ -25,34 +25,63 @@ Example:
 
 from mcp.server.fastmcp import FastMCP
 import os
+from descriptions import LIST_DIRECTORY_DESCRIPTION, READ_FILE_DESCRIPTION
+
 mcp = FastMCP("Filesystem Tools")
 
-# ── YOUR TOOLS GO HERE ─────────────────────────────────────────────────
-# @mcp.tool()
-# def read_file(path: str) -> str:
-#     ...
-
-USERNAME = 'Kashyap Tanuku'
-BASE_PATH = f"C:/Users/{USERNAME}"
-
-list_directory_description = f"""
-List files/folders in a directory.
-CURRENT CONTEXT:
-- Username: {USERNAME}
-- Base Path: {BASE_PATH}
-"""
-
-# 3. Pass the description into the decorator
-# This keeps the decorator on top, but feeds it the dynamic text!
-@mcp.tool(description=list_directory_description)
-def list_directory(path: str) -> list:
-    """Lists files for the current user."""
+@mcp.tool(description=LIST_DIRECTORY_DESCRIPTION)
+def list_directory(path: str) -> list[str]:
+    """Lists files for the current user, sorted by most recent modification."""
+    # Expand ~ to the full user path
     clean_path = os.path.expanduser(path)
 
     try:
-        return os.listdir(clean_path)
+        # Get all entries in the directory
+        entries = os.listdir(clean_path)
+        
+        # Create full paths so we can check their mtime
+        full_paths = [os.path.join(clean_path, entry) for entry in entries]
+        
+        # Sort by modification time (latest first)
+        full_paths.sort(key=os.path.getmtime, reverse=True)
+        
+        # Convert back to just filenames to match original return signature
+        return [os.path.basename(p) for p in full_paths]
+    
     except FileNotFoundError:
-        return [f"Error: Could not find path '{clean_path}'. Check if it exists."]
+        return [f"Error: The path '{clean_path}' does not exist."]
+    
+    except PermissionError:
+        return [f"Error: Permission denied. Cannot access '{clean_path}'."]
+    
+    except NotADirectoryError:
+        return [f"Error: '{clean_path}' is a file, not a directory."]
+        
+    except Exception as e:
+        return [f"Error: An unexpected error occurred: {str(e)}"]
+
+
+@mcp.tool(description=READ_FILE_DESCRIPTION)
+def read_file(path: str) -> str:
+    """Reads a file's contents."""
+    clean_path = os.path.expanduser(path)
+
+    try:
+        # 'errors="replace"' ensures the server won't crash on non-text characters
+        with open(clean_path, 'r', encoding='utf-8', errors='replace') as f:
+            return f.read()
+            
+    except FileNotFoundError:
+        return f"Error: The file '{clean_path}' was not found."
+    
+    except PermissionError:
+        return f"Error: Permission denied. Cannot read '{clean_path}'."
+    
+    except IsADirectoryError:
+        return f"Error: '{clean_path}' is a directory, not a file. Use list_directory instead."
+        
+    except Exception as e:
+        return f"Error: An unexpected error occurred: {str(e)}"
 
 if __name__ == "__main__":
     mcp.run()

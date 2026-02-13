@@ -229,7 +229,7 @@ class McpOllamaBridge:
                 
                 # Route to the correct MCP server
                 result = await self._call_mcp_tool(fn_name, fn_args)
-                print(f"  ✅ Tool result: {result}")
+                print(f"  ✅ Tool result: {result[0:10]}...")  # Print first 100 chars of result
                 
                 # Add the assistant's tool call to history
                 self._chat_history.append(response.message.model_dump())

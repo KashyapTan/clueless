@@ -601,7 +601,7 @@ function App() {
                               <code>{tc.name}({Object.entries(tc.args).map(([k, v]) => `${k}: ${JSON.stringify(v)}`).join(', ')})</code>
                             </div>
                             <div className="tool-call-result">
-                              <span className="tool-result-label">Result:</span> <code>{tc.result}</code>
+                              <span className="tool-result-label">Result:</span> <code>{tc.result.slice(0, 100)}{tc.result.length > 100 ? '...' : ''}</code>
                             </div>
                           </div>
                         ))}

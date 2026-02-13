@@ -531,7 +531,7 @@ async def _handle_mcp_tool_calls(messages: List[Dict[str, Any]], image_paths: Li
             except Exception as e:
                 result = f"Error executing tool: {e}"
             
-            print(f"[MCP] Tool result: {result}")
+            print(f"[MCP] Tool result:\n{result[0:100]}...")  # Print first 100 chars of result
             
             # Broadcast result to UI
             await broadcast_message("tool_call", json.dumps({

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import TitleBar from '../components/TitleBar';
 import SettingsModels from '../components/SettingsModels';
@@ -10,41 +10,71 @@ import anthropicIcon from '../assets/anthropic.svg';
 import geminiIcon from '../assets/gemini.svg';
 import openaiIcon from '../assets/openai.svg';
 
+// ============================================
+// Placeholder components for tabs that aren't
+// implemented yet. Each one is a simple card
+// so users know they're on the right page.
+// ============================================
+const Placeholder: React.FC<{ title: string }> = ({ title }) => (
+  <div style={{ padding: 20, color: 'rgba(255,255,255,0.4)', fontSize: '0.9rem' }}>
+    <strong>{title}</strong> — coming soon.
+  </div>
+);
+
+/**
+ * Every tab the Settings page supports.
+ * `id` is used as the active-tab key.
+ * `icon` / `label` render in the sidebar.
+ * `component` is what shows in the content area.
+ */
+type SettingsTab = {
+  id: string;
+  label: string;
+  icon: string;
+  className: string;
+  component: React.ReactNode;
+};
+
 const Settings: React.FC = () => {
   const { setMini } = useOutletContext<{ setMini: (val: boolean) => void }>();
+
+  // Define all tabs
+  const tabs: SettingsTab[] = [
+    { id: 'models', label: 'Models', icon: modelsIcon, className: 'settings-models', component: <SettingsModels /> },
+    { id: 'connections', label: 'Connections', icon: connectionsIcon, className: 'settings-mcp-connections', component: <Placeholder title="MCP Connections" /> },
+    { id: 'ollama', label: 'Ollama', icon: ollamaIcon, className: 'settings-ollama-model', component: <Placeholder title="Ollama Settings" /> },
+    { id: 'anthropic', label: 'Anthropic', icon: anthropicIcon, className: 'settings-anthropic-api-key', component: <Placeholder title="Anthropic API Key" /> },
+    { id: 'gemini', label: 'Gemini', icon: geminiIcon, className: 'settings-gemini-api-key', component: <Placeholder title="Gemini API Key" /> },
+    { id: 'openai', label: 'OpenAI', icon: openaiIcon, className: 'settings-openai-api-key', component: <Placeholder title="OpenAI API Key" /> },
+  ];
+
+  // "models" is selected by default
+  const [activeTab, setActiveTab] = useState('models');
+
+  // Find the currently active tab object
+  const activeContent = tabs.find((t) => t.id === activeTab)?.component ?? null;
 
   return (
     <>
       <TitleBar onClearContext={() => {}} setMini={setMini} />
       <div className="settings-container">
+        {/* ====== SIDEBAR ====== */}
         <div className="settings-side-bar">
-          <div className="settings-models">
-            <img src={modelsIcon} alt="Models" className='settings-icons'/>
-            Models
-          </div>
-          <div className="settings-mcp-connections">
-            <img src={connectionsIcon} alt="Connections" className='settings-icons'/>
-            Connections
-          </div>
-          <div className="settings-ollama-model">
-            <img src={ollamaIcon} alt="Ollama" className='settings-icons'/>
-            Ollama
-          </div>
-          <div className="settings-anthropic-api-key">
-            <img src={anthropicIcon} alt="Anthropic" className='settings-icons'/>
-            Anthropic
-          </div>
-          <div className="settings-gemini-api-key">
-            <img src={geminiIcon} alt="Gemini" className='settings-icons'/>
-            Gemini
-          </div>
-          <div className="settings-openai-api-key">
-            <img src={openaiIcon} alt="OpenAI" className='settings-icons'/>
-            OpenAI
-          </div>
+          {tabs.map((tab) => (
+            <div
+              key={tab.id}
+              className={`${tab.className} ${activeTab === tab.id ? 'settings-tab-active' : ''}`}
+              onClick={() => setActiveTab(tab.id)}
+            >
+              <img src={tab.icon} alt={tab.label} className="settings-icons" />
+              {tab.label}
+            </div>
+          ))}
         </div>
+
+        {/* ====== CONTENT AREA ====== */}
         <div className="settings-content">
-          <SettingsModels />
+          {activeContent}
         </div>
       </div>
     </>

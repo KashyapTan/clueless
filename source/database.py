@@ -64,6 +64,12 @@ class DatabaseManager:
         except sqlite3.OperationalError:
             pass  # Column already exists
 
+        # Migration: add model column to messages
+        try:
+            cursor.execute("ALTER TABLE messages ADD COLUMN model TEXT")
+        except sqlite3.OperationalError:
+            pass
+
         # --- TABLE 2: MESSAGES ---
         # This holds the actual content.
         # The 'conversation_id' column links this message to a specific row 
@@ -76,6 +82,7 @@ class DatabaseManager:
                 role TEXT,                            -- 'user' or 'assistant'
                 content TEXT,                         -- The actual text body
                 images TEXT,                          -- SEE NOTE BELOW
+                model TEXT,                           -- Which model generated this response
                 created_at REAL,
                 FOREIGN KEY(conversation_id) REFERENCES conversations(id)  
             )
@@ -85,6 +92,16 @@ class DatabaseManager:
         # To store a list of image paths like ["img1.png", "img2.png"], 
         # we must serialize it into a JSON string like '["img1.png", "img2.png"]'
         # before saving, and parse it back into a list when loading.
+
+        # --- TABLE 3: SETTINGS ---
+        # Key-value store for user preferences.
+        # We use this to persist which models the user has toggled on.
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS settings (
+                key TEXT PRIMARY KEY,
+                value TEXT
+            )
+        ''')
 
         connection.commit()
         connection.close()
@@ -114,7 +131,7 @@ class DatabaseManager:
         connection.close()
         return new_id
 
-    def add_message(self, conversation_id: str, role: str, content: str, images: List[str] | None = None):
+    def add_message(self, conversation_id: str, role: str, content: str, images: List[str] | None = None, model: str | None = None):
         """
         Saves a message AND updates the parent conversation's timestamp.
         """
@@ -129,8 +146,8 @@ class DatabaseManager:
         images_json = json.dumps(images) if images else None
 
         cursor.execute(
-            "INSERT INTO messages (conversation_id, role, content, images, created_at)  VALUES (?, ?, ?, ?, ?)",
-            (conversation_id, role, content, images_json, time_stamp)
+            "INSERT INTO messages (conversation_id, role, content, images, model, created_at)  VALUES (?, ?, ?, ?, ?, ?)",
+            (conversation_id, role, content, images_json, model, time_stamp)
         )
 
         # 3. Update the Parent
@@ -187,7 +204,7 @@ class DatabaseManager:
         cursor = connection.cursor()
 
         cursor.execute(
-            """SELECT role, content, images, created_at from messages
+            """SELECT role, content, images, created_at, model from messages
                 WHERE conversation_id = ?
                 ORDER BY created_at ASC""", # Oldest messages at top (like standard chat)
             (conversation_id,)
@@ -207,7 +224,8 @@ class DatabaseManager:
                 "role": row[0],
                 "content": row[1],
                 "images": img_list,
-                "timestamp": row[3]
+                "timestamp": row[3],
+                "model": row[4]
             })
         return results
 
@@ -306,8 +324,43 @@ class DatabaseManager:
             }
         return {'input': 0, 'output': 0, 'total': 0}
 
+    # ---------------------------------------------------------
+    # SETTINGS OPERATIONS (Key-Value Store)
+    # ---------------------------------------------------------
+
+    def get_enabled_models(self) -> List[str]:
+        """
+        Get the list of model names the user has toggled on.
+        
+        Stored as a JSON array string under the key 'enabled_models'.
+        Returns an empty list if nothing has been saved yet.
+        """
+        connection = self._get_connection()
+        cursor = connection.cursor()
+        cursor.execute("SELECT value FROM settings WHERE key = ?", ("enabled_models",))
+        row = cursor.fetchone()
+        connection.close()
+
+        if row and row[0]:
+            return json.loads(row[0])
+        return []
+
+    def set_enabled_models(self, models: List[str]):
+        """
+        Save the list of enabled model names.
+        
+        Uses INSERT OR REPLACE (upsert) so it works whether or not
+        the row already exists.
+        """
+        connection = self._get_connection()
+        cursor = connection.cursor()
+        cursor.execute(
+            "INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)",
+            ("enabled_models", json.dumps(models))
+        )
+        connection.commit()
+        connection.close()
 
 
-
-    
-
+# Global singleton instance so all modules share the same DB connection logic
+db = DatabaseManager()

@@ -167,6 +167,7 @@ class ScreenshotService:
         self.start_callback = start_callback  # Function to call when screenshot capture starts
         self.capturing = False
         self._lock = threading.Lock()
+        self._last_trigger_time = 0  # Debounce timestamp
 
     def _do_capture(self, save_folder):
         try:
@@ -188,12 +189,17 @@ class ScreenshotService:
         print("Press Ctrl+C to stop the service.")
 
         def on_activate():
+            current_time = time.time()
             with self._lock:
                 if not self.running:  # Check if service is still running
                     return
                 if self.capturing:
                     return
+                # Debounce: ignore triggers within 500ms of the last one
+                if current_time - self._last_trigger_time < 0.5:
+                    return
                 self.capturing = True
+                self._last_trigger_time = current_time
             print("Hotkey detected! Starting region selection...")
             
             # Call the start callback if provided

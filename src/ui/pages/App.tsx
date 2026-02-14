@@ -42,7 +42,7 @@ function App() {
   // Multiple screenshots support
   const [screenshots, setScreenshots] = useState<Array<{id: string, name: string, thumbnail: string}>>([]);
   // Capture mode: 'fullscreen' | 'precision' | 'none'
-  const [captureMode, setCaptureMode] = useState<'fullscreen' | 'precision' | 'none'>('fullscreen');
+  const [captureMode, setCaptureMode] = useState<'fullscreen' | 'precision' | 'none'>('precision');
   const [meetingRecordingMode, setMeetingRecordingMode] = useState<boolean>(false);
   // Chat history for multi-turn conversations
   const [chatHistory, setChatHistory] = useState<Array<{role: 'user' | 'assistant', content: string, thinking?: string, images?: Array<{name: string, thumbnail: string}>, toolCalls?: Array<{name: string, args: Record<string, unknown>, result: string, server: string}>}>>([]);
@@ -108,7 +108,7 @@ function App() {
         setStatus('Connected to server');
         setError('');
         // Send initial capture mode to backend
-        ws?.send(JSON.stringify({ type: 'set_capture_mode', mode: 'fullscreen' }));
+        ws?.send(JSON.stringify({ type: 'set_capture_mode', mode: captureMode }));
       };
 
       ws.onmessage = (event) => {
@@ -872,11 +872,11 @@ function App() {
             </div>
           </div>
           <div className="mode-selection-section">
-            <div className={`fullscreenssmode${captureMode === 'fullscreen' ? '-active' : ''}`} onClick={fullscreenModeEnabled} title="Talk to anything on your screen">
-              <img src={fullscreenSSIcon} alt="Full Screen Screenshot Mode" className='fullscreen-ss-icon' />
-            </div>
             <div className={`regionssmode${captureMode === 'precision' ? '-active' : ''}`} onClick={precisionModeEnabled} title="Talk to a specific region of your screen">
               <img src={regionSSIcon} alt="Region Screenshot Mode" className='region-ss-icon' />
+            </div>
+            <div className={`fullscreenssmode${captureMode === 'fullscreen' ? '-active' : ''}`} onClick={fullscreenModeEnabled} title="Talk to anything on your screen">
+              <img src={fullscreenSSIcon} alt="Full Screen Screenshot Mode" className='fullscreen-ss-icon' />
             </div>
             <div className={`meetingrecordermode${meetingRecordingMode ? '-active' : ''}`} onClick={meetingRecordingModeEnabled} title="Meeting recorder mode">
               <img src={meetingRecordingIcon} alt="Meeting Recorder Mode" className='meeting-recording-icon' />

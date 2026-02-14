@@ -506,7 +506,7 @@ async def _handle_mcp_tool_calls(messages: List[Dict[str, Any]], image_paths: Li
         return messages, tool_calls_made
     
     # Loop: keep calling tools until Ollama gives a final text answer
-    max_rounds = 5  # Safety limit to prevent infinite loops
+    max_rounds = 30  # Maximum number of tool calls
     rounds = 0
     while response.message.tool_calls and rounds < max_rounds:
         rounds += 1
@@ -530,7 +530,7 @@ async def _handle_mcp_tool_calls(messages: List[Dict[str, Any]], image_paths: Li
                 result = await _mcp_manager.call_tool(fn_name, fn_args)
             except Exception as e:
                 result = f"Error executing tool: {e}"
-            
+
             print(f"[MCP] Tool result:\n{result[0:100]}...")  # Print first 100 chars of result
             
             # Broadcast result to UI
@@ -699,7 +699,7 @@ async def _stream_ollama_chat(user_query: str, image_paths: List[str], chat_hist
             try:
                 loop.call_soon_threadsafe(asyncio.ensure_future, _do_tool_calls())
                 # Wait for the tool calls to complete (with timeout)
-                updated_messages, tool_calls_list = future.result(timeout=60)
+                updated_messages, tool_calls_list = future.result(timeout=90)
                 # Replace messages with the updated version that includes tool exchanges
                 messages = updated_messages
             except Exception as e:

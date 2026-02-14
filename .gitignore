@@ -28,5 +28,4 @@ build-temp
 __pycache__/
 
 # Data
-source/user_data
-source/user_data/screenshots
+user_data/

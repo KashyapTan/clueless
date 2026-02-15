@@ -1,13 +1,15 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
-import { createBrowserRouter, RouterProvider } from 'react-router-dom'
+// CHANGE 1: Import createHashRouter instead of createBrowserRouter
+import { createHashRouter, RouterProvider } from 'react-router-dom'
 import Layout from './components/Layout.tsx'
 import App from './pages/App.tsx'
 import Settings from './pages/Settings.tsx'
 import ChatHistory from './pages/ChatHistory.tsx'
 import MeetingAlbum from './pages/MeetingAlbum.tsx'
 
-const router = createBrowserRouter([
+// CHANGE 2: Use createHashRouter here
+const router = createHashRouter([
   {
     path: '/',
     element: <Layout />,

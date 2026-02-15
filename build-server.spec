@@ -7,6 +7,10 @@ a = Analysis(
     datas=[],
     hiddenimports=[
         'fastapi',
+        'crawl4ai',
+        'mcp',
+        'mcp.cli',
+        'playwright'
         'uvicorn',
         'uvicorn.protocols.http.auto',
         'uvicorn.protocols.websockets.auto',

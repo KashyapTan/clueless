@@ -1,0 +1,2438 @@
+(['C:\\Users\\Kashyap Tanuku\\Desktop\\Github\\clueless\\source\\main.py'],
+ ['C:\\Users\\Kashyap Tanuku\\Desktop\\Github\\clueless'],
+ [],
+ [('C:\\Users\\Kashyap '
+   'Tanuku\\Desktop\\Github\\clueless\\.venv\\Lib\\site-packages\\lark\\__pyinstaller',
+   0),
+  ('C:\\Users\\Kashyap '
+   'Tanuku\\Desktop\\Github\\clueless\\.venv\\Lib\\site-packages\\numpy\\_pyinstaller',
+   0),
+  ('C:\\Users\\Kashyap '
+   'Tanuku\\Desktop\\Github\\clueless\\.venv\\Lib\\site-packages\\patchright\\_impl\\__pyinstaller',
+   0),
+  ('C:\\Users\\Kashyap '
+   'Tanuku\\Desktop\\Github\\clueless\\.venv\\Lib\\site-packages\\playwright\\_impl\\__pyinstaller',
+   0),
+  ('C:\\Users\\Kashyap '
+   'Tanuku\\Desktop\\Github\\clueless\\.venv\\Lib\\site-packages\\_pyinstaller_hooks_contrib\\stdhooks',
+   -1000),
+  ('C:\\Users\\Kashyap '
+   'Tanuku\\Desktop\\Github\\clueless\\.venv\\Lib\\site-packages\\_pyinstaller_hooks_contrib',
+   -1000)],
+ {},
+ [],
+ [],
+ False,
+ {},
+ 0,
+ [],
+ [],
+ '3.13.5 (main, Jul  1 2025, 18:31:42) [MSC v.1944 64 bit (AMD64)]',
+ [('pyi_rth_inspect',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\Desktop\\Github\\clueless\\.venv\\Lib\\site-packages\\PyInstaller\\hooks\\rthooks\\pyi_rth_inspect.py',
+   'PYSOURCE'),
+  ('pyi_rth_multiprocessing',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\Desktop\\Github\\clueless\\.venv\\Lib\\site-packages\\PyInstaller\\hooks\\rthooks\\pyi_rth_multiprocessing.py',
+   'PYSOURCE'),
+  ('pyi_rth_pkgutil',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\Desktop\\Github\\clueless\\.venv\\Lib\\site-packages\\PyInstaller\\hooks\\rthooks\\pyi_rth_pkgutil.py',
+   'PYSOURCE'),
+  ('main',
+   'C:\\Users\\Kashyap Tanuku\\Desktop\\Github\\clueless\\source\\main.py',
+   'PYSOURCE')],
+ [('pkgutil',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\pkgutil.py',
+   'PYMODULE'),
+  ('zipimport',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\zipimport.py',
+   'PYMODULE'),
+  ('struct',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\struct.py',
+   'PYMODULE'),
+  ('importlib.readers',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\importlib\\readers.py',
+   'PYMODULE'),
+  ('importlib.resources.readers',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\importlib\\resources\\readers.py',
+   'PYMODULE'),
+  ('importlib.resources._itertools',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\importlib\\resources\\_itertools.py',
+   'PYMODULE'),
+  ('importlib.resources.abc',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\importlib\\resources\\abc.py',
+   'PYMODULE'),
+  ('typing',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\typing.py',
+   'PYMODULE'),
+  ('importlib.resources',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\importlib\\resources\\__init__.py',
+   'PYMODULE'),
+  ('importlib.resources._functional',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\importlib\\resources\\_functional.py',
+   'PYMODULE'),
+  ('importlib.resources._common',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\importlib\\resources\\_common.py',
+   'PYMODULE'),
+  ('importlib.resources._adapters',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\importlib\\resources\\_adapters.py',
+   'PYMODULE'),
+  ('tempfile',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\tempfile.py',
+   'PYMODULE'),
+  ('random',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\random.py',
+   'PYMODULE'),
+  ('argparse',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\argparse.py',
+   'PYMODULE'),
+  ('textwrap',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\textwrap.py',
+   'PYMODULE'),
+  ('copy',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\copy.py',
+   'PYMODULE'),
+  ('gettext',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\gettext.py',
+   'PYMODULE'),
+  ('statistics',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\statistics.py',
+   'PYMODULE'),
+  ('decimal',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\decimal.py',
+   'PYMODULE'),
+  ('_pydecimal',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\_pydecimal.py',
+   'PYMODULE'),
+  ('contextvars',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\contextvars.py',
+   'PYMODULE'),
+  ('fractions',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\fractions.py',
+   'PYMODULE'),
+  ('numbers',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\numbers.py',
+   'PYMODULE'),
+  ('hashlib',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\hashlib.py',
+   'PYMODULE'),
+  ('logging',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\logging\\__init__.py',
+   'PYMODULE'),
+  ('pickle',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\pickle.py',
+   'PYMODULE'),
+  ('pprint',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\pprint.py',
+   'PYMODULE'),
+  ('dataclasses',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\dataclasses.py',
+   'PYMODULE'),
+  ('_compat_pickle',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\_compat_pickle.py',
+   'PYMODULE'),
+  ('string',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\string.py',
+   'PYMODULE'),
+  ('bisect',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\bisect.py',
+   'PYMODULE'),
+  ('shutil',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\shutil.py',
+   'PYMODULE'),
+  ('tarfile',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\tarfile.py',
+   'PYMODULE'),
+  ('gzip',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\gzip.py',
+   'PYMODULE'),
+  ('_compression',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\_compression.py',
+   'PYMODULE'),
+  ('lzma',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\lzma.py',
+   'PYMODULE'),
+  ('bz2',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\bz2.py',
+   'PYMODULE'),
+  ('fnmatch',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\fnmatch.py',
+   'PYMODULE'),
+  ('zipfile',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\zipfile\\__init__.py',
+   'PYMODULE'),
+  ('zipfile._path',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\zipfile\\_path\\__init__.py',
+   'PYMODULE'),
+  ('zipfile._path.glob',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\zipfile\\_path\\glob.py',
+   'PYMODULE'),
+  ('py_compile',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\py_compile.py',
+   'PYMODULE'),
+  ('importlib._bootstrap_external',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\importlib\\_bootstrap_external.py',
+   'PYMODULE'),
+  ('importlib.metadata',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\importlib\\metadata\\__init__.py',
+   'PYMODULE'),
+  ('csv',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\csv.py',
+   'PYMODULE'),
+  ('importlib.metadata._adapters',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\importlib\\metadata\\_adapters.py',
+   'PYMODULE'),
+  ('importlib.metadata._text',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\importlib\\metadata\\_text.py',
+   'PYMODULE'),
+  ('email.message',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\email\\message.py',
+   'PYMODULE'),
+  ('email.policy',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\email\\policy.py',
+   'PYMODULE'),
+  ('email.contentmanager',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\email\\contentmanager.py',
+   'PYMODULE'),
+  ('email.quoprimime',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\email\\quoprimime.py',
+   'PYMODULE'),
+  ('email.headerregistry',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\email\\headerregistry.py',
+   'PYMODULE'),
+  ('email._header_value_parser',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\email\\_header_value_parser.py',
+   'PYMODULE'),
+  ('urllib',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\urllib\\__init__.py',
+   'PYMODULE'),
+  ('email.iterators',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\email\\iterators.py',
+   'PYMODULE'),
+  ('email.generator',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\email\\generator.py',
+   'PYMODULE'),
+  ('email._encoded_words',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\email\\_encoded_words.py',
+   'PYMODULE'),
+  ('base64',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\base64.py',
+   'PYMODULE'),
+  ('getopt',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\getopt.py',
+   'PYMODULE'),
+  ('email.charset',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\email\\charset.py',
+   'PYMODULE'),
+  ('email.encoders',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\email\\encoders.py',
+   'PYMODULE'),
+  ('email.base64mime',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\email\\base64mime.py',
+   'PYMODULE'),
+  ('email._policybase',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\email\\_policybase.py',
+   'PYMODULE'),
+  ('email.header',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\email\\header.py',
+   'PYMODULE'),
+  ('email.errors',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\email\\errors.py',
+   'PYMODULE'),
+  ('email.utils',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\email\\utils.py',
+   'PYMODULE'),
+  ('email._parseaddr',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\email\\_parseaddr.py',
+   'PYMODULE'),
+  ('calendar',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\calendar.py',
+   'PYMODULE'),
+  ('urllib.parse',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\urllib\\parse.py',
+   'PYMODULE'),
+  ('ipaddress',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\ipaddress.py',
+   'PYMODULE'),
+  ('datetime',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\datetime.py',
+   'PYMODULE'),
+  ('_pydatetime',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\_pydatetime.py',
+   'PYMODULE'),
+  ('_strptime',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\_strptime.py',
+   'PYMODULE'),
+  ('quopri',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\quopri.py',
+   'PYMODULE'),
+  ('importlib.abc',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\importlib\\abc.py',
+   'PYMODULE'),
+  ('importlib._abc',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\importlib\\_abc.py',
+   'PYMODULE'),
+  ('importlib._bootstrap',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\importlib\\_bootstrap.py',
+   'PYMODULE'),
+  ('importlib.metadata._itertools',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\importlib\\metadata\\_itertools.py',
+   'PYMODULE'),
+  ('importlib.metadata._functools',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\importlib\\metadata\\_functools.py',
+   'PYMODULE'),
+  ('importlib.metadata._collections',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\importlib\\metadata\\_collections.py',
+   'PYMODULE'),
+  ('importlib.metadata._meta',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\importlib\\metadata\\_meta.py',
+   'PYMODULE'),
+  ('email',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\email\\__init__.py',
+   'PYMODULE'),
+  ('email.parser',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\email\\parser.py',
+   'PYMODULE'),
+  ('email.feedparser',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\email\\feedparser.py',
+   'PYMODULE'),
+  ('json',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\json\\__init__.py',
+   'PYMODULE'),
+  ('json.encoder',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\json\\encoder.py',
+   'PYMODULE'),
+  ('json.decoder',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\json\\decoder.py',
+   'PYMODULE'),
+  ('json.scanner',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\json\\scanner.py',
+   'PYMODULE'),
+  ('tokenize',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\tokenize.py',
+   'PYMODULE'),
+  ('token',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\token.py',
+   'PYMODULE'),
+  ('pathlib',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\pathlib\\__init__.py',
+   'PYMODULE'),
+  ('pathlib._local',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\pathlib\\_local.py',
+   'PYMODULE'),
+  ('glob',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\glob.py',
+   'PYMODULE'),
+  ('pathlib._abc',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\pathlib\\_abc.py',
+   'PYMODULE'),
+  ('contextlib',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\contextlib.py',
+   'PYMODULE'),
+  ('__future__',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\__future__.py',
+   'PYMODULE'),
+  ('inspect',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\inspect.py',
+   'PYMODULE'),
+  ('dis',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\dis.py',
+   'PYMODULE'),
+  ('opcode',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\opcode.py',
+   'PYMODULE'),
+  ('_opcode_metadata',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\_opcode_metadata.py',
+   'PYMODULE'),
+  ('ast',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\ast.py',
+   'PYMODULE'),
+  ('importlib.machinery',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\importlib\\machinery.py',
+   'PYMODULE'),
+  ('importlib.util',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\importlib\\util.py',
+   'PYMODULE'),
+  ('importlib',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\importlib\\__init__.py',
+   'PYMODULE'),
+  ('subprocess',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\subprocess.py',
+   'PYMODULE'),
+  ('selectors',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\selectors.py',
+   'PYMODULE'),
+  ('signal',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\signal.py',
+   'PYMODULE'),
+  ('multiprocessing.spawn',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\multiprocessing\\spawn.py',
+   'PYMODULE'),
+  ('multiprocessing.resource_tracker',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\multiprocessing\\resource_tracker.py',
+   'PYMODULE'),
+  ('multiprocessing.util',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\multiprocessing\\util.py',
+   'PYMODULE'),
+  ('multiprocessing.forkserver',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\multiprocessing\\forkserver.py',
+   'PYMODULE'),
+  ('multiprocessing.connection',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\multiprocessing\\connection.py',
+   'PYMODULE'),
+  ('multiprocessing.resource_sharer',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\multiprocessing\\resource_sharer.py',
+   'PYMODULE'),
+  ('xmlrpc.client',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\xmlrpc\\client.py',
+   'PYMODULE'),
+  ('xmlrpc',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\xmlrpc\\__init__.py',
+   'PYMODULE'),
+  ('xml.parsers.expat',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\xml\\parsers\\expat.py',
+   'PYMODULE'),
+  ('xml.parsers',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\xml\\parsers\\__init__.py',
+   'PYMODULE'),
+  ('xml',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\xml\\__init__.py',
+   'PYMODULE'),
+  ('xml.sax.expatreader',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\xml\\sax\\expatreader.py',
+   'PYMODULE'),
+  ('xml.sax.saxutils',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\xml\\sax\\saxutils.py',
+   'PYMODULE'),
+  ('urllib.request',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\urllib\\request.py',
+   'PYMODULE'),
+  ('getpass',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\getpass.py',
+   'PYMODULE'),
+  ('nturl2path',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\nturl2path.py',
+   'PYMODULE'),
+  ('ftplib',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\ftplib.py',
+   'PYMODULE'),
+  ('netrc',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\netrc.py',
+   'PYMODULE'),
+  ('mimetypes',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\mimetypes.py',
+   'PYMODULE'),
+  ('http.cookiejar',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\http\\cookiejar.py',
+   'PYMODULE'),
+  ('http',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\http\\__init__.py',
+   'PYMODULE'),
+  ('ssl',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\ssl.py',
+   'PYMODULE'),
+  ('urllib.response',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\urllib\\response.py',
+   'PYMODULE'),
+  ('urllib.error',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\urllib\\error.py',
+   'PYMODULE'),
+  ('xml.sax',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\xml\\sax\\__init__.py',
+   'PYMODULE'),
+  ('xml.sax.handler',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\xml\\sax\\handler.py',
+   'PYMODULE'),
+  ('xml.sax._exceptions',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\xml\\sax\\_exceptions.py',
+   'PYMODULE'),
+  ('xml.sax.xmlreader',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\xml\\sax\\xmlreader.py',
+   'PYMODULE'),
+  ('http.client',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\http\\client.py',
+   'PYMODULE'),
+  ('hmac',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\hmac.py',
+   'PYMODULE'),
+  ('multiprocessing.context',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\multiprocessing\\context.py',
+   'PYMODULE'),
+  ('multiprocessing.popen_spawn_win32',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\multiprocessing\\popen_spawn_win32.py',
+   'PYMODULE'),
+  ('multiprocessing.popen_forkserver',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\multiprocessing\\popen_forkserver.py',
+   'PYMODULE'),
+  ('multiprocessing.popen_spawn_posix',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\multiprocessing\\popen_spawn_posix.py',
+   'PYMODULE'),
+  ('multiprocessing.popen_fork',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\multiprocessing\\popen_fork.py',
+   'PYMODULE'),
+  ('multiprocessing.sharedctypes',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\multiprocessing\\sharedctypes.py',
+   'PYMODULE'),
+  ('multiprocessing.heap',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\multiprocessing\\heap.py',
+   'PYMODULE'),
+  ('ctypes',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\ctypes\\__init__.py',
+   'PYMODULE'),
+  ('ctypes.util',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\ctypes\\util.py',
+   'PYMODULE'),
+  ('ctypes._aix',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\ctypes\\_aix.py',
+   'PYMODULE'),
+  ('ctypes.macholib.dyld',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\ctypes\\macholib\\dyld.py',
+   'PYMODULE'),
+  ('ctypes.macholib',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\ctypes\\macholib\\__init__.py',
+   'PYMODULE'),
+  ('ctypes.macholib.dylib',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\ctypes\\macholib\\dylib.py',
+   'PYMODULE'),
+  ('ctypes.macholib.framework',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\ctypes\\macholib\\framework.py',
+   'PYMODULE'),
+  ('ctypes._endian',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\ctypes\\_endian.py',
+   'PYMODULE'),
+  ('multiprocessing.pool',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\multiprocessing\\pool.py',
+   'PYMODULE'),
+  ('multiprocessing.dummy',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\multiprocessing\\dummy\\__init__.py',
+   'PYMODULE'),
+  ('multiprocessing.dummy.connection',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\multiprocessing\\dummy\\connection.py',
+   'PYMODULE'),
+  ('queue',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\queue.py',
+   'PYMODULE'),
+  ('multiprocessing.queues',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\multiprocessing\\queues.py',
+   'PYMODULE'),
+  ('multiprocessing.synchronize',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\multiprocessing\\synchronize.py',
+   'PYMODULE'),
+  ('multiprocessing.managers',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\multiprocessing\\managers.py',
+   'PYMODULE'),
+  ('multiprocessing.shared_memory',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\multiprocessing\\shared_memory.py',
+   'PYMODULE'),
+  ('secrets',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\secrets.py',
+   'PYMODULE'),
+  ('multiprocessing.reduction',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\multiprocessing\\reduction.py',
+   'PYMODULE'),
+  ('multiprocessing.process',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\multiprocessing\\process.py',
+   'PYMODULE'),
+  ('runpy',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\runpy.py',
+   'PYMODULE'),
+  ('_colorize',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\_colorize.py',
+   'PYMODULE'),
+  ('_py_abc',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\_py_abc.py',
+   'PYMODULE'),
+  ('stringprep',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\stringprep.py',
+   'PYMODULE'),
+  ('tracemalloc',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\tracemalloc.py',
+   'PYMODULE'),
+  ('multiprocessing',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\multiprocessing\\__init__.py',
+   'PYMODULE'),
+  ('uvicorn',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\Desktop\\Github\\clueless\\.venv\\Lib\\site-packages\\uvicorn\\__init__.py',
+   'PYMODULE'),
+  ('uvicorn.workers',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\Desktop\\Github\\clueless\\.venv\\Lib\\site-packages\\uvicorn\\workers.py',
+   'PYMODULE'),
+  ('uvicorn.supervisors.watchfilesreload',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\Desktop\\Github\\clueless\\.venv\\Lib\\site-packages\\uvicorn\\supervisors\\watchfilesreload.py',
+   'PYMODULE'),
+  ('uvicorn.supervisors.statreload',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\Desktop\\Github\\clueless\\.venv\\Lib\\site-packages\\uvicorn\\supervisors\\statreload.py',
+   'PYMODULE'),
+  ('uvicorn.supervisors.multiprocess',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\Desktop\\Github\\clueless\\.venv\\Lib\\site-packages\\uvicorn\\supervisors\\multiprocess.py',
+   'PYMODULE'),
+  ('click',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\Desktop\\Github\\clueless\\.venv\\Lib\\site-packages\\click\\__init__.py',
+   'PYMODULE'),
+  ('click.parser',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\Desktop\\Github\\clueless\\.venv\\Lib\\site-packages\\click\\parser.py',
+   'PYMODULE'),
+  ('click.shell_completion',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\Desktop\\Github\\clueless\\.venv\\Lib\\site-packages\\click\\shell_completion.py',
+   'PYMODULE'),
+  ('shlex',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\shlex.py',
+   'PYMODULE'),
+  ('difflib',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\difflib.py',
+   'PYMODULE'),
+  ('click.utils',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\Desktop\\Github\\clueless\\.venv\\Lib\\site-packages\\click\\utils.py',
+   'PYMODULE'),
+  ('typing_extensions',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\Desktop\\Github\\clueless\\.venv\\Lib\\site-packages\\typing_extensions.py',
+   'PYMODULE'),
+  ('asyncio.coroutines',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\asyncio\\coroutines.py',
+   'PYMODULE'),
+  ('click._compat',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\Desktop\\Github\\clueless\\.venv\\Lib\\site-packages\\click\\_compat.py',
+   'PYMODULE'),
+  ('colorama',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\Desktop\\Github\\clueless\\.venv\\Lib\\site-packages\\colorama\\__init__.py',
+   'PYMODULE'),
+  ('colorama.ansitowin32',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\Desktop\\Github\\clueless\\.venv\\Lib\\site-packages\\colorama\\ansitowin32.py',
+   'PYMODULE'),
+  ('colorama.winterm',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\Desktop\\Github\\clueless\\.venv\\Lib\\site-packages\\colorama\\winterm.py',
+   'PYMODULE'),
+  ('colorama.ansi',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\Desktop\\Github\\clueless\\.venv\\Lib\\site-packages\\colorama\\ansi.py',
+   'PYMODULE'),
+  ('colorama.initialise',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\Desktop\\Github\\clueless\\.venv\\Lib\\site-packages\\colorama\\initialise.py',
+   'PYMODULE'),
+  ('colorama.win32',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\Desktop\\Github\\clueless\\.venv\\Lib\\site-packages\\colorama\\win32.py',
+   'PYMODULE'),
+  ('ctypes.wintypes',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\ctypes\\wintypes.py',
+   'PYMODULE'),
+  ('click._winconsole',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\Desktop\\Github\\clueless\\.venv\\Lib\\site-packages\\click\\_winconsole.py',
+   'PYMODULE'),
+  ('click.termui',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\Desktop\\Github\\clueless\\.venv\\Lib\\site-packages\\click\\termui.py',
+   'PYMODULE'),
+  ('click._termui_impl',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\Desktop\\Github\\clueless\\.venv\\Lib\\site-packages\\click\\_termui_impl.py',
+   'PYMODULE'),
+  ('tty',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\tty.py',
+   'PYMODULE'),
+  ('webbrowser',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\webbrowser.py',
+   'PYMODULE'),
+  ('_ios_support',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\_ios_support.py',
+   'PYMODULE'),
+  ('click.globals',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\Desktop\\Github\\clueless\\.venv\\Lib\\site-packages\\click\\globals.py',
+   'PYMODULE'),
+  ('click.formatting',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\Desktop\\Github\\clueless\\.venv\\Lib\\site-packages\\click\\formatting.py',
+   'PYMODULE'),
+  ('click._textwrap',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\Desktop\\Github\\clueless\\.venv\\Lib\\site-packages\\click\\_textwrap.py',
+   'PYMODULE'),
+  ('click.exceptions',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\Desktop\\Github\\clueless\\.venv\\Lib\\site-packages\\click\\exceptions.py',
+   'PYMODULE'),
+  ('click.decorators',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\Desktop\\Github\\clueless\\.venv\\Lib\\site-packages\\click\\decorators.py',
+   'PYMODULE'),
+  ('click.core',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\Desktop\\Github\\clueless\\.venv\\Lib\\site-packages\\click\\core.py',
+   'PYMODULE'),
+  ('click.types',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\Desktop\\Github\\clueless\\.venv\\Lib\\site-packages\\click\\types.py',
+   'PYMODULE'),
+  ('uuid',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\uuid.py',
+   'PYMODULE'),
+  ('platform',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\platform.py',
+   'PYMODULE'),
+  ('uvicorn.supervisors.basereload',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\Desktop\\Github\\clueless\\.venv\\Lib\\site-packages\\uvicorn\\supervisors\\basereload.py',
+   'PYMODULE'),
+  ('uvicorn.supervisors',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\Desktop\\Github\\clueless\\.venv\\Lib\\site-packages\\uvicorn\\supervisors\\__init__.py',
+   'PYMODULE'),
+  ('uvicorn.server',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\Desktop\\Github\\clueless\\.venv\\Lib\\site-packages\\uvicorn\\server.py',
+   'PYMODULE'),
+  ('uvicorn.protocols.websockets.wsproto_impl',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\Desktop\\Github\\clueless\\.venv\\Lib\\site-packages\\uvicorn\\protocols\\websockets\\wsproto_impl.py',
+   'PYMODULE'),
+  ('uvicorn.protocols.websockets.websockets_sansio_impl',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\Desktop\\Github\\clueless\\.venv\\Lib\\site-packages\\uvicorn\\protocols\\websockets\\websockets_sansio_impl.py',
+   'PYMODULE'),
+  ('websockets.server',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\Desktop\\Github\\clueless\\.venv\\Lib\\site-packages\\websockets\\server.py',
+   'PYMODULE'),
+  ('websockets',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\Desktop\\Github\\clueless\\.venv\\Lib\\site-packages\\websockets\\__init__.py',
+   'PYMODULE'),
+  ('websockets.uri',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\Desktop\\Github\\clueless\\.venv\\Lib\\site-packages\\websockets\\uri.py',
+   'PYMODULE'),
+  ('websockets.sync.utils',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\Desktop\\Github\\clueless\\.venv\\Lib\\site-packages\\websockets\\sync\\utils.py',
+   'PYMODULE'),
+  ('websockets.sync.server',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\Desktop\\Github\\clueless\\.venv\\Lib\\site-packages\\websockets\\sync\\server.py',
+   'PYMODULE'),
+  ('websockets.sync.router',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\Desktop\\Github\\clueless\\.venv\\Lib\\site-packages\\websockets\\sync\\router.py',
+   'PYMODULE'),
+  ('websockets.sync.messages',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\Desktop\\Github\\clueless\\.venv\\Lib\\site-packages\\websockets\\sync\\messages.py',
+   'PYMODULE'),
+  ('websockets.sync.connection',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\Desktop\\Github\\clueless\\.venv\\Lib\\site-packages\\websockets\\sync\\connection.py',
+   'PYMODULE'),
+  ('websockets.sync.client',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\Desktop\\Github\\clueless\\.venv\\Lib\\site-packages\\websockets\\sync\\client.py',
+   'PYMODULE'),
+  ('websockets.sync',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\Desktop\\Github\\clueless\\.venv\\Lib\\site-packages\\websockets\\sync\\__init__.py',
+   'PYMODULE'),
+  ('websockets.streams',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\Desktop\\Github\\clueless\\.venv\\Lib\\site-packages\\websockets\\streams.py',
+   'PYMODULE'),
+  ('websockets.legacy.server',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\Desktop\\Github\\clueless\\.venv\\Lib\\site-packages\\websockets\\legacy\\server.py',
+   'PYMODULE'),
+  ('websockets.legacy.protocol',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\Desktop\\Github\\clueless\\.venv\\Lib\\site-packages\\websockets\\legacy\\protocol.py',
+   'PYMODULE'),
+  ('websockets.legacy.http',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\Desktop\\Github\\clueless\\.venv\\Lib\\site-packages\\websockets\\legacy\\http.py',
+   'PYMODULE'),
+  ('websockets.legacy.handshake',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\Desktop\\Github\\clueless\\.venv\\Lib\\site-packages\\websockets\\legacy\\handshake.py',
+   'PYMODULE'),
+  ('websockets.legacy.framing',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\Desktop\\Github\\clueless\\.venv\\Lib\\site-packages\\websockets\\legacy\\framing.py',
+   'PYMODULE'),
+  ('websockets.legacy.exceptions',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\Desktop\\Github\\clueless\\.venv\\Lib\\site-packages\\websockets\\legacy\\exceptions.py',
+   'PYMODULE'),
+  ('websockets.legacy.client',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\Desktop\\Github\\clueless\\.venv\\Lib\\site-packages\\websockets\\legacy\\client.py',
+   'PYMODULE'),
+  ('websockets.legacy.auth',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\Desktop\\Github\\clueless\\.venv\\Lib\\site-packages\\websockets\\legacy\\auth.py',
+   'PYMODULE'),
+  ('websockets.legacy',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\Desktop\\Github\\clueless\\.venv\\Lib\\site-packages\\websockets\\legacy\\__init__.py',
+   'PYMODULE'),
+  ('websockets.http',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\Desktop\\Github\\clueless\\.venv\\Lib\\site-packages\\websockets\\http.py',
+   'PYMODULE'),
+  ('websockets.extensions.base',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\Desktop\\Github\\clueless\\.venv\\Lib\\site-packages\\websockets\\extensions\\base.py',
+   'PYMODULE'),
+  ('websockets.connection',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\Desktop\\Github\\clueless\\.venv\\Lib\\site-packages\\websockets\\connection.py',
+   'PYMODULE'),
+  ('websockets.cli',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\Desktop\\Github\\clueless\\.venv\\Lib\\site-packages\\websockets\\cli.py',
+   'PYMODULE'),
+  ('websockets.auth',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\Desktop\\Github\\clueless\\.venv\\Lib\\site-packages\\websockets\\auth.py',
+   'PYMODULE'),
+  ('websockets.asyncio.messages',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\Desktop\\Github\\clueless\\.venv\\Lib\\site-packages\\websockets\\asyncio\\messages.py',
+   'PYMODULE'),
+  ('websockets.asyncio.connection',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\Desktop\\Github\\clueless\\.venv\\Lib\\site-packages\\websockets\\asyncio\\connection.py',
+   'PYMODULE'),
+  ('websockets.asyncio.compatibility',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\Desktop\\Github\\clueless\\.venv\\Lib\\site-packages\\websockets\\asyncio\\compatibility.py',
+   'PYMODULE'),
+  ('websockets.asyncio.async_timeout',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\Desktop\\Github\\clueless\\.venv\\Lib\\site-packages\\websockets\\asyncio\\async_timeout.py',
+   'PYMODULE'),
+  ('websockets.asyncio',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\Desktop\\Github\\clueless\\.venv\\Lib\\site-packages\\websockets\\asyncio\\__init__.py',
+   'PYMODULE'),
+  ('websockets.__main__',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\Desktop\\Github\\clueless\\.venv\\Lib\\site-packages\\websockets\\__main__.py',
+   'PYMODULE'),
+  ('websockets.client',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\Desktop\\Github\\clueless\\.venv\\Lib\\site-packages\\websockets\\client.py',
+   'PYMODULE'),
+  ('websockets.asyncio.server',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\Desktop\\Github\\clueless\\.venv\\Lib\\site-packages\\websockets\\asyncio\\server.py',
+   'PYMODULE'),
+  ('websockets.asyncio.router',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\Desktop\\Github\\clueless\\.venv\\Lib\\site-packages\\websockets\\asyncio\\router.py',
+   'PYMODULE'),
+  ('websockets.asyncio.client',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\Desktop\\Github\\clueless\\.venv\\Lib\\site-packages\\websockets\\asyncio\\client.py',
+   'PYMODULE'),
+  ('websockets.version',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\Desktop\\Github\\clueless\\.venv\\Lib\\site-packages\\websockets\\version.py',
+   'PYMODULE'),
+  ('websockets.utils',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\Desktop\\Github\\clueless\\.venv\\Lib\\site-packages\\websockets\\utils.py',
+   'PYMODULE'),
+  ('websockets.typing',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\Desktop\\Github\\clueless\\.venv\\Lib\\site-packages\\websockets\\typing.py',
+   'PYMODULE'),
+  ('websockets.protocol',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\Desktop\\Github\\clueless\\.venv\\Lib\\site-packages\\websockets\\protocol.py',
+   'PYMODULE'),
+  ('websockets.imports',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\Desktop\\Github\\clueless\\.venv\\Lib\\site-packages\\websockets\\imports.py',
+   'PYMODULE'),
+  ('websockets.headers',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\Desktop\\Github\\clueless\\.venv\\Lib\\site-packages\\websockets\\headers.py',
+   'PYMODULE'),
+  ('websockets.extensions',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\Desktop\\Github\\clueless\\.venv\\Lib\\site-packages\\websockets\\extensions\\__init__.py',
+   'PYMODULE'),
+  ('websockets.datastructures',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\Desktop\\Github\\clueless\\.venv\\Lib\\site-packages\\websockets\\datastructures.py',
+   'PYMODULE'),
+  ('websockets.http11',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\Desktop\\Github\\clueless\\.venv\\Lib\\site-packages\\websockets\\http11.py',
+   'PYMODULE'),
+  ('websockets.frames',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\Desktop\\Github\\clueless\\.venv\\Lib\\site-packages\\websockets\\frames.py',
+   'PYMODULE'),
+  ('websockets.extensions.permessage_deflate',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\Desktop\\Github\\clueless\\.venv\\Lib\\site-packages\\websockets\\extensions\\permessage_deflate.py',
+   'PYMODULE'),
+  ('websockets.exceptions',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\Desktop\\Github\\clueless\\.venv\\Lib\\site-packages\\websockets\\exceptions.py',
+   'PYMODULE'),
+  ('asyncio.transports',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\asyncio\\transports.py',
+   'PYMODULE'),
+  ('uvicorn.protocols.websockets.websockets_impl',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\Desktop\\Github\\clueless\\.venv\\Lib\\site-packages\\uvicorn\\protocols\\websockets\\websockets_impl.py',
+   'PYMODULE'),
+  ('uvicorn.protocols.websockets.auto',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\Desktop\\Github\\clueless\\.venv\\Lib\\site-packages\\uvicorn\\protocols\\websockets\\auto.py',
+   'PYMODULE'),
+  ('uvicorn.protocols.websockets',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\Desktop\\Github\\clueless\\.venv\\Lib\\site-packages\\uvicorn\\protocols\\websockets\\__init__.py',
+   'PYMODULE'),
+  ('uvicorn.protocols.utils',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\Desktop\\Github\\clueless\\.venv\\Lib\\site-packages\\uvicorn\\protocols\\utils.py',
+   'PYMODULE'),
+  ('uvicorn.protocols.http.httptools_impl',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\Desktop\\Github\\clueless\\.venv\\Lib\\site-packages\\uvicorn\\protocols\\http\\httptools_impl.py',
+   'PYMODULE'),
+  ('asyncio.events',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\asyncio\\events.py',
+   'PYMODULE'),
+  ('asyncio.format_helpers',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\asyncio\\format_helpers.py',
+   'PYMODULE'),
+  ('asyncio.constants',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\asyncio\\constants.py',
+   'PYMODULE'),
+  ('uvicorn.protocols.http.h11_impl',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\Desktop\\Github\\clueless\\.venv\\Lib\\site-packages\\uvicorn\\protocols\\http\\h11_impl.py',
+   'PYMODULE'),
+  ('h11._connection',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\Desktop\\Github\\clueless\\.venv\\Lib\\site-packages\\h11\\_connection.py',
+   'PYMODULE'),
+  ('h11._writers',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\Desktop\\Github\\clueless\\.venv\\Lib\\site-packages\\h11\\_writers.py',
+   'PYMODULE'),
+  ('h11._util',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\Desktop\\Github\\clueless\\.venv\\Lib\\site-packages\\h11\\_util.py',
+   'PYMODULE'),
+  ('h11._state',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\Desktop\\Github\\clueless\\.venv\\Lib\\site-packages\\h11\\_state.py',
+   'PYMODULE'),
+  ('h11._receivebuffer',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\Desktop\\Github\\clueless\\.venv\\Lib\\site-packages\\h11\\_receivebuffer.py',
+   'PYMODULE'),
+  ('h11._readers',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\Desktop\\Github\\clueless\\.venv\\Lib\\site-packages\\h11\\_readers.py',
+   'PYMODULE'),
+  ('h11._abnf',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\Desktop\\Github\\clueless\\.venv\\Lib\\site-packages\\h11\\_abnf.py',
+   'PYMODULE'),
+  ('h11._headers',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\Desktop\\Github\\clueless\\.venv\\Lib\\site-packages\\h11\\_headers.py',
+   'PYMODULE'),
+  ('h11._events',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\Desktop\\Github\\clueless\\.venv\\Lib\\site-packages\\h11\\_events.py',
+   'PYMODULE'),
+  ('h11',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\Desktop\\Github\\clueless\\.venv\\Lib\\site-packages\\h11\\__init__.py',
+   'PYMODULE'),
+  ('h11._version',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\Desktop\\Github\\clueless\\.venv\\Lib\\site-packages\\h11\\_version.py',
+   'PYMODULE'),
+  ('uvicorn.protocols.http.flow_control',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\Desktop\\Github\\clueless\\.venv\\Lib\\site-packages\\uvicorn\\protocols\\http\\flow_control.py',
+   'PYMODULE'),
+  ('uvicorn.protocols.http.auto',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\Desktop\\Github\\clueless\\.venv\\Lib\\site-packages\\uvicorn\\protocols\\http\\auto.py',
+   'PYMODULE'),
+  ('uvicorn.protocols.http',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\Desktop\\Github\\clueless\\.venv\\Lib\\site-packages\\uvicorn\\protocols\\http\\__init__.py',
+   'PYMODULE'),
+  ('uvicorn.protocols',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\Desktop\\Github\\clueless\\.venv\\Lib\\site-packages\\uvicorn\\protocols\\__init__.py',
+   'PYMODULE'),
+  ('uvicorn.middleware.wsgi',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\Desktop\\Github\\clueless\\.venv\\Lib\\site-packages\\uvicorn\\middleware\\wsgi.py',
+   'PYMODULE'),
+  ('concurrent.futures',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\concurrent\\futures\\__init__.py',
+   'PYMODULE'),
+  ('concurrent.futures.thread',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\concurrent\\futures\\thread.py',
+   'PYMODULE'),
+  ('concurrent.futures.process',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\concurrent\\futures\\process.py',
+   'PYMODULE'),
+  ('concurrent.futures._base',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\concurrent\\futures\\_base.py',
+   'PYMODULE'),
+  ('concurrent',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\concurrent\\__init__.py',
+   'PYMODULE'),
+  ('uvicorn.middleware.proxy_headers',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\Desktop\\Github\\clueless\\.venv\\Lib\\site-packages\\uvicorn\\middleware\\proxy_headers.py',
+   'PYMODULE'),
+  ('uvicorn.middleware.message_logger',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\Desktop\\Github\\clueless\\.venv\\Lib\\site-packages\\uvicorn\\middleware\\message_logger.py',
+   'PYMODULE'),
+  ('uvicorn.middleware.asgi2',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\Desktop\\Github\\clueless\\.venv\\Lib\\site-packages\\uvicorn\\middleware\\asgi2.py',
+   'PYMODULE'),
+  ('uvicorn.middleware',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\Desktop\\Github\\clueless\\.venv\\Lib\\site-packages\\uvicorn\\middleware\\__init__.py',
+   'PYMODULE'),
+  ('uvicorn.loops.uvloop',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\Desktop\\Github\\clueless\\.venv\\Lib\\site-packages\\uvicorn\\loops\\uvloop.py',
+   'PYMODULE'),
+  ('uvicorn.loops.auto',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\Desktop\\Github\\clueless\\.venv\\Lib\\site-packages\\uvicorn\\loops\\auto.py',
+   'PYMODULE'),
+  ('uvicorn.loops.asyncio',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\Desktop\\Github\\clueless\\.venv\\Lib\\site-packages\\uvicorn\\loops\\asyncio.py',
+   'PYMODULE'),
+  ('uvicorn.loops',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\Desktop\\Github\\clueless\\.venv\\Lib\\site-packages\\uvicorn\\loops\\__init__.py',
+   'PYMODULE'),
+  ('uvicorn.logging',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\Desktop\\Github\\clueless\\.venv\\Lib\\site-packages\\uvicorn\\logging.py',
+   'PYMODULE'),
+  ('uvicorn.lifespan.on',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\Desktop\\Github\\clueless\\.venv\\Lib\\site-packages\\uvicorn\\lifespan\\on.py',
+   'PYMODULE'),
+  ('uvicorn.lifespan.off',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\Desktop\\Github\\clueless\\.venv\\Lib\\site-packages\\uvicorn\\lifespan\\off.py',
+   'PYMODULE'),
+  ('uvicorn.lifespan',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\Desktop\\Github\\clueless\\.venv\\Lib\\site-packages\\uvicorn\\lifespan\\__init__.py',
+   'PYMODULE'),
+  ('uvicorn.importer',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\Desktop\\Github\\clueless\\.venv\\Lib\\site-packages\\uvicorn\\importer.py',
+   'PYMODULE'),
+  ('uvicorn._types',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\Desktop\\Github\\clueless\\.venv\\Lib\\site-packages\\uvicorn\\_types.py',
+   'PYMODULE'),
+  ('uvicorn._subprocess',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\Desktop\\Github\\clueless\\.venv\\Lib\\site-packages\\uvicorn\\_subprocess.py',
+   'PYMODULE'),
+  ('uvicorn.__main__',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\Desktop\\Github\\clueless\\.venv\\Lib\\site-packages\\uvicorn\\__main__.py',
+   'PYMODULE'),
+  ('uvicorn.main',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\Desktop\\Github\\clueless\\.venv\\Lib\\site-packages\\uvicorn\\main.py',
+   'PYMODULE'),
+  ('configparser',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\configparser.py',
+   'PYMODULE'),
+  ('uvicorn.config',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\Desktop\\Github\\clueless\\.venv\\Lib\\site-packages\\uvicorn\\config.py',
+   'PYMODULE'),
+  ('yaml',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\Desktop\\Github\\clueless\\.venv\\Lib\\site-packages\\yaml\\__init__.py',
+   'PYMODULE'),
+  ('yaml.cyaml',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\Desktop\\Github\\clueless\\.venv\\Lib\\site-packages\\yaml\\cyaml.py',
+   'PYMODULE'),
+  ('yaml.resolver',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\Desktop\\Github\\clueless\\.venv\\Lib\\site-packages\\yaml\\resolver.py',
+   'PYMODULE'),
+  ('yaml.representer',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\Desktop\\Github\\clueless\\.venv\\Lib\\site-packages\\yaml\\representer.py',
+   'PYMODULE'),
+  ('yaml.serializer',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\Desktop\\Github\\clueless\\.venv\\Lib\\site-packages\\yaml\\serializer.py',
+   'PYMODULE'),
+  ('yaml.constructor',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\Desktop\\Github\\clueless\\.venv\\Lib\\site-packages\\yaml\\constructor.py',
+   'PYMODULE'),
+  ('yaml.dumper',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\Desktop\\Github\\clueless\\.venv\\Lib\\site-packages\\yaml\\dumper.py',
+   'PYMODULE'),
+  ('yaml.emitter',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\Desktop\\Github\\clueless\\.venv\\Lib\\site-packages\\yaml\\emitter.py',
+   'PYMODULE'),
+  ('yaml.loader',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\Desktop\\Github\\clueless\\.venv\\Lib\\site-packages\\yaml\\loader.py',
+   'PYMODULE'),
+  ('yaml.composer',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\Desktop\\Github\\clueless\\.venv\\Lib\\site-packages\\yaml\\composer.py',
+   'PYMODULE'),
+  ('yaml.parser',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\Desktop\\Github\\clueless\\.venv\\Lib\\site-packages\\yaml\\parser.py',
+   'PYMODULE'),
+  ('yaml.scanner',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\Desktop\\Github\\clueless\\.venv\\Lib\\site-packages\\yaml\\scanner.py',
+   'PYMODULE'),
+  ('yaml.reader',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\Desktop\\Github\\clueless\\.venv\\Lib\\site-packages\\yaml\\reader.py',
+   'PYMODULE'),
+  ('yaml.nodes',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\Desktop\\Github\\clueless\\.venv\\Lib\\site-packages\\yaml\\nodes.py',
+   'PYMODULE'),
+  ('yaml.events',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\Desktop\\Github\\clueless\\.venv\\Lib\\site-packages\\yaml\\events.py',
+   'PYMODULE'),
+  ('yaml.tokens',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\Desktop\\Github\\clueless\\.venv\\Lib\\site-packages\\yaml\\tokens.py',
+   'PYMODULE'),
+  ('yaml.error',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\Desktop\\Github\\clueless\\.venv\\Lib\\site-packages\\yaml\\error.py',
+   'PYMODULE'),
+  ('dotenv',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\Desktop\\Github\\clueless\\.venv\\Lib\\site-packages\\dotenv\\__init__.py',
+   'PYMODULE'),
+  ('dotenv.ipython',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\Desktop\\Github\\clueless\\.venv\\Lib\\site-packages\\dotenv\\ipython.py',
+   'PYMODULE'),
+  ('dotenv.main',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\Desktop\\Github\\clueless\\.venv\\Lib\\site-packages\\dotenv\\main.py',
+   'PYMODULE'),
+  ('dotenv.variables',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\Desktop\\Github\\clueless\\.venv\\Lib\\site-packages\\dotenv\\variables.py',
+   'PYMODULE'),
+  ('dotenv.parser',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\Desktop\\Github\\clueless\\.venv\\Lib\\site-packages\\dotenv\\parser.py',
+   'PYMODULE'),
+  ('logging.config',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\logging\\config.py',
+   'PYMODULE'),
+  ('socketserver',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\socketserver.py',
+   'PYMODULE'),
+  ('logging.handlers',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\logging\\handlers.py',
+   'PYMODULE'),
+  ('win32evtlogutil',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\Desktop\\Github\\clueless\\.venv\\Lib\\site-packages\\win32\\lib\\win32evtlogutil.py',
+   'PYMODULE'),
+  ('winerror',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\Desktop\\Github\\clueless\\.venv\\Lib\\site-packages\\win32\\lib\\winerror.py',
+   'PYMODULE'),
+  ('win32con',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\Desktop\\Github\\clueless\\.venv\\Lib\\site-packages\\win32\\lib\\win32con.py',
+   'PYMODULE'),
+  ('smtplib',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\smtplib.py',
+   'PYMODULE'),
+  ('asyncio',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\asyncio\\__init__.py',
+   'PYMODULE'),
+  ('asyncio.unix_events',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\asyncio\\unix_events.py',
+   'PYMODULE'),
+  ('asyncio.log',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\asyncio\\log.py',
+   'PYMODULE'),
+  ('asyncio.windows_events',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\asyncio\\windows_events.py',
+   'PYMODULE'),
+  ('asyncio.windows_utils',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\asyncio\\windows_utils.py',
+   'PYMODULE'),
+  ('asyncio.selector_events',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\asyncio\\selector_events.py',
+   'PYMODULE'),
+  ('asyncio.proactor_events',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\asyncio\\proactor_events.py',
+   'PYMODULE'),
+  ('asyncio.base_subprocess',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\asyncio\\base_subprocess.py',
+   'PYMODULE'),
+  ('asyncio.threads',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\asyncio\\threads.py',
+   'PYMODULE'),
+  ('asyncio.taskgroups',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\asyncio\\taskgroups.py',
+   'PYMODULE'),
+  ('asyncio.subprocess',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\asyncio\\subprocess.py',
+   'PYMODULE'),
+  ('asyncio.streams',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\asyncio\\streams.py',
+   'PYMODULE'),
+  ('asyncio.runners',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\asyncio\\runners.py',
+   'PYMODULE'),
+  ('asyncio.base_events',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\asyncio\\base_events.py',
+   'PYMODULE'),
+  ('asyncio.trsock',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\asyncio\\trsock.py',
+   'PYMODULE'),
+  ('asyncio.staggered',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\asyncio\\staggered.py',
+   'PYMODULE'),
+  ('asyncio.timeouts',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\asyncio\\timeouts.py',
+   'PYMODULE'),
+  ('asyncio.tasks',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\asyncio\\tasks.py',
+   'PYMODULE'),
+  ('asyncio.queues',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\asyncio\\queues.py',
+   'PYMODULE'),
+  ('asyncio.base_tasks',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\asyncio\\base_tasks.py',
+   'PYMODULE'),
+  ('asyncio.locks',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\asyncio\\locks.py',
+   'PYMODULE'),
+  ('asyncio.mixins',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\asyncio\\mixins.py',
+   'PYMODULE'),
+  ('asyncio.sslproto',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\asyncio\\sslproto.py',
+   'PYMODULE'),
+  ('asyncio.protocols',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\asyncio\\protocols.py',
+   'PYMODULE'),
+  ('asyncio.futures',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\asyncio\\futures.py',
+   'PYMODULE'),
+  ('asyncio.base_futures',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\asyncio\\base_futures.py',
+   'PYMODULE'),
+  ('asyncio.exceptions',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\asyncio\\exceptions.py',
+   'PYMODULE'),
+  ('threading',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\threading.py',
+   'PYMODULE'),
+  ('_threading_local',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\_threading_local.py',
+   'PYMODULE'),
+  ('socket',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\socket.py',
+   'PYMODULE')],
+ [('python313.dll',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\python313.dll',
+   'BINARY'),
+  ('_decimal.pyd',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\DLLs\\_decimal.pyd',
+   'EXTENSION'),
+  ('_hashlib.pyd',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\DLLs\\_hashlib.pyd',
+   'EXTENSION'),
+  ('_lzma.pyd',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\DLLs\\_lzma.pyd',
+   'EXTENSION'),
+  ('_bz2.pyd',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\DLLs\\_bz2.pyd',
+   'EXTENSION'),
+  ('unicodedata.pyd',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\DLLs\\unicodedata.pyd',
+   'EXTENSION'),
+  ('select.pyd',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\DLLs\\select.pyd',
+   'EXTENSION'),
+  ('_multiprocessing.pyd',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\DLLs\\_multiprocessing.pyd',
+   'EXTENSION'),
+  ('pyexpat.pyd',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\DLLs\\pyexpat.pyd',
+   'EXTENSION'),
+  ('_ssl.pyd',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\DLLs\\_ssl.pyd',
+   'EXTENSION'),
+  ('_ctypes.pyd',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\DLLs\\_ctypes.pyd',
+   'EXTENSION'),
+  ('_queue.pyd',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\DLLs\\_queue.pyd',
+   'EXTENSION'),
+  ('_socket.pyd',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\DLLs\\_socket.pyd',
+   'EXTENSION'),
+  ('_uuid.pyd',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\DLLs\\_uuid.pyd',
+   'EXTENSION'),
+  ('_wmi.pyd',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\DLLs\\_wmi.pyd',
+   'EXTENSION'),
+  ('websockets\\speedups.cp313-win_amd64.pyd',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\Desktop\\Github\\clueless\\.venv\\Lib\\site-packages\\websockets\\speedups.cp313-win_amd64.pyd',
+   'EXTENSION'),
+  ('_asyncio.pyd',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\DLLs\\_asyncio.pyd',
+   'EXTENSION'),
+  ('yaml\\_yaml.cp313-win_amd64.pyd',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\Desktop\\Github\\clueless\\.venv\\Lib\\site-packages\\yaml\\_yaml.cp313-win_amd64.pyd',
+   'EXTENSION'),
+  ('win32\\win32evtlog.pyd',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\Desktop\\Github\\clueless\\.venv\\Lib\\site-packages\\win32\\win32evtlog.pyd',
+   'EXTENSION'),
+  ('win32\\win32api.pyd',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\Desktop\\Github\\clueless\\.venv\\Lib\\site-packages\\win32\\win32api.pyd',
+   'EXTENSION'),
+  ('_overlapped.pyd',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\DLLs\\_overlapped.pyd',
+   'EXTENSION'),
+  ('api-ms-win-crt-stdio-l1-1-0.dll',
+   'C:\\Program Files\\Java\\jdk-25\\bin\\api-ms-win-crt-stdio-l1-1-0.dll',
+   'BINARY'),
+  ('api-ms-win-crt-filesystem-l1-1-0.dll',
+   'C:\\Program Files\\Java\\jdk-25\\bin\\api-ms-win-crt-filesystem-l1-1-0.dll',
+   'BINARY'),
+  ('api-ms-win-crt-process-l1-1-0.dll',
+   'C:\\Program Files\\Java\\jdk-25\\bin\\api-ms-win-crt-process-l1-1-0.dll',
+   'BINARY'),
+  ('api-ms-win-crt-convert-l1-1-0.dll',
+   'C:\\Program Files\\Java\\jdk-25\\bin\\api-ms-win-crt-convert-l1-1-0.dll',
+   'BINARY'),
+  ('api-ms-win-crt-runtime-l1-1-0.dll',
+   'C:\\Program Files\\Java\\jdk-25\\bin\\api-ms-win-crt-runtime-l1-1-0.dll',
+   'BINARY'),
+  ('api-ms-win-crt-conio-l1-1-0.dll',
+   'C:\\Program Files\\Java\\jdk-25\\bin\\api-ms-win-crt-conio-l1-1-0.dll',
+   'BINARY'),
+  ('api-ms-win-crt-string-l1-1-0.dll',
+   'C:\\Program Files\\Java\\jdk-25\\bin\\api-ms-win-crt-string-l1-1-0.dll',
+   'BINARY'),
+  ('api-ms-win-crt-environment-l1-1-0.dll',
+   'C:\\Program '
+   'Files\\Java\\jdk-25\\bin\\api-ms-win-crt-environment-l1-1-0.dll',
+   'BINARY'),
+  ('api-ms-win-crt-heap-l1-1-0.dll',
+   'C:\\Program Files\\Java\\jdk-25\\bin\\api-ms-win-crt-heap-l1-1-0.dll',
+   'BINARY'),
+  ('VCRUNTIME140.dll',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\VCRUNTIME140.dll',
+   'BINARY'),
+  ('api-ms-win-crt-math-l1-1-0.dll',
+   'C:\\Program Files\\Java\\jdk-25\\bin\\api-ms-win-crt-math-l1-1-0.dll',
+   'BINARY'),
+  ('api-ms-win-crt-locale-l1-1-0.dll',
+   'C:\\Program Files\\Java\\jdk-25\\bin\\api-ms-win-crt-locale-l1-1-0.dll',
+   'BINARY'),
+  ('api-ms-win-crt-time-l1-1-0.dll',
+   'C:\\Program Files\\Java\\jdk-25\\bin\\api-ms-win-crt-time-l1-1-0.dll',
+   'BINARY'),
+  ('libcrypto-3-x64.dll',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\DLLs\\libcrypto-3-x64.dll',
+   'BINARY'),
+  ('api-ms-win-crt-utility-l1-1-0.dll',
+   'C:\\Program Files\\Java\\jdk-25\\bin\\api-ms-win-crt-utility-l1-1-0.dll',
+   'BINARY'),
+  ('libssl-3-x64.dll',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\DLLs\\libssl-3-x64.dll',
+   'BINARY'),
+  ('libffi-8.dll',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\DLLs\\libffi-8.dll',
+   'BINARY'),
+  ('VCRUNTIME140_1.dll',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\VCRUNTIME140_1.dll',
+   'BINARY'),
+  ('pywin32_system32\\pywintypes313.dll',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\Desktop\\Github\\clueless\\.venv\\Lib\\site-packages\\pywin32_system32\\pywintypes313.dll',
+   'BINARY'),
+  ('ucrtbase.dll',
+   'C:\\Program Files\\Java\\jdk-25\\bin\\ucrtbase.dll',
+   'BINARY'),
+  ('api-ms-win-core-errorhandling-l1-1-0.dll',
+   'C:\\Program '
+   'Files\\Java\\jdk-25\\bin\\api-ms-win-core-errorhandling-l1-1-0.dll',
+   'BINARY'),
+  ('api-ms-win-core-fibers-l1-1-0.dll',
+   'C:\\Program Files\\Java\\jdk-25\\bin\\api-ms-win-core-fibers-l1-1-0.dll',
+   'BINARY'),
+  ('api-ms-win-core-file-l1-2-0.dll',
+   'C:\\Program Files\\Java\\jdk-25\\bin\\api-ms-win-core-file-l1-2-0.dll',
+   'BINARY'),
+  ('api-ms-win-core-profile-l1-1-0.dll',
+   'C:\\Program Files\\Java\\jdk-25\\bin\\api-ms-win-core-profile-l1-1-0.dll',
+   'BINARY'),
+  ('api-ms-win-core-heap-l1-1-0.dll',
+   'C:\\Program Files\\Java\\jdk-25\\bin\\api-ms-win-core-heap-l1-1-0.dll',
+   'BINARY'),
+  ('api-ms-win-core-rtlsupport-l1-1-0.dll',
+   'C:\\Program '
+   'Files\\Java\\jdk-25\\bin\\api-ms-win-core-rtlsupport-l1-1-0.dll',
+   'BINARY'),
+  ('api-ms-win-core-processthreads-l1-1-0.dll',
+   'C:\\Program '
+   'Files\\Java\\jdk-25\\bin\\api-ms-win-core-processthreads-l1-1-0.dll',
+   'BINARY'),
+  ('api-ms-win-core-synch-l1-1-0.dll',
+   'C:\\Program Files\\Java\\jdk-25\\bin\\api-ms-win-core-synch-l1-1-0.dll',
+   'BINARY'),
+  ('api-ms-win-core-sysinfo-l1-1-0.dll',
+   'C:\\Program Files\\Java\\jdk-25\\bin\\api-ms-win-core-sysinfo-l1-1-0.dll',
+   'BINARY'),
+  ('api-ms-win-core-file-l2-1-0.dll',
+   'C:\\Program Files\\Java\\jdk-25\\bin\\api-ms-win-core-file-l2-1-0.dll',
+   'BINARY'),
+  ('api-ms-win-core-localization-l1-2-0.dll',
+   'C:\\Program '
+   'Files\\Java\\jdk-25\\bin\\api-ms-win-core-localization-l1-2-0.dll',
+   'BINARY'),
+  ('api-ms-win-core-processenvironment-l1-1-0.dll',
+   'C:\\Program '
+   'Files\\Java\\jdk-25\\bin\\api-ms-win-core-processenvironment-l1-1-0.dll',
+   'BINARY'),
+  ('api-ms-win-core-timezone-l1-1-0.dll',
+   'C:\\Program Files\\Java\\jdk-25\\bin\\api-ms-win-core-timezone-l1-1-0.dll',
+   'BINARY'),
+  ('api-ms-win-core-console-l1-1-0.dll',
+   'C:\\Program Files\\Java\\jdk-25\\bin\\api-ms-win-core-console-l1-1-0.dll',
+   'BINARY'),
+  ('api-ms-win-core-util-l1-1-0.dll',
+   'C:\\Program Files\\Java\\jdk-25\\bin\\api-ms-win-core-util-l1-1-0.dll',
+   'BINARY'),
+  ('api-ms-win-core-kernel32-legacy-l1-1-1.dll',
+   'C:\\Program '
+   'Files\\Java\\jdk-25\\bin\\api-ms-win-core-kernel32-legacy-l1-1-1.dll',
+   'BINARY'),
+  ('api-ms-win-core-datetime-l1-1-0.dll',
+   'C:\\Program Files\\Java\\jdk-25\\bin\\api-ms-win-core-datetime-l1-1-0.dll',
+   'BINARY'),
+  ('api-ms-win-core-namedpipe-l1-1-0.dll',
+   'C:\\Program Files\\Java\\jdk-25\\bin\\api-ms-win-core-namedpipe-l1-1-0.dll',
+   'BINARY'),
+  ('api-ms-win-core-fibers-l1-1-1.dll',
+   'C:\\Program Files\\Java\\jdk-25\\bin\\api-ms-win-core-fibers-l1-1-1.dll',
+   'BINARY'),
+  ('api-ms-win-core-sysinfo-l1-2-0.dll',
+   'C:\\Program Files\\Java\\jdk-25\\bin\\api-ms-win-core-sysinfo-l1-2-0.dll',
+   'BINARY'),
+  ('api-ms-win-core-memory-l1-1-0.dll',
+   'C:\\Program Files\\Java\\jdk-25\\bin\\api-ms-win-core-memory-l1-1-0.dll',
+   'BINARY'),
+  ('api-ms-win-core-libraryloader-l1-1-0.dll',
+   'C:\\Program '
+   'Files\\Java\\jdk-25\\bin\\api-ms-win-core-libraryloader-l1-1-0.dll',
+   'BINARY'),
+  ('api-ms-win-core-file-l1-1-0.dll',
+   'C:\\Program Files\\Java\\jdk-25\\bin\\api-ms-win-core-file-l1-1-0.dll',
+   'BINARY'),
+  ('api-ms-win-core-handle-l1-1-0.dll',
+   'C:\\Program Files\\Java\\jdk-25\\bin\\api-ms-win-core-handle-l1-1-0.dll',
+   'BINARY'),
+  ('api-ms-win-core-processthreads-l1-1-1.dll',
+   'C:\\Program '
+   'Files\\Java\\jdk-25\\bin\\api-ms-win-core-processthreads-l1-1-1.dll',
+   'BINARY'),
+  ('api-ms-win-core-debug-l1-1-0.dll',
+   'C:\\Program Files\\Java\\jdk-25\\bin\\api-ms-win-core-debug-l1-1-0.dll',
+   'BINARY'),
+  ('api-ms-win-core-string-l1-1-0.dll',
+   'C:\\Program Files\\Java\\jdk-25\\bin\\api-ms-win-core-string-l1-1-0.dll',
+   'BINARY'),
+  ('api-ms-win-core-synch-l1-2-0.dll',
+   'C:\\Program Files\\Java\\jdk-25\\bin\\api-ms-win-core-synch-l1-2-0.dll',
+   'BINARY'),
+  ('api-ms-win-core-interlocked-l1-1-0.dll',
+   'C:\\Program '
+   'Files\\Java\\jdk-25\\bin\\api-ms-win-core-interlocked-l1-1-0.dll',
+   'BINARY')],
+ [],
+ [],
+ [('click-8.2.1.dist-info\\METADATA',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\Desktop\\Github\\clueless\\.venv\\Lib\\site-packages\\click-8.2.1.dist-info\\METADATA',
+   'DATA'),
+  ('click-8.2.1.dist-info\\licenses\\LICENSE.txt',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\Desktop\\Github\\clueless\\.venv\\Lib\\site-packages\\click-8.2.1.dist-info\\licenses\\LICENSE.txt',
+   'DATA'),
+  ('websockets-15.0.1.dist-info\\top_level.txt',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\Desktop\\Github\\clueless\\.venv\\Lib\\site-packages\\websockets-15.0.1.dist-info\\top_level.txt',
+   'DATA'),
+  ('websockets-15.0.1.dist-info\\WHEEL',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\Desktop\\Github\\clueless\\.venv\\Lib\\site-packages\\websockets-15.0.1.dist-info\\WHEEL',
+   'DATA'),
+  ('websockets-15.0.1.dist-info\\entry_points.txt',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\Desktop\\Github\\clueless\\.venv\\Lib\\site-packages\\websockets-15.0.1.dist-info\\entry_points.txt',
+   'DATA'),
+  ('websockets-15.0.1.dist-info\\INSTALLER',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\Desktop\\Github\\clueless\\.venv\\Lib\\site-packages\\websockets-15.0.1.dist-info\\INSTALLER',
+   'DATA'),
+  ('click-8.2.1.dist-info\\RECORD',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\Desktop\\Github\\clueless\\.venv\\Lib\\site-packages\\click-8.2.1.dist-info\\RECORD',
+   'DATA'),
+  ('click-8.2.1.dist-info\\INSTALLER',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\Desktop\\Github\\clueless\\.venv\\Lib\\site-packages\\click-8.2.1.dist-info\\INSTALLER',
+   'DATA'),
+  ('websockets-15.0.1.dist-info\\REQUESTED',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\Desktop\\Github\\clueless\\.venv\\Lib\\site-packages\\websockets-15.0.1.dist-info\\REQUESTED',
+   'DATA'),
+  ('websockets-15.0.1.dist-info\\RECORD',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\Desktop\\Github\\clueless\\.venv\\Lib\\site-packages\\websockets-15.0.1.dist-info\\RECORD',
+   'DATA'),
+  ('click-8.2.1.dist-info\\WHEEL',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\Desktop\\Github\\clueless\\.venv\\Lib\\site-packages\\click-8.2.1.dist-info\\WHEEL',
+   'DATA'),
+  ('websockets-15.0.1.dist-info\\LICENSE',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\Desktop\\Github\\clueless\\.venv\\Lib\\site-packages\\websockets-15.0.1.dist-info\\LICENSE',
+   'DATA'),
+  ('click-8.2.1.dist-info\\REQUESTED',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\Desktop\\Github\\clueless\\.venv\\Lib\\site-packages\\click-8.2.1.dist-info\\REQUESTED',
+   'DATA'),
+  ('websockets-15.0.1.dist-info\\METADATA',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\Desktop\\Github\\clueless\\.venv\\Lib\\site-packages\\websockets-15.0.1.dist-info\\METADATA',
+   'DATA'),
+  ('base_library.zip',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\Desktop\\Github\\clueless\\build\\clueless-server\\base_library.zip',
+   'DATA')],
+ [('reprlib',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\reprlib.py',
+   'PYMODULE'),
+  ('operator',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\operator.py',
+   'PYMODULE'),
+  ('stat',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\stat.py',
+   'PYMODULE'),
+  ('linecache',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\linecache.py',
+   'PYMODULE'),
+  ('codecs',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\codecs.py',
+   'PYMODULE'),
+  ('ntpath',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\ntpath.py',
+   'PYMODULE'),
+  ('sre_parse',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\sre_parse.py',
+   'PYMODULE'),
+  ('collections',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\collections\\__init__.py',
+   'PYMODULE'),
+  ('genericpath',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\genericpath.py',
+   'PYMODULE'),
+  ('io',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\io.py',
+   'PYMODULE'),
+  ('enum',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\enum.py',
+   'PYMODULE'),
+  ('traceback',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\traceback.py',
+   'PYMODULE'),
+  ('types',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\types.py',
+   'PYMODULE'),
+  ('keyword',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\keyword.py',
+   'PYMODULE'),
+  ('_collections_abc',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\_collections_abc.py',
+   'PYMODULE'),
+  ('copyreg',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\copyreg.py',
+   'PYMODULE'),
+  ('posixpath',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\posixpath.py',
+   'PYMODULE'),
+  ('weakref',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\weakref.py',
+   'PYMODULE'),
+  ('sre_compile',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\sre_compile.py',
+   'PYMODULE'),
+  ('re._parser',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\re\\_parser.py',
+   'PYMODULE'),
+  ('re._constants',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\re\\_constants.py',
+   'PYMODULE'),
+  ('re._compiler',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\re\\_compiler.py',
+   'PYMODULE'),
+  ('re._casefix',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\re\\_casefix.py',
+   'PYMODULE'),
+  ('re',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\re\\__init__.py',
+   'PYMODULE'),
+  ('_weakrefset',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\_weakrefset.py',
+   'PYMODULE'),
+  ('abc',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\abc.py',
+   'PYMODULE'),
+  ('locale',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\locale.py',
+   'PYMODULE'),
+  ('encodings.zlib_codec',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\encodings\\zlib_codec.py',
+   'PYMODULE'),
+  ('encodings.uu_codec',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\encodings\\uu_codec.py',
+   'PYMODULE'),
+  ('encodings.utf_8_sig',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\encodings\\utf_8_sig.py',
+   'PYMODULE'),
+  ('encodings.utf_8',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\encodings\\utf_8.py',
+   'PYMODULE'),
+  ('encodings.utf_7',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\encodings\\utf_7.py',
+   'PYMODULE'),
+  ('encodings.utf_32_le',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\encodings\\utf_32_le.py',
+   'PYMODULE'),
+  ('encodings.utf_32_be',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\encodings\\utf_32_be.py',
+   'PYMODULE'),
+  ('encodings.utf_32',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\encodings\\utf_32.py',
+   'PYMODULE'),
+  ('encodings.utf_16_le',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\encodings\\utf_16_le.py',
+   'PYMODULE'),
+  ('encodings.utf_16_be',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\encodings\\utf_16_be.py',
+   'PYMODULE'),
+  ('encodings.utf_16',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\encodings\\utf_16.py',
+   'PYMODULE'),
+  ('encodings.unicode_escape',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\encodings\\unicode_escape.py',
+   'PYMODULE'),
+  ('encodings.undefined',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\encodings\\undefined.py',
+   'PYMODULE'),
+  ('encodings.tis_620',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\encodings\\tis_620.py',
+   'PYMODULE'),
+  ('encodings.shift_jisx0213',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\encodings\\shift_jisx0213.py',
+   'PYMODULE'),
+  ('encodings.shift_jis_2004',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\encodings\\shift_jis_2004.py',
+   'PYMODULE'),
+  ('encodings.shift_jis',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\encodings\\shift_jis.py',
+   'PYMODULE'),
+  ('encodings.rot_13',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\encodings\\rot_13.py',
+   'PYMODULE'),
+  ('encodings.raw_unicode_escape',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\encodings\\raw_unicode_escape.py',
+   'PYMODULE'),
+  ('encodings.quopri_codec',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\encodings\\quopri_codec.py',
+   'PYMODULE'),
+  ('encodings.punycode',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\encodings\\punycode.py',
+   'PYMODULE'),
+  ('encodings.ptcp154',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\encodings\\ptcp154.py',
+   'PYMODULE'),
+  ('encodings.palmos',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\encodings\\palmos.py',
+   'PYMODULE'),
+  ('encodings.oem',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\encodings\\oem.py',
+   'PYMODULE'),
+  ('encodings.mbcs',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\encodings\\mbcs.py',
+   'PYMODULE'),
+  ('encodings.mac_turkish',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\encodings\\mac_turkish.py',
+   'PYMODULE'),
+  ('encodings.mac_romanian',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\encodings\\mac_romanian.py',
+   'PYMODULE'),
+  ('encodings.mac_roman',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\encodings\\mac_roman.py',
+   'PYMODULE'),
+  ('encodings.mac_latin2',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\encodings\\mac_latin2.py',
+   'PYMODULE'),
+  ('encodings.mac_iceland',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\encodings\\mac_iceland.py',
+   'PYMODULE'),
+  ('encodings.mac_greek',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\encodings\\mac_greek.py',
+   'PYMODULE'),
+  ('encodings.mac_farsi',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\encodings\\mac_farsi.py',
+   'PYMODULE'),
+  ('encodings.mac_cyrillic',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\encodings\\mac_cyrillic.py',
+   'PYMODULE'),
+  ('encodings.mac_croatian',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\encodings\\mac_croatian.py',
+   'PYMODULE'),
+  ('encodings.mac_arabic',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\encodings\\mac_arabic.py',
+   'PYMODULE'),
+  ('encodings.latin_1',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\encodings\\latin_1.py',
+   'PYMODULE'),
+  ('encodings.kz1048',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\encodings\\kz1048.py',
+   'PYMODULE'),
+  ('encodings.koi8_u',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\encodings\\koi8_u.py',
+   'PYMODULE'),
+  ('encodings.koi8_t',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\encodings\\koi8_t.py',
+   'PYMODULE'),
+  ('encodings.koi8_r',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\encodings\\koi8_r.py',
+   'PYMODULE'),
+  ('encodings.johab',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\encodings\\johab.py',
+   'PYMODULE'),
+  ('encodings.iso8859_9',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\encodings\\iso8859_9.py',
+   'PYMODULE'),
+  ('encodings.iso8859_8',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\encodings\\iso8859_8.py',
+   'PYMODULE'),
+  ('encodings.iso8859_7',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\encodings\\iso8859_7.py',
+   'PYMODULE'),
+  ('encodings.iso8859_6',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\encodings\\iso8859_6.py',
+   'PYMODULE'),
+  ('encodings.iso8859_5',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\encodings\\iso8859_5.py',
+   'PYMODULE'),
+  ('encodings.iso8859_4',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\encodings\\iso8859_4.py',
+   'PYMODULE'),
+  ('encodings.iso8859_3',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\encodings\\iso8859_3.py',
+   'PYMODULE'),
+  ('encodings.iso8859_2',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\encodings\\iso8859_2.py',
+   'PYMODULE'),
+  ('encodings.iso8859_16',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\encodings\\iso8859_16.py',
+   'PYMODULE'),
+  ('encodings.iso8859_15',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\encodings\\iso8859_15.py',
+   'PYMODULE'),
+  ('encodings.iso8859_14',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\encodings\\iso8859_14.py',
+   'PYMODULE'),
+  ('encodings.iso8859_13',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\encodings\\iso8859_13.py',
+   'PYMODULE'),
+  ('encodings.iso8859_11',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\encodings\\iso8859_11.py',
+   'PYMODULE'),
+  ('encodings.iso8859_10',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\encodings\\iso8859_10.py',
+   'PYMODULE'),
+  ('encodings.iso8859_1',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\encodings\\iso8859_1.py',
+   'PYMODULE'),
+  ('encodings.iso2022_kr',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\encodings\\iso2022_kr.py',
+   'PYMODULE'),
+  ('encodings.iso2022_jp_ext',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\encodings\\iso2022_jp_ext.py',
+   'PYMODULE'),
+  ('encodings.iso2022_jp_3',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\encodings\\iso2022_jp_3.py',
+   'PYMODULE'),
+  ('encodings.iso2022_jp_2004',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\encodings\\iso2022_jp_2004.py',
+   'PYMODULE'),
+  ('encodings.iso2022_jp_2',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\encodings\\iso2022_jp_2.py',
+   'PYMODULE'),
+  ('encodings.iso2022_jp_1',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\encodings\\iso2022_jp_1.py',
+   'PYMODULE'),
+  ('encodings.iso2022_jp',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\encodings\\iso2022_jp.py',
+   'PYMODULE'),
+  ('encodings.idna',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\encodings\\idna.py',
+   'PYMODULE'),
+  ('encodings.hz',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\encodings\\hz.py',
+   'PYMODULE'),
+  ('encodings.hp_roman8',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\encodings\\hp_roman8.py',
+   'PYMODULE'),
+  ('encodings.hex_codec',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\encodings\\hex_codec.py',
+   'PYMODULE'),
+  ('encodings.gbk',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\encodings\\gbk.py',
+   'PYMODULE'),
+  ('encodings.gb2312',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\encodings\\gb2312.py',
+   'PYMODULE'),
+  ('encodings.gb18030',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\encodings\\gb18030.py',
+   'PYMODULE'),
+  ('encodings.euc_kr',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\encodings\\euc_kr.py',
+   'PYMODULE'),
+  ('encodings.euc_jp',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\encodings\\euc_jp.py',
+   'PYMODULE'),
+  ('encodings.euc_jisx0213',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\encodings\\euc_jisx0213.py',
+   'PYMODULE'),
+  ('encodings.euc_jis_2004',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\encodings\\euc_jis_2004.py',
+   'PYMODULE'),
+  ('encodings.cp950',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\encodings\\cp950.py',
+   'PYMODULE'),
+  ('encodings.cp949',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\encodings\\cp949.py',
+   'PYMODULE'),
+  ('encodings.cp932',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\encodings\\cp932.py',
+   'PYMODULE'),
+  ('encodings.cp875',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\encodings\\cp875.py',
+   'PYMODULE'),
+  ('encodings.cp874',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\encodings\\cp874.py',
+   'PYMODULE'),
+  ('encodings.cp869',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\encodings\\cp869.py',
+   'PYMODULE'),
+  ('encodings.cp866',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\encodings\\cp866.py',
+   'PYMODULE'),
+  ('encodings.cp865',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\encodings\\cp865.py',
+   'PYMODULE'),
+  ('encodings.cp864',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\encodings\\cp864.py',
+   'PYMODULE'),
+  ('encodings.cp863',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\encodings\\cp863.py',
+   'PYMODULE'),
+  ('encodings.cp862',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\encodings\\cp862.py',
+   'PYMODULE'),
+  ('encodings.cp861',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\encodings\\cp861.py',
+   'PYMODULE'),
+  ('encodings.cp860',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\encodings\\cp860.py',
+   'PYMODULE'),
+  ('encodings.cp858',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\encodings\\cp858.py',
+   'PYMODULE'),
+  ('encodings.cp857',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\encodings\\cp857.py',
+   'PYMODULE'),
+  ('encodings.cp856',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\encodings\\cp856.py',
+   'PYMODULE'),
+  ('encodings.cp855',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\encodings\\cp855.py',
+   'PYMODULE'),
+  ('encodings.cp852',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\encodings\\cp852.py',
+   'PYMODULE'),
+  ('encodings.cp850',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\encodings\\cp850.py',
+   'PYMODULE'),
+  ('encodings.cp775',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\encodings\\cp775.py',
+   'PYMODULE'),
+  ('encodings.cp737',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\encodings\\cp737.py',
+   'PYMODULE'),
+  ('encodings.cp720',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\encodings\\cp720.py',
+   'PYMODULE'),
+  ('encodings.cp500',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\encodings\\cp500.py',
+   'PYMODULE'),
+  ('encodings.cp437',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\encodings\\cp437.py',
+   'PYMODULE'),
+  ('encodings.cp424',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\encodings\\cp424.py',
+   'PYMODULE'),
+  ('encodings.cp273',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\encodings\\cp273.py',
+   'PYMODULE'),
+  ('encodings.cp1258',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\encodings\\cp1258.py',
+   'PYMODULE'),
+  ('encodings.cp1257',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\encodings\\cp1257.py',
+   'PYMODULE'),
+  ('encodings.cp1256',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\encodings\\cp1256.py',
+   'PYMODULE'),
+  ('encodings.cp1255',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\encodings\\cp1255.py',
+   'PYMODULE'),
+  ('encodings.cp1254',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\encodings\\cp1254.py',
+   'PYMODULE'),
+  ('encodings.cp1253',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\encodings\\cp1253.py',
+   'PYMODULE'),
+  ('encodings.cp1252',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\encodings\\cp1252.py',
+   'PYMODULE'),
+  ('encodings.cp1251',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\encodings\\cp1251.py',
+   'PYMODULE'),
+  ('encodings.cp1250',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\encodings\\cp1250.py',
+   'PYMODULE'),
+  ('encodings.cp1140',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\encodings\\cp1140.py',
+   'PYMODULE'),
+  ('encodings.cp1125',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\encodings\\cp1125.py',
+   'PYMODULE'),
+  ('encodings.cp1026',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\encodings\\cp1026.py',
+   'PYMODULE'),
+  ('encodings.cp1006',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\encodings\\cp1006.py',
+   'PYMODULE'),
+  ('encodings.cp037',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\encodings\\cp037.py',
+   'PYMODULE'),
+  ('encodings.charmap',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\encodings\\charmap.py',
+   'PYMODULE'),
+  ('encodings.bz2_codec',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\encodings\\bz2_codec.py',
+   'PYMODULE'),
+  ('encodings.big5hkscs',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\encodings\\big5hkscs.py',
+   'PYMODULE'),
+  ('encodings.big5',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\encodings\\big5.py',
+   'PYMODULE'),
+  ('encodings.base64_codec',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\encodings\\base64_codec.py',
+   'PYMODULE'),
+  ('encodings.ascii',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\encodings\\ascii.py',
+   'PYMODULE'),
+  ('encodings.aliases',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\encodings\\aliases.py',
+   'PYMODULE'),
+  ('encodings',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\encodings\\__init__.py',
+   'PYMODULE'),
+  ('sre_constants',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\sre_constants.py',
+   'PYMODULE'),
+  ('functools',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\functools.py',
+   'PYMODULE'),
+  ('warnings',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\warnings.py',
+   'PYMODULE'),
+  ('heapq',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\heapq.py',
+   'PYMODULE'),
+  ('os',
+   'C:\\Users\\Kashyap '
+   'Tanuku\\AppData\\Roaming\\uv\\python\\cpython-3.13.5-windows-x86_64-none\\Lib\\os.py',
+   'PYMODULE')])

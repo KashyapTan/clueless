@@ -10,6 +10,8 @@ from fastapi import APIRouter, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import List
+import ollama
+
 
 router = APIRouter(prefix="/api")
 
@@ -45,7 +47,6 @@ async def get_ollama_models() -> List[dict]:
     and returns every model that has been pulled.
     """
     try:
-        import ollama
         response = ollama.list()
         models = []
         # The Ollama SDK returns objects with attributes, not dicts.

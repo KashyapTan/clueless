@@ -171,6 +171,12 @@ async def init_mcp_servers():
         sys.executable,
         [str(PROJECT_ROOT / "mcp_servers" / "servers" / "filesystem" / "server.py")]
     )
+
+    await mcp_manager.connect_server(
+        "websearch",
+        sys.executable,
+        [str(PROJECT_ROOT / "mcp_servers" / "servers" / "websearch" / "server.py")]
+    )
     
     # ── Add more servers here as you implement them ────────────────
     # Example:

@@ -1,62 +1,42 @@
-"""
-Web Search MCP Server — PLACEHOLDER
-=====================================
-TODO: Implement these tools yourself!
-
-Suggested tools:
-  - web_search(query, num_results) -> list     : Search the web
-  - read_webpage(url) -> str                   : Read/scrape a webpage
-  - summarize_page(url) -> str                 : Get a summary of a page
-
-Search APIs (pick one):
-  - Google Custom Search API (free tier: 100 queries/day)
-    https://developers.google.com/custom-search/v1/overview
-  - DuckDuckGo (free, no API key needed via duckduckgo-search package)
-    pip install duckduckgo-search
-  - SerpApi (free tier available)
-    pip install google-search-results
-  - Brave Search API (free tier: 2000 queries/month)
-    https://brave.com/search/api/
-
-Web scraping:
-  pip install requests beautifulsoup4
-  # or for JavaScript-heavy sites:
-  pip install playwright
-
-Example skeleton (using DuckDuckGo — no API key needed):
-    from duckduckgo_search import DDGS
-
-    @mcp.tool()
-    def web_search(query: str, num_results: int = 5) -> str:
-        '''Search the web and return top results.'''
-        with DDGS() as ddgs:
-            results = list(ddgs.text(query, max_results=num_results))
-        formatted = []
-        for r in results:
-            formatted.append(f"Title: {r['title']}\\nURL: {r['href']}\\nSnippet: {r['body']}\\n")
-        return "\\n".join(formatted)
-
-Example skeleton (reading a webpage):
-    import requests
-    from bs4 import BeautifulSoup
-
-    @mcp.tool()
-    def read_webpage(url: str) -> str:
-        '''Read the text content of a webpage.'''
-        resp = requests.get(url, timeout=10)
-        soup = BeautifulSoup(resp.text, 'html.parser')
-        # Remove script and style elements
-        for tag in soup(['script', 'style', 'nav', 'footer']):
-            tag.decompose()
-        return soup.get_text(separator='\\n', strip=True)[:5000]  # Limit output
-"""
-
 from mcp.server.fastmcp import FastMCP
+from ddgs import DDGS
+import json
 
 mcp = FastMCP("Web Search Tools")
 
-# ── YOUR TOOLS GO HERE ─────────────────────────────────────────────────
+# ------------------------------------------------------------------
+# 1. Fetch website urls tool
+# ------------------------------------------------------------------
+@mcp.tool()
+def search_web_pages(query:str):
+    """
+    Use this tool to fetch website urls and titles
+    
+    Also use this tool when the user asks you to search the web
+    """
+    results = DDGS().text(
+        query=query,
+        region='wt-wt', # us-en for US
+        safesearch='off',
+        max_results=10
+    )
 
+    results_json = json.dumps(results)
+    return results_json
 
-if __name__ == "__main__":
-    mcp.run()
+# import trafilatura
+
+# url = 'https://www.cbsnews.com/news/winter-olympic-games-schedule-2026/'
+
+# # Use the 'config' or 'headers' approach
+# downloaded = trafilatura.fetch_url(url)
+
+# if downloaded:
+#     result = trafilatura.extract(downloaded, output_format='markdown')
+#     print(result)
+#     with open("output.txt", "w", encoding="utf-8") as f:
+#         f.write(result)
+
+#     print("Scraping complete. Check output.txt.")
+# else:
+#     print("Blocked or failed to fetch.")

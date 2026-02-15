@@ -6,7 +6,7 @@
             "module": "mcp_servers.servers.demo.server"
         },
         "filesystem": {
-            "enabled": false,
+            "enabled": true,
             "description": "File system tools (read, write, move, rename files)",
             "module": "mcp_servers.servers.filesystem.server"
         },
@@ -46,7 +46,7 @@
             "module": "mcp_servers.servers.canvas.server"
         },
         "websearch": {
-            "enabled": false,
+            "enabled": true,
             "description": "Web search and scraping tools",
             "module": "mcp_servers.servers.websearch.server"
         }

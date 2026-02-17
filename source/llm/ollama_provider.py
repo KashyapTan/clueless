@@ -117,6 +117,9 @@ async def stream_ollama_chat(
                 messages=messages,
                 tools=mcp_manager.get_ollama_tools(),
                 stream=True,
+                options={
+                    "num_ctx": 32768,  # Increase context window to handle large tool outputs
+                },
             )
 
             for idx, chunk in enumerate(generator):
@@ -137,6 +140,45 @@ async def stream_ollama_chat(
                         safe_schedule(broadcast_message("thinking_complete", ""))
                     accumulated.append(content_token)
                     safe_schedule(broadcast_message("response_chunk", content_token))
+
+                # Handle unexpected tool calls in the final stream (fallback)
+                if hasattr(chunk, "message"):
+                    msg = getattr(chunk, "message")
+                    if msg and hasattr(msg, "tool_calls") and msg.tool_calls:
+                        for tool_call in msg.tool_calls:
+                            # If the model tries to call a tool in the final stream, capture it as text
+                            # to avoid "No content" errors.
+                            fn = tool_call.function.name
+                            args = tool_call.function.arguments
+                            tool_text = f"\n\n[Model requested tool: {fn}({args})]"
+
+                            if thinking_tokens and not accumulated:
+                                safe_schedule(
+                                    broadcast_message("thinking_complete", "")
+                                )
+
+                            accumulated.append(tool_text)
+                            safe_schedule(
+                                broadcast_message("response_chunk", tool_text)
+                            )
+                elif isinstance(chunk, dict):
+                    # Fallback for dict-based chunks (older clients)
+                    msg = chunk.get("message", {})
+                    if isinstance(msg, dict) and msg.get("tool_calls"):
+                        for tool_call in msg["tool_calls"]:
+                            fn = tool_call.get("function", {}).get("name", "unknown")
+                            args = tool_call.get("function", {}).get("arguments", {})
+                            tool_text = f"\n\n[Model requested tool: {fn}({args})]"
+
+                            if thinking_tokens and not accumulated:
+                                safe_schedule(
+                                    broadcast_message("thinking_complete", "")
+                                )
+
+                            accumulated.append(tool_text)
+                            safe_schedule(
+                                broadcast_message("response_chunk", tool_text)
+                            )
 
                 # Track final message and token stats
                 if hasattr(chunk, "done") and getattr(chunk, "done"):
@@ -169,11 +211,49 @@ async def stream_ollama_chat(
                     broadcast_message("response_chunk", final_message_content)
                 )
             elif not accumulated and not app_state.stop_streaming:
-                safe_schedule(
-                    broadcast_message(
-                        "error", "No content tokens extracted from stream."
+                # Fallback to non-streaming call if streaming yielded nothing
+                # (Common issue with some models/tool-use combinations)
+                try:
+                    print("[Ollama] Stream empty. Attempting non-streamed fallback...")
+                    fallback = chat(
+                        model=app_state.selected_model,
+                        messages=messages,
+                        tools=mcp_manager.get_ollama_tools(),
+                        stream=False,
+                        options={"num_ctx": 32768},
                     )
-                )
+
+                    content_str = ""
+                    if hasattr(fallback, "message"):
+                        msg = getattr(fallback, "message")
+                        if msg:
+                            if hasattr(msg, "content") and msg.content:
+                                content_str = msg.content
+
+                            # Also check for tool calls in fallback and convert to text
+                            if hasattr(msg, "tool_calls") and msg.tool_calls:
+                                for tool_call in msg.tool_calls:
+                                    fn = tool_call.function.name
+                                    args = tool_call.function.arguments
+                                    content_str += f"\n\n[Model requested tool (fallback): {fn}({args})]"
+
+                    if content_str:
+                        accumulated.append(content_str)
+                        safe_schedule(broadcast_message("response_chunk", content_str))
+                    else:
+                        safe_schedule(
+                            broadcast_message(
+                                "error",
+                                "No content tokens extracted from stream (and fallback failed).",
+                            )
+                        )
+                except Exception as e:
+                    safe_schedule(
+                        broadcast_message(
+                            "error",
+                            f"No content tokens extracted from stream. Fallback error: {e}",
+                        )
+                    )
 
             safe_schedule(broadcast_message("response_complete", ""))
             loop.call_soon_threadsafe(

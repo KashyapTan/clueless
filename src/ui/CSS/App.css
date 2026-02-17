@@ -931,6 +931,7 @@ input, textarea, [contenteditable="true"] {
   height: 22px;
   width: auto;
   opacity: 0.5;
+  
 }
 .mini-container .clueless-logo:hover {
   opacity: 1;
@@ -1208,4 +1209,42 @@ input, textarea, [contenteditable="true"] {
   overflow: hidden;
 }
 
+/* Loading Dots Animation */
+.loading-dots {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0 10px;
+  height: 24px;
+}
 
+.dot {
+  width: 6px;
+  height: 6px;
+  background-color: rgba(255, 255, 255, 0.6);
+  border-radius: 50%;
+  animation: pulse 1.4s infinite ease-in-out both;
+}
+
+.dot:nth-child(1) {
+  animation-delay: -0.32s;
+}
+
+.dot:nth-child(2) {
+  animation-delay: -0.16s;
+}
+
+.dot:nth-child(3) {
+  animation-delay: 0s;
+}
+
+@keyframes pulse {
+  0%, 80%, 100% { 
+    transform: scale(0);
+    opacity: 0.5;
+  }
+  40% { 
+    transform: scale(1);
+    opacity: 1;
+  }
+}

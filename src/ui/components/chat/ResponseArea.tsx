@@ -8,6 +8,7 @@ import ReactMarkdown from 'react-markdown';
 import { ChatMessage } from './ChatMessage';
 import { ThinkingSection } from './ThinkingSection';
 import { CodeBlock } from './CodeBlock';
+import { LoadingDots } from './LoadingDots';
 import type { ChatMessage as ChatMessageType } from '../../types';
 
 interface ResponseAreaProps {
@@ -65,6 +66,14 @@ export function ResponseArea({
           <div className="query">
             <p>{currentQuery}</p>
           </div>
+        )}
+
+        {/* Loading animation while waiting for response start */}
+        {!error && !canSubmit && !thinking && !response && (
+           <div className="response">
+             <div className="assistant-header">Clueless • {generatingModel}</div>
+             <LoadingDots />
+           </div>
         )}
 
         {/* Current thinking process */}

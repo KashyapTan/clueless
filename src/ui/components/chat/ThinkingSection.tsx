@@ -4,6 +4,7 @@
  * Shows the model's reasoning process in a collapsible section.
  */
 import ReactMarkdown from 'react-markdown';
+import { LoadingDots } from './LoadingDots';
 
 interface ThinkingSectionProps {
   thinking: string;
@@ -24,6 +25,7 @@ export function ThinkingSection({ thinking, isThinking, collapsed, onToggle }: T
         <span className="thinking-label">
           {isThinking ? 'Thinking...' : 'Thought process'}
         </span>
+        {isThinking && <LoadingDots />}
       </div>
       {!collapsed && (
         <div className="thinking-content">

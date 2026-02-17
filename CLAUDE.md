@@ -40,9 +40,15 @@ src/
       ├─ components/    # Layout.tsx, TitleBar.tsx, WebSocketContext.tsx
       └─ CSS/           # Stylesheets
 source/              # Python backend
-  ├─ main.py          # FastAPI server, Ollama, MCP manager (1195 lines)
-  ├─ database.py      # SQLite ops (314 lines)
-  ├─ ss.py            # Screenshot service (478 lines)
+  ├─ main.py          # Entry point (initializes services)
+  ├─ app.py           # FastAPI app factory
+  ├─ database.py      # SQLite ops (conversations, messages, settings)
+  ├─ ss.py            # Screenshot service
+  ├─ api/             # API layer (websocket.py, http.py, handlers.py)
+  ├─ core/            # Core utils (state.py, connection.py)
+  ├─ services/        # Business logic (conversations.py, screenshots.py)
+  ├─ mcp_integration/ # MCP manager and handlers
+  ├─ llm/             # Ollama integration
   └─ user_data/       # clueless_app.db, screenshots/
 mcp_servers/
   ├─ client/          # ollama_bridge.py (standalone bridge)
@@ -56,39 +62,34 @@ user_data/           # Persistent app data (DB, screenshots)
 
 ## Key Files & Implementation Details
 
-### `source/main.py` (1195 lines)
-**FastAPI WebSocket server, Ollama integration, MCP manager**
+### `source/main.py` (162 lines)
+**Backend Entry Point**
 
-Critical components:
-- `McpToolManager`: Manages MCP server lifecycle (stdio child processes), discovers tools, routes calls
-- `_init_mcp_servers()`: Registers all MCP servers (modify here to add new servers)
-- `websocket_endpoint()`: Main WS handler, message type router
-- `_handle_mcp_tool_calls()`: Intercepts Ollama tool calls, routes to MCP, returns results
-- `_server_loop_holder`: Global asyncio loop reference for scheduling coroutines from worker threads (Windows Proactor requirement)
-- `_chat_history`: Multi-turn conversation state (list of message dicts)
-- Screenshot lifecycle: `_on_screenshot_start()`, `_on_screenshot_captured()` scheduled on server loop
-- Auto-port detection: Falls back from 8000 if busy
-- Graceful cleanup: `atexit`, `SIGINT`, `SIGTERM` handlers
+- Initializes global state (`app_state`)
+- Starts screenshot service thread
+- Launches FastAPI server via Uvicorn with `asyncio` loop
+- Registers signal handlers for graceful shutdown
 
-**Key patterns**:
-- Use `asyncio.run_coroutine_threadsafe(coro, _server_loop_holder.loop)` from non-async threads
-- Refs in callbacks capture state; schedule on server loop to access current state
-- Tool schemas auto-converted to Ollama format from MCP discovery
-- Images preprocessed (max 800x600) before sending to Ollama
+### `source/api/http.py` (98 lines)
+**REST API Endpoints**
+- `GET /api/health`: Health check
+- `GET /api/models/ollama`: List installed models
+- `GET /api/models/enabled`: List enabled models
+- `PUT /api/models/enabled`: Update enabled models
 
-### `source/database.py` (314 lines)
+### `source/database.py` (367 lines)
 **SQLite operations with thread safety**
 
 Critical patterns:
 - `check_same_thread=False` enables FastAPI thread pool access
-- JSON serialization for image arrays (SQLite has no array type)
-- `add_message()` updates parent conversation `updated_at` timestamp
-- Migration pattern: Try `ALTER TABLE`, catch `OperationalError` if column exists
-- UUIDs for conversation IDs (generated in Python, not DB)
+- JSON serialization for image arrays and settings
+- `settings` table for key-value storage (e.g., enabled models)
+- `model` column in messages table
 
 Tables:
-- `conversations`: id (TEXT/UUID), title, created_at, updated_at, total_input_tokens, total_output_tokens
-- `messages`: num_messages (AUTOINCREMENT), conversation_id (FK), role, content, images (JSON TEXT), created_at
+- `conversations`: id, title, timestamps, token counts
+- `messages`: content, role, images, model, created_at
+- `settings`: key, value
 
 ### `source/ss.py` (478 lines)
 **Screenshot service with hotkey and overlay**
@@ -106,23 +107,25 @@ Components:
 
 **Critical**: DPI scaling on Windows requires coordinate transformation for multi-monitor setups
 
-### `src/ui/pages/App.tsx` (892 lines)
-**Main React component with WebSocket integration**
+### `src/ui/pages/App.tsx` (554 lines)
+**Main React component (Refactored)**
+
+**Architecture**:
+- **Hooks**: `useChatState`, `useScreenshots`, `useTokenUsage`, `useWebSocket`
+- **Services**: `api.ts` for REST calls (models, settings)
+- **Components**: Decomposed into `ResponseArea`, `QueryInput`, `ModeSelector`, `ScreenshotChips`
 
 **Critical patterns**:
-- Uses **refs** for values captured in async WS callbacks: `currentQueryRef`, `responseRef`, `thinkingRef`, `screenshotsRef`, `toolCallsRef`
-  - WHY: State updates don't re-register WS handler, callbacks capture stale state
-  - SOLUTION: Update both state and ref simultaneously
-- WebSocket message router in `ws.onmessage` event handler
-- Screenshot thumbnails stored as base64 data URIs
-- Tool calls displayed as cards: `⚙ Used X tools: server > tool(args) → result`
-- `electronAPI.focusWindow()` and `electronAPI.setMiniMode()` for IPC
+- **State/Ref separation**: Hooks manage state, refs used inside WebSocket callbacks to avoid stale closures
+- **WebSocket Handler**: Centralized `handleWebSocketMessage` function
+- **Model Selection**: Fetches enabled models from backend via HTTP API
+- **IPC**: `electronAPI.focusWindow()` and `setMiniMode()`
 
-**State management**:
-- `messages`: Chat history array
-- `screenshots`: Current screenshot carousel (cleared after query completes)
-- `captureMode`: 'fullscreen' | 'precision' | 'none'
-- `currentConversationId`: UUID or null
+### `source/services/conversations.py` (190 lines)
+**Conversation Logic**
+- `submit_query`: Handles user input, image processing, Ollama streaming, and persistence
+- `resume_conversation`: Reconstructs chat state from DB, regenerates thumbnails
+- `clear_context`: Resets state for new chat
 
 ### `src/electron/main.ts` (148 lines)
 **Electron main process**
@@ -332,9 +335,9 @@ CREATE TABLE messages (
     conversation_id TEXT,             -- FK to conversations.id
     role TEXT,                        -- 'user' or 'assistant'
     content TEXT,
-    images TEXT,                      -- JSON array: ["path1.png", "path2.png"]
-    created_at REAL,
-    FOREIGN KEY(conversation_id) REFERENCES conversations(id)
+CREATE TABLE settings (
+    key TEXT PRIMARY KEY,
+    value TEXT
 )
 ```
 

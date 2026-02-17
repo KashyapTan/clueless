@@ -138,9 +138,27 @@ clueless/
 │           ├── gemini.svg
 │           └── openai.svg
 ├── source/                 # Python backend
-│   ├── main.py             # FastAPI server, Ollama streaming, MCP manager
+│   ├── main.py             # FastAPI server entry point
+│   ├── app.py              # FastAPI app factory
+│   ├── config.py           # Configuration constants
 │   ├── database.py         # SQLite chat history persistence
 │   ├── ss.py               # Screenshot service, region selector
+│   ├── api/                # API layer
+│   │   ├── websocket.py    # WebSocket endpoint
+│   │   ├── http.py         # HTTP REST endpoints
+│   │   └── handlers.py     # Message handlers
+│   ├── core/               # Core utilities
+│   │   ├── state.py        # Global state
+│   │   ├── connection.py   # WebSocket manager
+│   │   └── lifecycle.py    # Startup/shutdown logic
+│   ├── services/           # Business logic
+│   │   ├── conversations.py
+│   │   └── screenshots.py
+│   ├── llm/                # LLM integration
+│   │   └── ollama.py
+│   ├── mcp_integration/    # MCP tool management
+│   │   ├── manager.py
+│   │   └── handlers.py
 │   └── user_data/          # Persistent user data
 │       ├── clueless_app.db # SQLite database
 │       └── screenshots/    # Persistent screenshot storage
@@ -206,39 +224,27 @@ clueless/
 
 ## Key Files
 
-### `source/main.py` (1195 lines)
-The heart of the backend. Handles:
-- **FastAPI WebSocket server** on port 8000 (auto-finds available port if busy)
-- **Bidirectional messaging protocol**:
-  - **Client → Server**: `submit_query`, `clear_context`, `set_capture_mode`, `resume_conversation`, `get_conversations`, `search_conversations`, `delete_conversation`, `remove_screenshot`
-  - **Server → Client**: `ready`, `screenshot_start`, `screenshot_added`, `screenshot_removed`, `screenshots_cleared`, `screenshot_ready`, `query`, `thinking_chunk`, `thinking_complete`, `response_chunk`, `response_complete`, `error`, `context_cleared`, `conversation_saved`, `conversations_list`, `conversation_loaded`, `conversation_deleted`, `token_update`
-- **Ollama streaming** with token-by-token response delivery
-- **MCP (Model Context Protocol) integration**:
-  - `McpToolManager` class manages MCP server connections
-  - Launches MCP servers as child processes (stdio transport)
-  - Discovers tools and converts schemas to Ollama format
-  - Routes tool calls from Ollama to correct MCP servers
-  - Returns results back to Ollama for final answer generation
-  - `_init_mcp_servers()` function registers all enabled servers
-  - Currently enabled: demo (add/divide), filesystem (list_directory)
-  - See MCP section below for how to add new tools
-- **Screenshot lifecycle management**:
-  - Multiple screenshots support with thumbnails
-  - Three capture modes: fullscreen, precision (hotkey), meeting recording
-  - Image preprocessing and thumbnail generation (max 800x600 preview)
-- **Multi-turn chat history** with context preservation
-- **Database integration** for conversation persistence
-- **Token usage tracking** with input/output counts
-- **Graceful cleanup** via `atexit`, `SIGINT`, and `SIGTERM` handlers
-- **Event loop holder** (`_server_loop_holder`) so worker threads can schedule coroutines on the server's asyncio loop (critical for Windows Proactor)
-- **Auto-port detection** with fallback if 8000 is busy
-- **Connection manager** for broadcast messaging to all connected clients
+### `source/main.py` (162 lines)
+Entry point for the backend. It initializes services, starts the screenshot listener, and launches the FastAPI server (uvicorn) with the correct asyncio loop configuration. It delegates the actual app creation to `app.py` and logic to `services/`, `api/`, and `core/` modules.
 
-### `source/database.py` (314 lines)
+### `source/api/http.py` (98 lines)
+New HTTP REST API for non-streaming operations:
+- **GET /api/health**: Server health check
+- **GET /api/models/ollama**: Lists installed Ollama models with details (size, quantization)
+- **GET /api/models/enabled**: Returns models enabled in settings (from DB)
+- **PUT /api/models/enabled**: Updates the list of enabled models
+- **Architecture**: Separates one-time fetches from the WebSocket real-time stream.
+
+### `source/database.py` (367 lines)
 SQLite database manager with thread-safe operations:
 - **Schema**:
-  - `conversations` table: id (UUID), title, created_at, updated_at, total_input_tokens, total_output_tokens
-  - `messages` table: num_messages (auto-increment), conversation_id (FK), role, content, images (JSON array), created_at
+  - `conversations`: id, title, timestamps, token counts
+  - `messages`: content, role, images, model (new column)
+  - `settings`: key-value store for preferences (e.g., enabled models)
+- **New Features**:
+  - `get/set_enabled_models()`: Persists user model selection
+  - `model` column in messages: Tracks which model generated a response
+  - `settings` table: Generic key-value storage
 - **Write operations**:
   - `start_new_conversation(title)` → creates new chat session
   - `add_message(conversation_id, role, content, images)` → saves message and updates parent timestamp
@@ -277,43 +283,25 @@ Screenshot service with two main components:
    - `copy_image_to_clipboard(image, dpi_scale)` → robust clipboard support (64-bit handles)
    - `get_dpi_scale()` → detects monitor DPI scaling factor
 
-### `src/ui/pages/App.tsx` (892 lines)
-Main React component with comprehensive features:
-- **Navigation bar**:
-  - **Left side**: Settings, Chat History, Recorded Meetings Album buttons
-  - **Center**: Draggable title bar (blank space for window dragging)
-  - **Right side**: New Chat button, Clueless logo (click to enter mini mode)
-- **Multi-turn chat history display**:
-  - User messages with attached screenshot thumbnails
-  - Assistant responses with markdown rendering and syntax highlighting
-  - Collapsible "thinking" section (if model provides reasoning)
-  - Tool call cards showing MCP tool usage (`⚙ Used X tools: server > tool(args) → result`)
-- **Screenshot management**:
-  - Multiple screenshots with thumbnails and remove buttons
-  - Visual indicator showing number of attached images
-  - Clear all screenshots button
-- **Capture mode selector** (bottom bar):
-  - Fullscreen screenshot (entire primary display)
-  - Region screenshot (precision mode with hotkey)
-  - Meeting recorder (UI scaffolded, not yet functional)
-- **Token usage tracking**:
-  - Visual indicator showing total tokens / limit (e.g., "1,234 / 128,000")
-  - Popup with input/output breakdown on click
-  - Color coding: green (< 50%), yellow (50-80%), red (> 80%)
-- **Scroll behavior**:
-  - Auto-scroll to bottom on new messages
-  - "Scroll to bottom" button when user scrolls up
-  - Manual scroll detection
-- **Model selector dropdown** (currently UI-only, shows QWEN 3 VL:8B)
-- **Voice input button** (UI placeholder — not yet implemented)
-- **WebSocket integration**:
-  - Handles all message types from backend
-  - Uses refs (`currentQueryRef`, `responseRef`, `thinkingRef`, `screenshotsRef`, `toolCallsRef`) to capture values during async operations
-  - Conversation resumption from ChatHistory navigation
-  - New chat context clearing
-- **electronAPI bridge**:
-  - `focusWindow()` — brings window to focus after screenshot capture
-  - `setMiniMode(boolean)` — toggles mini/normal mode
+### `src/ui/pages/App.tsx` (554 lines)
+Main Chat Application Component (Refactored):
+- **Architecture**:
+  - State management via custom hooks: `useChatState`, `useScreenshots`, `useTokenUsage`
+  - WebSocket communication via `useWebSocket` hook
+  - API abstraction via `src/ui/services/api.ts`
+- **Features**:
+  - **Navigation**: TitleBar with Settings, History, Album links
+  - **Chat Interface**: `ResponseArea` (messages), `QueryInput` (text area)
+  - **Input Options**: `ScreenshotChips` (previews), `ModeSelector` (capture modes), `TokenUsagePopup`
+  - **Model Selector**: Dropdown populated from `api.getEnabledModels()`
+- **Key Hooks**:
+  - `useChatState`: Handles message history, thinking state, tool calls
+  - `useScreenshots`: Handles capture mode, image list, thumbnail generation
+  - `useTokenUsage`: Tracks input/output tokens
+- **WebSocket Integration**:
+  - Handles all server messages (`ready`, `query`, `response_chunk`, `tool_call`, etc.)
+  - Auto-reconnection logic
+- **IPC**: Uses `window.electronAPI` for focus and mini-mode toggling
 
 ### `src/ui/pages/ChatHistory.tsx` (202 lines)
 Conversation browser with advanced features:
@@ -329,17 +317,13 @@ Conversation browser with advanced features:
   - Deleted conversations remove from list
 - **Navigation integration** with React Router state passing
 
-### `src/ui/pages/Settings.tsx` (58 lines)
-Settings page with sidebar navigation (UI scaffolded):
-- **Sidebar menu**:
-  - Models — model selection and configuration
-  - Connections — MCP server management
-  - Ollama — local model settings
-  - Anthropic — API key configuration (placeholder)
-  - Gemini — API key configuration (placeholder)
-  - OpenAI — API key configuration (placeholder)
-- **Content area**: Currently shows SettingsModels component
-- **Future features**: Enable/disable MCP servers, configure API keys, model parameters
+### `src/ui/pages/Settings.tsx` (85 lines)
+Settings page with tabbed navigation:
+- **Tabs**: Models, Connections, Ollama, Anthropic, Gemini, OpenAI
+- **Implemented**: 
+  - **Models**: Uses `SettingsModels` component to toggle local Ollama models.
+- **Placeholders**: Other tabs show a "coming soon" message.
+- **Sidebar**: Vertical navigation with icons.
 
 ### `src/ui/components/Layout.tsx` (41 lines)
 Root layout component with mini mode logic:
@@ -657,13 +641,19 @@ CREATE TABLE conversations (
 ### `messages` Table
 ```sql
 CREATE TABLE messages (
-    num_messages INTEGER PRIMARY KEY AUTOINCREMENT,  -- Auto-incrementing ID
-    conversation_id TEXT,             -- Foreign key to conversations.id
+    num_messages INTEGER PRIMARY KEY AUTOINCREMENT,
+    conversation_id TEXT,             -- FK to conversations.id
     role TEXT,                        -- 'user' or 'assistant'
     content TEXT,                     -- Message content
     images TEXT,                      -- JSON array: ["path1.png", "path2.png"]
-    created_at REAL,                  -- Unix timestamp
+    model TEXT,                       -- Model name used for this message
+    created_at REAL,
     FOREIGN KEY(conversation_id) REFERENCES conversations(id)
+)
+
+CREATE TABLE settings (
+    key TEXT PRIMARY KEY,             -- e.g., "enabled_models"
+    value TEXT                        -- e.g., JSON string of model names
 )
 ```
 

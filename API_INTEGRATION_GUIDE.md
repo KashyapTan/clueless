@@ -115,108 +115,47 @@ case 'your_action_result': {
 
 ---
 
-## Adding an HTTP REST API
+## Implemented HTTP REST API
 
-### Step 1: Create HTTP Routes (Python)
+### `source/api/http.py`
 
-Create `source/api/http.py`:
+The following endpoints are now available:
 
 ```python
-"""
-HTTP REST API endpoints.
-
-Use for:
-- One-time data fetches
-- Configuration
-- Health checks
-"""
-from fastapi import APIRouter, HTTPException
-from pydantic import BaseModel
-from typing import List
-
-router = APIRouter(prefix="/api")
-
-
 # ============================================
 # Health Check
 # ============================================
-
-@router.get("/health")
-async def health_check():
-    """Check if the server is running."""
-    return {"status": "healthy"}
-
+GET /api/health
+Returns: {"status": "healthy"}
 
 # ============================================
 # Models API
 # ============================================
+GET /api/models/ollama
+Returns: List of installed models with details:
+[
+  {
+    "name": "qwen3-vl:8b-instruct",
+    "size": 123456789,
+    "parameter_size": "8.5B",
+    "quantization": "Q4_0"
+  }
+]
 
-@router.get("/models")
-async def get_models() -> List[str]:
-    """Get available Ollama models."""
-    try:
-        import ollama
-        models = ollama.list()
-        return [m['name'] for m in models.get('models', [])]
-    except Exception:
-        return ["qwen3-vl:8b-instruct"]
+GET /api/models/enabled
+Returns: List of enabled model names (e.g., ["qwen3-vl:8b-instruct"])
 
-
-# ============================================
-# Settings API (Example)
-# ============================================
-
-class SettingsUpdate(BaseModel):
-    """Settings update request body."""
-    model: str | None = None
-    capture_mode: str | None = None
-
-
-@router.get("/settings")
-async def get_settings():
-    """Get current settings."""
-    from ..core.state import app_state
-    return {
-        "capture_mode": app_state.capture_mode,
-        "model": "qwen3-vl:8b-instruct",
-    }
-
-
-@router.put("/settings")
-async def update_settings(settings: SettingsUpdate):
-    """Update settings."""
-    from ..core.state import app_state
-    
-    if settings.capture_mode:
-        app_state.capture_mode = settings.capture_mode
-    
-    return {"status": "updated"}
+PUT /api/models/enabled
+Body: {"models": ["model1", "model2"]}
+Returns: {"status": "updated", "models": [...]}
 ```
 
-### Step 2: Register Routes in App
+### Registering Routes
 
-Edit `source/app.py`:
+Routes are registered in `source/app.py`:
 
 ```python
-from fastapi import FastAPI
-from .api.websocket import websocket_endpoint
-from .api.http import router as http_router  # Add this
-
-
-def create_app() -> FastAPI:
-    app = FastAPI(
-        title="Clueless API",
-        description="AI Chat Assistant with Screenshot Capabilities",
-        version="0.1.0"
-    )
-    
-    # Register WebSocket endpoint
-    app.add_websocket_route("/ws", websocket_endpoint)
-    
-    # Register HTTP routes
-    app.include_router(http_router)  # Add this
-    
-    return app
+app.include_router(http_router)
 ```
 
 ### Step 3: Call from Frontend
@@ -373,7 +312,7 @@ source/
 │   ├── __init__.py
 │   ├── websocket.py  # WebSocket endpoint
 │   ├── handlers.py   # WebSocket message handlers
-│   └── http.py       # HTTP REST endpoints (create this)
+│   └── http.py       # HTTP REST endpoints (IMPLEMENTED)
 │
 ├── core/             # Core utilities
 │   ├── __init__.py
@@ -386,7 +325,7 @@ source/
 │   ├── conversations.py
 │   └── screenshots.py
 │
-├── mcp/              # MCP integration
+├── mcp_integration/  # MCP integration
 │   ├── __init__.py
 │   ├── manager.py
 │   └── handlers.py

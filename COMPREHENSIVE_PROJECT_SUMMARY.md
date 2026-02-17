@@ -283,25 +283,37 @@ Screenshot service with two main components:
    - `copy_image_to_clipboard(image, dpi_scale)` → robust clipboard support (64-bit handles)
    - `get_dpi_scale()` → detects monitor DPI scaling factor
 
-### `src/ui/pages/App.tsx` (554 lines)
-Main Chat Application Component (Refactored):
-- **Architecture**:
-  - State management via custom hooks: `useChatState`, `useScreenshots`, `useTokenUsage`
-  - WebSocket communication via `useWebSocket` hook
-  - API abstraction via `src/ui/services/api.ts`
-- **Features**:
-  - **Navigation**: TitleBar with Settings, History, Album links
-  - **Chat Interface**: `ResponseArea` (messages), `QueryInput` (text area)
-  - **Input Options**: `ScreenshotChips` (previews), `ModeSelector` (capture modes), `TokenUsagePopup`
-  - **Model Selector**: Dropdown populated from `api.getEnabledModels()`
-- **Key Hooks**:
-  - `useChatState`: Handles message history, thinking state, tool calls
-  - `useScreenshots`: Handles capture mode, image list, thumbnail generation
-  - `useTokenUsage`: Tracks input/output tokens
-- **WebSocket Integration**:
-  - Handles all server messages (`ready`, `query`, `response_chunk`, `tool_call`, etc.)
-  - Auto-reconnection logic
-- **IPC**: Uses `window.electronAPI` for focus and mini-mode toggling
+### `src/ui/pages/App.tsx` (Refactored)
+Main React component that orchestrates the chat interface using custom hooks and modular components:
+- **State Management**: Uses `useChatState`, `useScreenshots`, and `useTokenUsage` hooks.
+- **WebSocket**: Integrates `useWebSocket` (or direct connection logic) to handle real-time events.
+- **Components**:
+  - `<TitleBar />`: Navigation and window controls.
+  - `<ResponseArea />`: Renders chat history, thinking sections, and tool calls.
+  - `<QueryInput />`: User input field with submit handling.
+  - `<ModeSelector />`: Toggles between capture modes (fullscreen, precision, meeting).
+  - `<ScreenshotChips />`: Displays attached screenshot thumbnails.
+- **Refs**: Uses refs (`currentQueryRef`, `responseRef`, etc.) to maintain state consistency inside async WebSocket callbacks.
+- **Navigation**: Handles navigation state from other pages (e.g., resuming a conversation from History).
+
+### `src/ui/hooks/`
+Custom hooks for separating logic from UI:
+- `useChatState.ts`: Manages `chatHistory`, `currentQuery`, `response`, `thinking`, `status`, and `error`. Exposes actions like `startQuery`, `appendResponse`, `resetForNewChat`.
+- `useScreenshots.ts`: Manages the list of captured screenshots and the current capture mode.
+- `useTokenUsage.ts`: Tracks input/output token counts and calculates total usage.
+
+### `src/ui/components/`
+Reusable UI building blocks:
+- **chat/**:
+  - `ChatMessage.tsx`: Renders individual user/assistant messages.
+  - `ThinkingSection.tsx`: Collapsible section for LLM reasoning.
+  - `ToolCallsDisplay.tsx`: Renders MCP tool usage cards.
+  - `CodeBlock.tsx`: Syntax highlighting for code snippets.
+- **input/**:
+  - `QueryInput.tsx`: Text area with auto-resize and submit handlers.
+  - `ModeSelector.tsx`: Buttons for switching capture modes.
+  - `TokenUsagePopup.tsx`: Detailed token usage breakdown.
+
 
 ### `src/ui/pages/ChatHistory.tsx` (202 lines)
 Conversation browser with advanced features:

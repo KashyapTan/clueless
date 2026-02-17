@@ -107,19 +107,22 @@ Components:
 
 **Critical**: DPI scaling on Windows requires coordinate transformation for multi-monitor setups
 
-### `src/ui/pages/App.tsx` (554 lines)
-**Main React component (Refactored)**
+### `src/ui/pages/App.tsx` (Refactored)
+**Main Chat Interface**
+- **Architecture**: Modular composition using custom hooks and components.
+- **State**: Managed by `useChatState` (chat logic), `useScreenshots` (images), `useTokenUsage` (stats).
+- **Rendering**: Delegates to `ResponseArea` (chat history) and `QueryInput` (user interaction).
+- **WebSocket**: Handles real-time events via `handleWebSocketMessage` callback, updating state and refs.
 
-**Architecture**:
-- **Hooks**: `useChatState`, `useScreenshots`, `useTokenUsage`, `useWebSocket`
-- **Services**: `api.ts` for REST calls (models, settings)
-- **Components**: Decomposed into `ResponseArea`, `QueryInput`, `ModeSelector`, `ScreenshotChips`
+### `src/ui/hooks/`
+- **`useChatState.ts`**: Core chat logic. Manages history array, streaming buffers (`thinking`, `response`), and status.
+- **`useScreenshots.ts`**: Manages screenshot carousel and capture mode state.
+- **`useTokenUsage.ts`**: Tracks cumulative token usage.
 
-**Critical patterns**:
-- **State/Ref separation**: Hooks manage state, refs used inside WebSocket callbacks to avoid stale closures
-- **WebSocket Handler**: Centralized `handleWebSocketMessage` function
-- **Model Selection**: Fetches enabled models from backend via HTTP API
-- **IPC**: `electronAPI.focusWindow()` and `setMiniMode()`
+### `src/ui/components/`
+- **`chat/`**: `ChatMessage`, `ThinkingSection`, `ToolCallsDisplay`, `CodeBlock`.
+- **`input/`**: `QueryInput`, `ModeSelector`, `ScreenshotChips`, `TokenUsagePopup`.
+
 
 ### `source/services/conversations.py` (190 lines)
 **Conversation Logic**

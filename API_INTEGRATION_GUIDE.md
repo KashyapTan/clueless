@@ -335,13 +335,13 @@ source/
     └── ollama.py
 ```
 
-### React Frontend (src/ui/)
+### React Frontend (`src/ui/`)
 ```
 src/ui/
 ├── main.tsx          # Entry point
 │
 ├── pages/            # Page components
-│   ├── App.tsx       # Main chat
+│   ├── App.tsx       # Main chat - orchestrates hooks
 │   ├── Settings.tsx
 │   └── ChatHistory.tsx
 │
@@ -357,14 +357,14 @@ src/ui/
 │   └── Layout.tsx
 │
 ├── hooks/            # Custom hooks
-│   ├── useChatState.ts
-│   ├── useWebSocket.ts
-│   ├── useScreenshots.ts
-│   └── useTokenUsage.ts
+│   ├── useChatState.ts   # Core chat logic
+│   ├── useWebSocket.ts   # Connection wrapper
+│   ├── useScreenshots.ts # Image management
+│   └── useTokenUsage.ts  # Token tracking
 │
 ├── services/         # API layer
 │   ├── index.ts
-│   └── api.ts
+│   └── api.ts        # HTTP API wrappers
 │
 ├── types/            # TypeScript types
 │   └── index.ts
@@ -375,6 +375,7 @@ src/ui/
 └── CSS/              # Stylesheets
     └── ...
 ```
+
 
 ---
 

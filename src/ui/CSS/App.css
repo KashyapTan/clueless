@@ -1088,6 +1088,27 @@ input, textarea, [contenteditable="true"] {
   transform: rotate(180deg);
 }
 
+.tool-icon-gear.spinning {
+  animation: spin 2s linear infinite;
+  color: #58a6ff;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.tool-result-text.italic {
+  font-style: italic;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.tool-status-indicator {
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.4);
+  animation: pulse 1s infinite;
+}
+
 .tool-calls-list {
   padding: 0;
   background-color: rgba(0, 0, 0, 0.1);

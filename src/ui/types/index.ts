@@ -9,8 +9,9 @@
 export interface ToolCall {
   name: string;
   args: Record<string, unknown>;
-  result: string;
+  result?: string;
   server: string;
+  status?: 'calling' | 'complete';
 }
 
 export interface MessageImage {

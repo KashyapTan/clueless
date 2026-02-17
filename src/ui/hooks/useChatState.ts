@@ -14,6 +14,7 @@ interface UseChatStateReturn {
   thinking: string;
   isThinking: boolean;
   thinkingCollapsed: boolean;
+  toolCalls: ToolCall[];
   conversationId: string | null;
   query: string;
   canSubmit: boolean;
@@ -35,6 +36,8 @@ interface UseChatStateReturn {
   setIsThinking: (isThinking: boolean) => void;
   appendThinking: (chunk: string) => void;
   appendResponse: (chunk: string) => void;
+  addToolCall: (toolCall: ToolCall) => void;
+  updateToolCall: (toolCall: ToolCall) => void;
   startQuery: (query: string) => void;
   completeResponse: (attachedImages?: Array<{name: string; thumbnail: string}>, model?: string) => void;
   resetForNewChat: () => void;
@@ -51,6 +54,7 @@ export function useChatState(): UseChatStateReturn {
   const [thinking, setThinking] = useState('');
   const [isThinking, setIsThinking] = useState(false);
   const [thinkingCollapsed, setThinkingCollapsed] = useState(true);
+  const [toolCalls, setToolCalls] = useState<ToolCall[]>([]);
   const [status, setStatus] = useState('Connecting to server...');
   const [error, setError] = useState('');
   const [canSubmit, setCanSubmit] = useState(false);
@@ -76,6 +80,26 @@ export function useChatState(): UseChatStateReturn {
     responseRef.current += chunk;
   }, []);
 
+  const addToolCall = useCallback((toolCall: ToolCall) => {
+    setToolCalls(prev => [...prev, toolCall]);
+    toolCallsRef.current = [...toolCallsRef.current, toolCall];
+  }, []);
+
+  const updateToolCall = useCallback((updatedToolCall: ToolCall) => {
+    setToolCalls(prev => prev.map(tc => 
+      (tc.name === updatedToolCall.name && JSON.stringify(tc.args) === JSON.stringify(updatedToolCall.args)) 
+        ? { ...tc, ...updatedToolCall } 
+        : tc
+    ));
+    
+    // Update ref as well
+    toolCallsRef.current = toolCallsRef.current.map(tc => 
+       (tc.name === updatedToolCall.name && JSON.stringify(tc.args) === JSON.stringify(updatedToolCall.args))
+        ? { ...tc, ...updatedToolCall }
+        : tc
+    );
+  }, []);
+
   const startQuery = useCallback((queryText: string) => {
     setCurrentQuery(queryText);
     currentQueryRef.current = queryText;
@@ -84,6 +108,7 @@ export function useChatState(): UseChatStateReturn {
     setIsThinking(true);
     setCanSubmit(false);
     // Reset tool calls for new query
+    setToolCalls([]);
     toolCallsRef.current = [];
   }, []);
 
@@ -114,6 +139,7 @@ export function useChatState(): UseChatStateReturn {
     setResponse('');
     setThinking('');
     setCurrentQuery('');
+    setToolCalls([]);
     
     // Reset refs
     currentQueryRef.current = '';
@@ -131,6 +157,7 @@ export function useChatState(): UseChatStateReturn {
     setThinking('');
     setIsThinking(false);
     setThinkingCollapsed(true);
+    setToolCalls([]);
     setError('');
     setQuery('');
     setCurrentQuery('');
@@ -167,6 +194,7 @@ export function useChatState(): UseChatStateReturn {
     currentQuery,
     response,
     thinking,
+    toolCalls,
     isThinking,
     thinkingCollapsed,
     conversationId,
@@ -190,6 +218,8 @@ export function useChatState(): UseChatStateReturn {
     setIsThinking,
     appendThinking,
     appendResponse,
+    addToolCall,
+    updateToolCall,
     startQuery,
     completeResponse,
     resetForNewChat,

@@ -9,7 +9,8 @@ import { ChatMessage } from './ChatMessage';
 import { ThinkingSection } from './ThinkingSection';
 import { CodeBlock } from './CodeBlock';
 import { LoadingDots } from './LoadingDots';
-import type { ChatMessage as ChatMessageType } from '../../types';
+import { ToolCallsDisplay } from './ToolCallsDisplay';
+import type { ChatMessage as ChatMessageType, ToolCall } from '../../types';
 
 interface ResponseAreaProps {
   chatHistory: ChatMessageType[];
@@ -18,6 +19,7 @@ interface ResponseAreaProps {
   thinking: string;
   isThinking: boolean;
   thinkingCollapsed: boolean;
+  toolCalls?: ToolCall[];
   generatingModel: string;
   canSubmit: boolean;
   error: string;
@@ -36,6 +38,7 @@ export function ResponseArea({
   thinking,
   isThinking,
   thinkingCollapsed,
+  toolCalls,
   generatingModel,
   canSubmit,
   error,
@@ -69,11 +72,19 @@ export function ResponseArea({
         )}
 
         {/* Loading animation while waiting for response start */}
-        {!error && !canSubmit && !thinking && !response && (
+        {!error && !canSubmit && !thinking && !response && (!toolCalls || toolCalls.length === 0) && (
            <div className="response">
              <div className="assistant-header">Clueless • {generatingModel}</div>
              <LoadingDots />
            </div>
+        )}
+
+        {/* Live Tool Calls */}
+        {!error && toolCalls && toolCalls.length > 0 && (
+          <div className="response">
+             {!response && <div className="assistant-header">Clueless • {generatingModel}</div>}
+             <ToolCallsDisplay toolCalls={toolCalls} />
+          </div>
         )}
 
         {/* Current thinking process */}

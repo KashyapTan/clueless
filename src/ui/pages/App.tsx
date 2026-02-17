@@ -82,7 +82,7 @@ function App() {
   // ============================================
   // Context from Layout
   // ============================================
-  const { setMini, setIsHidden, isHidden } = useOutletContext<{
+  const { setMini, setIsHidden } = useOutletContext<{
     setMini: (val: boolean) => void;
     setIsHidden: (val: boolean) => void;
     isHidden: boolean;
@@ -142,9 +142,9 @@ function App() {
         break;
 
       case 'screenshot_added': {
-        const ssData = typeof data.content === 'string' 
-          ? JSON.parse(data.content) as ScreenshotAddedContent
-          : data.content as ScreenshotAddedContent;
+        const ssData = (typeof data.content === 'string' 
+          ? JSON.parse(data.content) 
+          : data.content) as unknown as ScreenshotAddedContent;
         screenshotState.addScreenshot(ssData);
         chatState.setStatus('Screenshot added to context.');
         setIsHidden(false);
@@ -152,9 +152,9 @@ function App() {
       }
 
       case 'screenshot_removed': {
-        const removeData = typeof data.content === 'string'
-          ? JSON.parse(data.content) as ScreenshotRemovedContent
-          : data.content as ScreenshotRemovedContent;
+        const removeData = (typeof data.content === 'string'
+          ? JSON.parse(data.content)
+          : data.content) as unknown as ScreenshotRemovedContent;
         screenshotState.removeScreenshot(removeData.id);
         break;
       }
@@ -174,19 +174,26 @@ function App() {
         break;
 
       case 'tool_call': {
-        const tc = typeof data.content === 'string'
-          ? JSON.parse(data.content) as ToolCallContent
-          : data.content as ToolCallContent;
+        const tc = (typeof data.content === 'string'
+          ? JSON.parse(data.content)
+          : data.content) as unknown as ToolCallContent;
         
         if (tc.status === 'calling') {
           chatState.setStatus(`Calling tool: ${tc.name}...`);
-        } else if (tc.status === 'complete' && tc.result) {
-          chatState.toolCallsRef.current = [...chatState.toolCallsRef.current, {
+          chatState.addToolCall({
             name: tc.name,
             args: tc.args,
-            result: tc.result,
             server: tc.server,
-          }];
+            status: 'calling'
+          });
+        } else if (tc.status === 'complete' && tc.result) {
+          chatState.updateToolCall({
+             name: tc.name,
+             args: tc.args,
+             result: tc.result,
+             server: tc.server,
+             status: 'complete'
+          });
           chatState.setStatus('Tool call complete.');
         }
         break;
@@ -220,9 +227,9 @@ function App() {
         break;
 
       case 'token_usage': {
-        const stats = typeof data.content === 'string'
-          ? JSON.parse(data.content) as TokenUsageContent
-          : data.content as TokenUsageContent;
+        const stats = (typeof data.content === 'string'
+          ? JSON.parse(data.content)
+          : data.content) as unknown as TokenUsageContent;
         const input = stats.prompt_eval_count || 0;
         const output = stats.eval_count || 0;
         tokenState.addTokens(input, output);
@@ -230,17 +237,17 @@ function App() {
       }
 
       case 'conversation_saved': {
-        const saveData = typeof data.content === 'string'
-          ? JSON.parse(data.content) as ConversationSavedContent
-          : data.content as ConversationSavedContent;
+        const saveData = (typeof data.content === 'string'
+          ? JSON.parse(data.content)
+          : data.content) as unknown as ConversationSavedContent;
         chatState.setConversationId(saveData.conversation_id);
         break;
       }
 
       case 'conversation_resumed': {
-        const resumeData = typeof data.content === 'string'
-          ? JSON.parse(data.content) as ConversationResumedContent
-          : data.content as ConversationResumedContent;
+        const resumeData = (typeof data.content === 'string'
+          ? JSON.parse(data.content)
+          : data.content) as unknown as ConversationResumedContent;
         
         const msgs: ChatMessage[] = resumeData.messages.map((m) => ({
           role: m.role as 'user' | 'assistant',
@@ -485,6 +492,7 @@ function App() {
         thinking={chatState.thinking}
         isThinking={chatState.isThinking}
         thinkingCollapsed={chatState.thinkingCollapsed}
+        toolCalls={chatState.toolCalls}
         generatingModel={generatingModelRef.current || selectedModel}
         canSubmit={chatState.canSubmit}
         error={chatState.error}

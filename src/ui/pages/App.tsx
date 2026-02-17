@@ -67,6 +67,7 @@ function App() {
   const [selectedModel, setSelectedModel] = useState('');
   const [enabledModels, setEnabledModels] = useState<string[]>([]);
   const [showScrollBottom, setShowScrollBottom] = useState(false);
+  const [isRecording, setIsRecording] = useState(false);
 
   // ============================================
   // Refs
@@ -266,6 +267,12 @@ function App() {
         chatState.setStatus('An error occurred.');
         chatState.setCanSubmit(true);
         break;
+
+      case 'transcription_result':
+        chatState.setQuery((prev) => prev + (prev ? ' ' : '') + String(data.content));
+        setIsRecording(false);
+        chatState.setStatus('Transcription complete.');
+        break;
     }
   }, [chatState, screenshotState, tokenState, setIsHidden]);
 
@@ -449,6 +456,21 @@ function App() {
     return "Ask Clueless anything...";
   };
 
+  const handleMicClick = () => {
+    if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) return;
+    
+    if (isRecording) {
+      // Stop recording
+      wsRef.current.send(JSON.stringify({ type: 'stop_recording' }));
+      chatState.setStatus('Transcribing...');
+    } else {
+      // Start recording
+      wsRef.current.send(JSON.stringify({ type: 'start_recording' }));
+      setIsRecording(true);
+      chatState.setStatus('Listening...');
+    }
+  };
+
   // ============================================
   // Render
   // ============================================
@@ -528,7 +550,11 @@ function App() {
                 contextWindowIcon={contextWindowInsightsIcon}
               />
 
-              <div className="mic-input-section">
+              <div 
+                className={`mic-input-section ${isRecording ? 'recording' : ''}`}
+                onClick={handleMicClick}
+                title={isRecording ? "Stop recording" : "Start voice input"}
+              >
                 <img src={micSignSvg} alt="Voice input" className="mic-icon" />
               </div>
             </div>

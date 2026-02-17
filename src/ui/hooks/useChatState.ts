@@ -27,7 +27,7 @@ interface UseChatStateReturn {
   toolCallsRef: React.RefObject<ToolCall[]>;
   
   // Actions
-  setQuery: (query: string) => void;
+  setQuery: React.Dispatch<React.SetStateAction<string>>;
   setCanSubmit: (canSubmit: boolean) => void;
   setStatus: (status: string) => void;
   setError: (error: string) => void;

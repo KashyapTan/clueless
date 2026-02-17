@@ -27,6 +27,7 @@ Architecture:
         ├── screenshots.py  # Screenshot handling
         └── conversations.py # Conversation handling
 """
+
 import sys
 import os
 import socket
@@ -52,16 +53,20 @@ from .mcp_integration.manager import init_mcp_servers
 from .services.screenshots import process_screenshot, process_screenshot_start
 
 
-def find_available_port(start_port: int = DEFAULT_PORT, max_attempts: int = MAX_PORT_ATTEMPTS) -> int:
+def find_available_port(
+    start_port: int = DEFAULT_PORT, max_attempts: int = MAX_PORT_ATTEMPTS
+) -> int:
     """Find an available port starting from start_port."""
     for port in range(start_port, start_port + max_attempts):
         try:
             with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-                s.bind(('', port))
+                s.bind(("", port))
                 return port
         except OSError:
             continue
-    raise RuntimeError(f"Could not find available port in range {start_port}-{start_port + max_attempts - 1}")
+    raise RuntimeError(
+        f"Could not find available port in range {start_port}-{start_port + max_attempts - 1}"
+    )
 
 
 def start_server():
@@ -72,20 +77,22 @@ def start_server():
     except RuntimeError as e:
         print(f"Error finding available port: {e}")
         return
-    
+
     loop = asyncio.new_event_loop()
     app_state.server_loop_holder["loop"] = loop
     app_state.server_loop_holder["port"] = port
     asyncio.set_event_loop(loop)
-    
+
     # Initialize MCP servers
     try:
         loop.run_until_complete(init_mcp_servers())
     except Exception as e:
         print(f"[MCP] Failed to initialize servers (non-fatal): {e}")
-    
+
     # Start uvicorn server
-    config = uvicorn.Config(app, host="0.0.0.0", port=port, log_level="warning", loop="asyncio")
+    config = uvicorn.Config(
+        app, host="0.0.0.0", port=port, log_level="warning", loop="asyncio"
+    )
     server = uvicorn.Server(config)
     loop.run_until_complete(server.serve())
 
@@ -94,11 +101,14 @@ def start_screenshot_service():
     """Start the screenshot service."""
     try:
         from .ss import ScreenshotService
-        app_state.screenshot_service = ScreenshotService(process_screenshot, process_screenshot_start)
+
+        app_state.screenshot_service = ScreenshotService(
+            process_screenshot, process_screenshot_start
+        )
         app_state.service_thread = threading.Thread(
             target=app_state.screenshot_service.start_listener,
             args=(SCREENSHOT_FOLDER,),
-            daemon=True
+            daemon=True,
         )
         app_state.service_thread.start()
         print("Screenshot service started")
@@ -106,17 +116,29 @@ def start_screenshot_service():
         print(f"Error starting screenshot service: {e}")
 
 
+def start_transcription_service():
+    """Start the transcription service."""
+    try:
+        from .services.transcription import TranscriptionService
+
+        # Initialize the service (model loads lazily on first use)
+        app_state.transcription_service = TranscriptionService()
+        print("Transcription service initialized")
+    except Exception as e:
+        print(f"Error starting transcription service: {e}")
+
+
 def main():
     """Main entry point."""
     # Register signal handlers for graceful shutdown
     register_signal_handlers()
-    
+
     print("=" * 50)
     print("  CLUELESS - AI Desktop Assistant")
     print("=" * 50)
     print()
     print("Starting services...")
-    
+
     # Start FastAPI server in background thread
     app_state.server_thread = threading.Thread(target=start_server, daemon=True)
     app_state.server_thread.start()
@@ -128,15 +150,18 @@ def main():
         time.sleep(0.1)
     else:
         print("Warning: server loop not initialized; continuing anyway.")
-    
+
     port = app_state.server_loop_holder.get("port", DEFAULT_PORT)
-    
+
     # Wait a bit more for services to fully initialize
     time.sleep(0.5)
-    
+
     # Start screenshot service
     start_screenshot_service()
-    
+
+    # Start transcription service
+    start_transcription_service()
+
     print()
     print(f"Server running at: http://localhost:{port}")
     print(f"WebSocket endpoint: ws://localhost:{port}/ws")
@@ -146,7 +171,7 @@ def main():
     print()
     print("Press Ctrl+C to stop")
     print("=" * 50)
-    
+
     # Keep main thread alive
     try:
         while True:
@@ -154,6 +179,7 @@ def main():
     except KeyboardInterrupt:
         print("\nShutting down...")
         from .core.lifecycle import cleanup_resources
+
         cleanup_resources()
 
 

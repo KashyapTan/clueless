@@ -332,7 +332,27 @@ input, textarea, [contenteditable="true"] {
   display: flex;
   align-items: center;
   justify-content: center;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
 }
+
+.mic-input-section:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.mic-input-section.recording {
+  background-color: rgba(255, 50, 50, 0.2);
+  border: 1px solid rgba(255, 50, 50, 0.5);
+  animation: pulse-recording 1.5s infinite;
+}
+
+@keyframes pulse-recording {
+  0% { box-shadow: 0 0 0 0 rgba(255, 50, 50, 0.4); }
+  70% { box-shadow: 0 0 0 6px rgba(255, 50, 50, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(255, 50, 50, 0); }
+}
+
 .mode-selection-section{
   width: calc(100% / 3);
   height: 30%;

@@ -1036,87 +1036,176 @@ input, textarea, [contenteditable="true"] {
 }
 
 /* ── MCP Tool Calls Display ───────────────────────────────── */
-.tool-calls-section {
+.tool-calls-container {
   margin: 8px 0 12px 0;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 8px;
-  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.02);
   overflow: hidden;
+  transition: background-color 0.2s ease;
 }
 
 .tool-calls-header {
   display: flex;
   align-items: center;
-  gap: 6px;
+  justify-content: space-between;
   padding: 8px 12px;
-  font-size: 0.8rem;
-  font-weight: 600;
-  color: rgba(255, 255, 255, 0.7);
-  background: rgba(255, 255, 255, 0.06);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  cursor: pointer;
+  -webkit-user-select: none;
+  user-select: none;
+  transition: background-color 0.15s ease;
 }
 
-.tool-calls-icon {
-  font-size: 1rem;
-  opacity: 0.8;
+.tool-calls-header:hover {
+  background-color: rgba(255, 255, 255, 0.05);
 }
 
-.tool-calls-list {
-  padding: 6px 0;
+.tool-calls-header.expanded {
+  background-color: rgba(255, 255, 255, 0.05);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-.tool-call-item {
-  padding: 6px 12px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-}
-
-.tool-call-item:last-child {
-  border-bottom: none;
-}
-
-.tool-call-name {
+.tool-header-left {
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 0.78rem;
-  color: rgba(255, 255, 255, 0.85);
-  margin-bottom: 3px;
-}
-
-.tool-call-name code {
-  font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
-  font-size: 0.76rem;
-  color: #c9d1d9;
-}
-
-.tool-call-badge {
-  display: inline-block;
-  padding: 1px 6px;
-  border-radius: 4px;
-  background: rgba(88, 166, 255, 0.15);
-  color: #58a6ff;
-  font-size: 0.7rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.3px;
-  white-space: nowrap;
-}
-
-.tool-call-result {
-  font-size: 0.76rem;
-  color: rgba(255, 255, 255, 0.6);
-  padding-left: 4px;
-}
-
-.tool-result-label {
-  color: rgba(255, 255, 255, 0.45);
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.85rem;
   font-weight: 500;
 }
 
-.tool-call-result code {
+.tool-icon-gear {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.tool-icon-chevron {
+  color: rgba(255, 255, 255, 0.4);
+  transition: transform 0.2s ease;
+}
+
+.tool-icon-chevron.expanded {
+  transform: rotate(180deg);
+}
+
+.tool-calls-list {
+  padding: 0;
+  background-color: rgba(0, 0, 0, 0.1);
+}
+
+.tool-call-card {
+  padding: 10px 14px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.tool-call-card:last-child {
+  border-bottom: none;
+}
+
+/* Row 1: Function Signature */
+.tool-call-top {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  overflow: hidden;
+}
+
+.tool-server-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 1px 5px;
+  border-radius: 3px;
+  background: rgba(88, 166, 255, 0.15);
+  color: #58a6ff;
+  font-size: 0.65rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+  flex-shrink: 0;
+  border: 1px solid rgba(88, 166, 255, 0.3);
+}
+
+.tool-function-sig {
   font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
-  font-size: 0.74rem;
-  color: #7ee787;
+  font-size: 0.8rem;
+  color: #e6edf3;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tool-func-name {
+  color: #d2a8ff; /* Purple for function name */
+}
+
+.tool-paren {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.tool-arg-key {
+  color: #79c0ff; /* Blue for keys */
+}
+
+.tool-arg-val {
+  color: #a5d6ff; /* Lighter blue for values */
+}
+
+.tool-comma {
+  color: rgba(255, 255, 255, 0.4);
+}
+
+/* Row 2: Result */
+.tool-call-bottom {
+  display: flex;
+  align-items: flex-start; /* Align top for multiline results */
+  gap: 10px;
+  padding-left: 2px;
+  opacity: 0.8;
+}
+
+.tool-result-connector {
+  width: 1px;
+  height: 100%;
+  background-color: transparent; /* Spacer mostly */
+}
+
+.tool-result-content {
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+  overflow: hidden;
+  width: 100%;
+}
+
+.tool-result-label {
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.4);
+  font-weight: 500;
+  flex-shrink: 0;
+}
+
+.tool-result-arrow {
+  font-family: monospace;
+  color: rgba(255, 255, 255, 0.3);
+  font-size: 1rem;
+  line-height: 1;
+  transform: translateY(2px);
+}
+
+.tool-result-text {
+  font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+  font-size: 0.75rem;
+  color: #7ee787; /* Green for result */
+  white-space: pre-wrap;
+  word-break: break-all;
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-line-clamp: 2; /* Limit to 2 lines */
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
 

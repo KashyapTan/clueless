@@ -4,6 +4,7 @@ MCP Tool Manager.
 Manages MCP server connections and tool routing for the main app.
 """
 
+import os
 import sys
 from typing import List, Dict, Any
 
@@ -66,6 +67,18 @@ class McpToolManager:
             return
 
         try:
+            # Ensure PROJECT_ROOT is in PYTHONPATH so child processes can
+            # resolve absolute imports like "from mcp_servers.servers.xxx import ..."
+            if env is None:
+                env = {**os.environ}
+            project_root_str = str(PROJECT_ROOT)
+            existing_pypath = env.get("PYTHONPATH", "")
+            if existing_pypath:
+                if project_root_str not in existing_pypath.split(os.pathsep):
+                    env["PYTHONPATH"] = project_root_str + os.pathsep + existing_pypath
+            else:
+                env["PYTHONPATH"] = project_root_str
+
             server_params = StdioServerParameters(command=command, args=args, env=env)
 
             # Launch the MCP server subprocess and connect
@@ -215,9 +228,104 @@ class McpToolManager:
             )
             return None
 
+    async def disconnect_server(self, server_name: str):
+        """Disconnect a single MCP server by name."""
+        conn = self._connections.get(server_name)
+        if not conn:
+            return
+
+        try:
+            await conn["session_ctx"].__aexit__(None, None, None)
+            await conn["stdio_ctx"].__aexit__(None, None, None)
+            print(f"[MCP] Disconnected from '{server_name}'")
+        except Exception as e:
+            print(f"[MCP] Error disconnecting from '{server_name}': {e}")
+
+        # Remove from connections
+        self._connections.pop(server_name, None)
+
+        # Remove tools belonging to this server
+        tools_to_remove = [
+            name
+            for name, entry in self._tool_registry.items()
+            if entry["server_name"] == server_name
+        ]
+        for tool_name in tools_to_remove:
+            self._tool_registry.pop(tool_name, None)
+
+        # Rebuild tool lists without this server's tools
+        self._ollama_tools = [
+            t
+            for t in self._ollama_tools
+            if t["function"]["name"] not in tools_to_remove
+        ]
+        self._raw_tools = [
+            t for t in self._raw_tools if t["name"] not in tools_to_remove
+        ]
+
+        print(f"[MCP] Removed {len(tools_to_remove)} tool(s) from '{server_name}'")
+
+    def is_server_connected(self, server_name: str) -> bool:
+        """Check if a specific MCP server is currently connected."""
+        return server_name in self._connections
+
+    async def connect_google_servers(self):
+        """Connect Gmail and Calendar MCP servers with Google OAuth env vars."""
+        from ..config import GOOGLE_TOKEN_FILE
+
+        import os
+
+        if not os.path.exists(GOOGLE_TOKEN_FILE):
+            print("[MCP] Google token not found, skipping Google servers")
+            return
+
+        # Build env dict with token path for the child processes
+        env = {
+            **os.environ,
+            "GOOGLE_TOKEN_FILE": str(GOOGLE_TOKEN_FILE),
+        }
+
+        # Connect Gmail server
+        if not self.is_server_connected("gmail"):
+            await self.connect_server(
+                "gmail",
+                sys.executable,
+                [str(PROJECT_ROOT / "mcp_servers" / "servers" / "gmail" / "server.py")],
+                env=env,
+            )
+
+        # Connect Calendar server
+        if not self.is_server_connected("calendar"):
+            await self.connect_server(
+                "calendar",
+                sys.executable,
+                [
+                    str(
+                        PROJECT_ROOT
+                        / "mcp_servers"
+                        / "servers"
+                        / "calendar"
+                        / "server.py"
+                    )
+                ],
+                env=env,
+            )
+
+        print(
+            f"[MCP] Google servers connected — {len(self._ollama_tools)} total tool(s) available"
+        )
+
+    async def disconnect_google_servers(self):
+        """Disconnect Gmail and Calendar MCP servers."""
+        if self.is_server_connected("gmail"):
+            await self.disconnect_server("gmail")
+        if self.is_server_connected("calendar"):
+            await self.disconnect_server("calendar")
+        print("[MCP] Google servers disconnected")
+
     async def cleanup(self):
         """Disconnect from all MCP servers."""
-        for name, conn in self._connections.items():
+        for name, conn in list(self._connections.items()):
             try:
                 await conn["session_ctx"].__aexit__(None, None, None)
                 await conn["stdio_ctx"].__aexit__(None, None, None)
@@ -270,10 +378,9 @@ async def init_mcp_servers():
     # ── Add more servers here as you implement them ────────────────
     # Example:
     # await mcp_manager.connect_server(
-    #     "gmail",
+    #     "my_server",
     #     sys.executable,
-    #     [str(PROJECT_ROOT / "mcp_servers" / "servers" / "gmail" / "server.py")],
-    #     env={"GOOGLE_CREDENTIALS_FILE": "path/to/creds.json"}
+    #     [str(PROJECT_ROOT / "mcp_servers" / "servers" / "my_server" / "server.py")],
     # )
 
     mcp_manager._initialized = True

@@ -11,21 +11,21 @@
             "module": "mcp_servers.servers.filesystem.server"
         },
         "gmail": {
-            "enabled": false,
-            "description": "Gmail tools (read, send, delete, label mail)",
+            "enabled": true,
+            "description": "Gmail tools (search, read, send, reply, draft, trash, labels)",
             "module": "mcp_servers.servers.gmail.server",
+            "requires_google_auth": true,
             "env": {
-                "GOOGLE_CREDENTIALS_FILE": "path/to/credentials.json",
-                "GOOGLE_TOKEN_FILE": "path/to/token.json"
+                "GOOGLE_TOKEN_FILE": "user_data/google/token.json"
             }
         },
         "calendar": {
-            "enabled": false,
-            "description": "Google Calendar tools (create, read events)",
+            "enabled": true,
+            "description": "Google Calendar tools (events, scheduling, free/busy)",
             "module": "mcp_servers.servers.calendar.server",
+            "requires_google_auth": true,
             "env": {
-                "GOOGLE_CREDENTIALS_FILE": "path/to/credentials.json",
-                "GOOGLE_TOKEN_FILE": "path/to/token.json"
+                "GOOGLE_TOKEN_FILE": "user_data/google/token.json"
             }
         },
         "discord": {

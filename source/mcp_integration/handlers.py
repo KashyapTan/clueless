@@ -13,6 +13,7 @@ from ollama import chat
 from .manager import mcp_manager
 from ..core.connection import broadcast_message
 from ..core.state import app_state
+from ..core.thread_pool import run_in_thread
 
 
 def _extract_response(response) -> Optional[Dict[str, Any]]:
@@ -82,9 +83,9 @@ async def handle_mcp_tool_calls(
 
     # Non-streamed call to detect tool requests
     # think=False works around Ollama bug #10976 (think+tools=empty output)
-    # Use asyncio.to_thread to avoid blocking the event loop (critical for thinking models)
+    # Use run_in_thread to avoid blocking the event loop (critical for thinking models)
     try:
-        response = await asyncio.to_thread(
+        response = await run_in_thread(
             chat,
             model=app_state.selected_model,
             messages=messages,
@@ -187,7 +188,7 @@ async def handle_mcp_tool_calls(
         # Ask Ollama again with tool results
         # think=False works around Ollama bug #10976 (think+tools=empty output)
         try:
-            response = await asyncio.to_thread(
+            response = await run_in_thread(
                 chat,
                 model=app_state.selected_model,
                 messages=messages,

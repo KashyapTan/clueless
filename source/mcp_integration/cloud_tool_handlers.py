@@ -11,6 +11,7 @@ from typing import List, Dict, Any, Optional
 
 from .manager import mcp_manager
 from ..core.connection import broadcast_message
+from ..core.thread_pool import run_in_thread
 from ..config import MAX_MCP_TOOL_ROUNDS
 
 
@@ -79,7 +80,7 @@ async def _handle_anthropic_tools(
     anthropic_msgs = _to_anthropic_messages(messages)
 
     try:
-        response = await asyncio.to_thread(
+        response = await run_in_thread(
             client.messages.create,
             model=model,
             max_tokens=4096,
@@ -173,7 +174,7 @@ async def _handle_anthropic_tools(
         anthropic_msgs.append({"role": "user", "content": tool_results})
 
         try:
-            response = await asyncio.to_thread(
+            response = await run_in_thread(
                 client.messages.create,
                 model=model,
                 max_tokens=4096,
@@ -231,7 +232,7 @@ async def _handle_openai_tools(
     openai_msgs = _to_openai_messages(messages)
 
     try:
-        response = await asyncio.to_thread(
+        response = await run_in_thread(
             client.chat.completions.create,
             model=model,
             messages=openai_msgs,
@@ -316,7 +317,7 @@ async def _handle_openai_tools(
             )
 
         try:
-            response = await asyncio.to_thread(
+            response = await run_in_thread(
                 client.chat.completions.create,
                 model=model,
                 messages=openai_msgs,
@@ -371,7 +372,7 @@ async def _handle_gemini_tools(
     config = types.GenerateContentConfig(tools=tools)
 
     try:
-        response = await asyncio.to_thread(
+        response = await run_in_thread(
             client.models.generate_content,
             model=model,
             contents=contents,
@@ -456,7 +457,7 @@ async def _handle_gemini_tools(
         contents.append(types.Content(role="user", parts=fn_response_parts))
 
         try:
-            response = await asyncio.to_thread(
+            response = await run_in_thread(
                 client.models.generate_content,
                 model=model,
                 contents=contents,

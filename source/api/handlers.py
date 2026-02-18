@@ -142,11 +142,11 @@ class MessageHandler:
 
     async def _handle_stop_recording(self, data: Dict[str, Any]):
         """Handle stop recording request."""
-        import asyncio
+        from ..core.thread_pool import run_in_thread
 
         if app_state.transcription_service:
             # Run transcription in a separate thread to avoid blocking the event loop
-            text = await asyncio.to_thread(
+            text = await run_in_thread(
                 app_state.transcription_service.stop_recording
             )
 

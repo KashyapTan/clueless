@@ -254,4 +254,53 @@ export const api = {
       return [];
     }
   },
+
+  // ============================================
+  // Google OAuth Connection
+  // ============================================
+
+  /**
+   * Get the current Google account connection status.
+   * Returns {connected, email, auth_in_progress}.
+   */
+  async getGoogleStatus(): Promise<{
+    connected: boolean;
+    email: string | null;
+    auth_in_progress: boolean;
+  }> {
+    try {
+      const response = await fetch(`${HTTP_BASE_URL}/api/google/status`);
+      if (!response.ok) throw new Error('Failed to get Google status');
+      return response.json();
+    } catch {
+      return { connected: false, email: null, auth_in_progress: false };
+    }
+  },
+
+  /**
+   * Initiate Google OAuth flow. Opens the user's browser for Google login.
+   * This is a blocking call that waits for the OAuth callback.
+   */
+  async connectGoogle(): Promise<{ success: boolean; email?: string; error?: string }> {
+    const response = await fetch(`${HTTP_BASE_URL}/api/google/connect`, {
+      method: 'POST',
+    });
+    if (!response.ok) {
+      // Backend returns {detail: "..."} for HTTP errors
+      const body = await response.json().catch(() => ({ detail: 'Connection failed' }));
+      return { success: false, error: body.detail || 'Connection failed' };
+    }
+    return response.json();
+  },
+
+  /**
+   * Disconnect Google account. Revokes token, removes token file,
+   * and stops Gmail/Calendar MCP servers.
+   */
+  async disconnectGoogle(): Promise<{ success: boolean; error?: string }> {
+    const response = await fetch(`${HTTP_BASE_URL}/api/google/disconnect`, {
+      method: 'POST',
+    });
+    return response.json();
+  },
 };

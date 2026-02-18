@@ -8,12 +8,13 @@ Use for:
 - Cloud provider model listing
 """
 
-import asyncio
 from fastapi import APIRouter, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import List, Optional
 import ollama
+
+from ..core.thread_pool import run_in_thread as _run_in_thread
 
 
 router = APIRouter(prefix="/api")
@@ -54,7 +55,7 @@ async def get_ollama_models() -> List[dict]:
     """
     try:
         # Run synchronous ollama.list() in a thread to avoid blocking
-        response = await asyncio.to_thread(ollama.list)
+        response = await _run_in_thread(ollama.list)
         models = []
         # The Ollama SDK returns objects with attributes, not dicts.
         # e.g. Model(model='gemma3:12b', size=..., details=ModelDetails(...))
@@ -177,7 +178,7 @@ async def save_api_key(provider: str, body: ApiKeyUpdate):
 
             client = genai.Client(api_key=api_key)
             # List models as a lightweight validation (run in thread)
-            await asyncio.to_thread(
+            await _run_in_thread(
                 lambda: list(client.models.list(config={"page_size": 1}))
             )
 
@@ -278,6 +279,81 @@ GEMINI_FALLBACK = [
         "description": "Gemini 1.5 Flash-8B — extremely fast",
     },
 ]
+
+
+# ============================================
+# Google OAuth Connection
+# ============================================
+
+
+@router.get("/google/status")
+async def get_google_status():
+    """Get the current Google account connection status."""
+    from ..services.google_auth import google_auth
+
+    return google_auth.get_status()
+
+
+@router.post("/google/connect")
+async def connect_google():
+    """
+    Initiate Google OAuth flow.
+
+    Opens the user's browser for Google login.
+    This is a blocking call that waits for the OAuth callback.
+
+    Uses the app-owned thread pool to avoid the default executor shutdown issue.
+    """
+    from ..services.google_auth import google_auth
+
+    try:
+        result = await _run_in_thread(google_auth.start_oauth_flow)
+    except Exception as e:
+        print(f"[Google] OAuth error: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"OAuth flow failed: {str(e)[:300]}",
+        )
+
+    if not result.get("success"):
+        # Return the error as a proper 400 so the frontend can parse it
+        raise HTTPException(
+            status_code=400,
+            detail=result.get("error", "OAuth flow failed"),
+        )
+
+    # Start Gmail and Calendar MCP servers after successful auth
+    try:
+        from ..mcp_integration.manager import mcp_manager
+
+        await mcp_manager.connect_google_servers()
+    except Exception as e:
+        print(f"[Google] MCP server startup failed (non-fatal): {e}")
+
+    return result
+
+
+@router.post("/google/disconnect")
+async def disconnect_google():
+    """
+    Disconnect Google account: revoke token, remove token file,
+    and stop Gmail/Calendar MCP servers.
+    """
+    from ..services.google_auth import google_auth
+    from ..mcp_integration.manager import mcp_manager
+
+    # Disconnect MCP servers first
+    try:
+        await mcp_manager.disconnect_google_servers()
+    except Exception as e:
+        print(f"[Google] MCP server disconnect failed (non-fatal): {e}")
+
+    return google_auth.disconnect()
+
+
+# ============================================
+# Cloud Provider Models
+# ============================================
 
 
 @router.get("/models/anthropic")
@@ -408,7 +484,7 @@ async def get_gemini_models() -> List[dict]:
 
         # Run sync list_models in thread
         # Note: The Google GenAI SDK might return an iterator or list depending on version
-        response = await asyncio.to_thread(lambda: list(client.models.list()))
+        response = await _run_in_thread(lambda: list(client.models.list()))
 
         models = []
         for m in response:

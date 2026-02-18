@@ -89,6 +89,21 @@ def start_server():
     except Exception as e:
         print(f"[MCP] Failed to initialize servers (non-fatal): {e}")
 
+    # Conditionally start Google MCP servers if user has connected their account
+    try:
+        from .config import GOOGLE_TOKEN_FILE
+        import os
+
+        if os.path.exists(GOOGLE_TOKEN_FILE):
+            from .mcp_integration.manager import mcp_manager
+
+            loop.run_until_complete(mcp_manager.connect_google_servers())
+            print("[Google] Gmail & Calendar MCP servers started (token found)")
+        else:
+            print("[Google] No Google token found — skipping Gmail & Calendar servers")
+    except Exception as e:
+        print(f"[Google] Failed to start Google servers (non-fatal): {e}")
+
     # Start uvicorn server
     config = uvicorn.Config(
         app, host="0.0.0.0", port=port, log_level="warning", loop="asyncio"

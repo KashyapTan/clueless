@@ -29,5 +29,6 @@ __pycache__/
 
 # Data
 user_data/
+.env
 
 archive/

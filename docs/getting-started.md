@@ -6,15 +6,19 @@ This guide covers installing and running Clueless for both end users and develop
 
 ### Prerequisites
 
-1. **Ollama** - Local LLM runtime
+1. **Ollama** - Local LLM runtime (Optional if using Cloud Models)
    - Download from [ollama.com](https://ollama.ai/)
    - Pull the default vision model:
      ```bash
      ollama pull qwen3-vl:8b-instruct
      ```
-   - You can also pull additional models and enable/disable them from the Settings page
-
-2. **Windows 10/11** (macOS support planned)
+2. **Cloud API Keys** (Optional)
+   - Anthropic (Claude)
+   - OpenAI (GPT-4o, o1)
+   - Google Gemini
+3. **Google Account** (Optional)
+   - Required for Gmail and Calendar integration
+4. **Windows 10/11** (macOS support planned)
 
 ### Quick Install
 
@@ -42,7 +46,9 @@ Or download from the [Releases](https://github.com/KashyapTan/clueless/releases)
 | New conversation | Click the "New Chat" button in the title bar |
 | Browse history | Navigate to the History page |
 | Mini mode | Click the Clueless logo to minimize to 52x52 |
-| Model selection | Go to Settings > Models to enable/disable models |
+| **Cloud Models** | Go to Settings > Models to add API keys for Claude, GPT, or Gemini |
+| **Google Integration** | Go to Settings > Connections to link your Google account |
+| Model selection | Toggle models in Settings > Models |
 | Stop streaming | Click stop while the AI is responding |
 | Web search | Ask questions that trigger web search tools |
 
@@ -55,7 +61,7 @@ Or download from the [Releases](https://github.com/KashyapTan/clueless/releases)
 - **Node.js** 18+ and npm
 - **Python** 3.13+
 - **UV** (Python package manager) - [Install UV](https://docs.astral.sh/uv/getting-started/installation/)
-- **Ollama** running locally
+- **Ollama** running locally (optional)
 - **Git**
 
 ### Clone and Install
@@ -126,15 +132,15 @@ clueless/
   source/             # Python backend
     api/              # WebSocket + REST endpoints
     core/             # State, connections, lifecycle
-    services/         # Business logic
-    llm/              # Ollama integration
+    services/         # Business logic (Google Auth, Chat)
+    llm/              # Ollama + Cloud Providers (Claude, OpenAI, Gemini)
     mcp_integration/  # MCP server management
   mcp_servers/        # MCP tool server implementations
-    servers/          # Individual server modules
+    servers/          # Individual server modules (gmail, calendar, etc.)
     client/           # Standalone bridge client
     config/           # Server configuration
   docs/               # Documentation
-  user_data/          # Runtime data (DB, screenshots)
+  user_data/          # Runtime data (DB, screenshots, tokens)
 ```
 
 ### Verifying Your Setup
@@ -151,5 +157,6 @@ clueless/
 | Python server won't start | Ensure Python 3.13+ is installed and `uv` is available |
 | Port already in use | The server auto-probes ports 8000-8009; kill stale processes |
 | Ollama not responding | Run `ollama serve` and verify with `ollama list` |
-| Screenshots not working | Check that `pynput` has accessibility permissions |
+| Google Auth fails | Check internet connection; ensure `client_config.json` is embedded |
+| MCP tools missing | Verify `npm run install:python` installed all deps including `mcp` |
 | WebSocket disconnects | Check the Python server console for error logs |

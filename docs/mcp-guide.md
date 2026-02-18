@@ -16,16 +16,18 @@ The Model Context Protocol is a standardized way to give LLMs access to external
 
 ```
 1. User sends query
-2. Backend checks for tool-calling opportunities (non-streamed Ollama call)
-3. If Ollama returns a tool_call:
+2. Backend checks for tool-calling opportunities
+   - If Cloud Model: Uses native tool calling API (Anthropic/OpenAI/Gemini)
+   - If Ollama: Uses non-streamed check first
+3. If LLM returns a tool_call:
    a. Backend routes to the correct MCP server via McpToolManager
    b. Server executes the tool and returns the result
-   c. Result is fed back to Ollama
-   d. Loop repeats (up to 30 rounds) until Ollama gives a final text response
+   c. Result is fed back to LLM
+   d. Loop repeats (up to 30 rounds) until LLM gives a final text response
 4. Final response is streamed to the user
 ```
 
-**Important**: Tool detection is skipped when images are present in the query, as vision models often struggle with simultaneous tool calling and image analysis.
+**Important**: Tool detection is skipped when images are present in the query for some models, as vision models often struggle with simultaneous tool calling and image analysis.
 
 ## Active Servers
 
@@ -67,12 +69,39 @@ Internet search and web page reading capabilities.
 - `read_website` uses crawl4ai with stealth mode (rotating User-Agents, noise reduction, randomized timing)
 - Falls back to trafilatura for content extraction if crawl4ai fails
 
-### Placeholder Servers (Not Yet Implemented)
+### Gmail Tools (`gmail`)
+
+**Requires Google Account connection in Settings.**
+
+| Tool | Description |
+|------|-------------|
+| `search_emails` | Search emails using Gmail query syntax (e.g., "is:unread") |
+| `read_email` | Get full content and attachments of an email |
+| `send_email` | Compose and send a new email |
+| `reply_to_email` | Reply to a specific email thread |
+| `create_draft` | Create a draft email without sending |
+| `trash_email` | Move an email to trash |
+| `get_unread_count` | Check unread count in inbox |
+| `modify_labels` | Add/remove labels (e.g., archive, star) |
+
+### Calendar Tools (`calendar`)
+
+**Requires Google Account connection in Settings.**
+
+| Tool | Description |
+|------|-------------|
+| `get_events` | List upcoming events for the next N days |
+| `search_events` | Search events by keyword |
+| `create_event` | Create a new calendar event |
+| `quick_add_event` | Create event from natural language text |
+| `update_event` | Update an existing event |
+| `delete_event` | Delete an event |
+| `get_free_busy` | Check availability for a time range |
+| `list_calendars` | List all available calendars |
+
+### Placeholder Servers
 
 These servers have skeleton files but are not yet functional:
-
-- **Gmail** - Email reading/sending via Google OAuth 2.0
-- **Calendar** - Google Calendar event management
 - **Discord** - Message reading/sending via Bot Token
 - **Canvas** - LMS assignment and grade retrieval
 
@@ -102,32 +131,20 @@ def my_function(param1: str, param2: int = 10) -> str:
     result = do_something(param1, param2)
     return f"Result: {result}"
 
-@mcp.tool()
-async def my_async_function(url: str) -> str:
-    """Async tools are also supported for I/O-bound operations."""
-    data = await fetch_data(url)
-    return data
-
 if __name__ == "__main__":
     mcp.run()  # Starts stdio transport
 ```
 
-**Requirements:**
-- Type hints are **mandatory** (used for JSON Schema generation)
-- Docstrings become the tool description visible to the LLM
-- The `if __name__ == "__main__"` block is required for subprocess execution
-
 ### Step 2: Register the Server
 
-Add your server to the MCP initialization in `source/main.py`:
+Add your server to the MCP initialization in `source/mcp_integration/manager.py` -> `init_mcp_servers()`:
 
 ```python
-async def _init_mcp_servers():
-    await _mcp_manager.connect_server(
-        "my_tool",                    # Server name (used in routing)
-        sys.executable,               # Python interpreter
-        [str(PROJECT_ROOT / "mcp_servers" / "servers" / "my_tool" / "server.py")]
-    )
+await mcp_manager.connect_server(
+    "my_tool",                    # Server name (used in routing)
+    sys.executable,               # Python interpreter
+    [str(PROJECT_ROOT / "mcp_servers" / "servers" / "my_tool" / "server.py")]
+)
 ```
 
 Also add it to `mcp_servers/config/servers.json`:
@@ -150,7 +167,7 @@ Test the server standalone:
 python -m mcp_servers.servers.my_tool.server
 ```
 
-Then restart the app. Tools are auto-discovered and registered with Ollama.
+Then restart the app. Tools are auto-discovered and registered with the LLM.
 
 ## Best Practices
 
@@ -189,10 +206,6 @@ For complex tools, keep docstrings in a separate `descriptions.py` file:
 MY_FUNCTION_DESC = """
 Detailed multi-line description that guides the LLM
 on exactly how and when to use this tool.
-
-Mandatory workflow:
-1. Always call list_items first
-2. Then call process_item with a valid ID
 """
 
 # mcp_servers/servers/my_tool/server.py
@@ -236,30 +249,7 @@ Tool calls appear as cards in the UI:
 | Tool never called | Poor docstring | Rewrite with clearer description |
 | Server crash on startup | Missing dependency | Check `requirements.txt` and install deps |
 | "Tool call timeout" | Long-running operation | Add async support or increase timeout |
-| Tools not used with images | By design | Tool detection is skipped when images are in context |
-
-## Configuration
-
-Server configuration lives in `mcp_servers/config/servers.json`:
-
-```json
-{
-    "demo": {
-        "enabled": true,
-        "module": "mcp_servers.servers.demo.server"
-    },
-    "filesystem": {
-        "enabled": true,
-        "module": "mcp_servers.servers.filesystem.server"
-    },
-    "websearch": {
-        "enabled": true,
-        "module": "mcp_servers.servers.websearch.server"
-    }
-}
-```
-
-Set `"enabled": false` to disable a server without removing its code.
+| Tools not used with images | By design | Tool detection is skipped when images are in context for some models |
 
 ## Architecture
 
@@ -268,7 +258,7 @@ source/mcp_integration/
   manager.py        # McpToolManager: launches servers, discovers tools,
                     #   converts schemas to Ollama format, routes calls
   handlers.py       # Tool call loop: detects tool requests, executes them,
-                    #   feeds results back to Ollama (up to 30 rounds)
+                    #   feeds results back to LLM
 
 mcp_servers/
   client/
@@ -279,8 +269,6 @@ mcp_servers/
     demo/             # Reference calculator server
     filesystem/       # File system operations
     websearch/        # Web search + page reading
-    gmail/            # Placeholder
-    calendar/         # Placeholder
-    discord/          # Placeholder
-    canvas/           # Placeholder
+    gmail/            # Email operations (search, send, read)
+    calendar/         # Calendar operations (events, free/busy)
 ```

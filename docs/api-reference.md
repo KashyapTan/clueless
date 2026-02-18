@@ -21,7 +21,9 @@ Returns server status. Used by the Electron process to verify the Python server 
 }
 ```
 
-### List Ollama Models
+### Model Management
+
+#### List Ollama Models
 
 ```
 GET /api/models/ollama
@@ -42,22 +44,43 @@ Returns all locally installed Ollama models.
 }
 ```
 
-### Get Enabled Models
+#### List Cloud Models
+
+```
+GET /api/models/anthropic
+GET /api/models/openai
+GET /api/models/gemini
+```
+
+Returns available models for the respective cloud provider. Requires a valid API key to be stored. If the API is unreachable, returns a fallback list of known models.
+
+**Response:**
+```json
+[
+    {
+        "name": "anthropic/claude-3-5-sonnet-20241022",
+        "provider": "anthropic",
+        "description": "Claude 3.5 Sonnet"
+    }
+]
+```
+
+#### Get Enabled Models
 
 ```
 GET /api/models/enabled
 ```
 
-Returns the list of models currently enabled in the UI.
+Returns the list of models currently enabled in the UI (both local and cloud).
 
 **Response:**
 ```json
 {
-    "models": ["qwen3-vl:8b-instruct"]
+    "models": ["qwen3-vl:8b-instruct", "anthropic/claude-3-5-sonnet-20241022"]
 }
 ```
 
-### Update Enabled Models
+#### Update Enabled Models
 
 ```
 PUT /api/models/enabled
@@ -71,12 +94,89 @@ Content-Type: application/json
 }
 ```
 
+### API Key Management
+
+#### Get Key Status
+
+```
+GET /api/keys
+```
+
+Returns the status of API keys for all cloud providers (masked).
+
 **Response:**
 ```json
 {
-    "models": ["qwen3-vl:8b-instruct", "llama3:8b"]
+    "anthropic": { "has_key": true, "masked": "sk-ant...a1b2" },
+    "openai": { "has_key": false, "masked": null },
+    "gemini": { "has_key": false, "masked": null }
 }
 ```
+
+#### Save API Key
+
+```
+PUT /api/keys/{provider}
+Content-Type: application/json
+```
+
+Validates and stores an API key. Supported providers: `anthropic`, `openai`, `gemini`.
+
+**Request Body:**
+```json
+{
+    "key": "sk-..."
+}
+```
+
+#### Delete API Key
+
+```
+DELETE /api/keys/{provider}
+```
+
+Removes the stored API key for the specified provider.
+
+### Google OAuth
+
+#### Get Connection Status
+
+```
+GET /api/google/status
+```
+
+**Response:**
+```json
+{
+    "connected": true,
+    "email": "user@gmail.com",
+    "auth_in_progress": false
+}
+```
+
+#### Connect Google Account
+
+```
+POST /api/google/connect
+```
+
+Initiates the OAuth flow. Opens the system browser for login. Blocks until authentication completes or fails.
+
+**Response:**
+```json
+{
+    "success": true,
+    "email": "user@gmail.com"
+}
+```
+
+#### Disconnect Google Account
+
+```
+POST /api/google/disconnect
+```
+
+Revokes the OAuth token and removes stored credentials.
 
 ---
 
@@ -103,7 +203,7 @@ All WebSocket messages use JSON with `type` and optional `content` fields:
 }
 ```
 
-Submits a user query. If screenshots are in context, they are automatically included. The `model` field selects which Ollama model to use.
+Submits a user query. If screenshots are in context, they are automatically included. The `model` field can be a local Ollama model or a cloud model ID (e.g., `anthropic/claude-3-5-sonnet`).
 
 #### Clear Context
 
@@ -134,10 +234,7 @@ Interrupts the current AI response mid-stream.
 }
 ```
 
-Changes the screenshot capture behavior:
-- `fullscreen` - Captures the entire screen automatically
-- `precision` - Opens the region selector overlay
-- `none` - Disables screenshot capture
+Changes the screenshot capture behavior.
 
 #### Remove Screenshot
 
@@ -160,7 +257,7 @@ Removes a specific screenshot from the current context.
 }
 ```
 
-Retrieves a paginated list of past conversations for the history page.
+Retrieves a paginated list of past conversations.
 
 #### Load Conversation
 
@@ -182,7 +279,7 @@ Loads a specific conversation's messages into the chat view.
 }
 ```
 
-Resumes a previous conversation, restoring full chat state including thumbnails and token counts.
+Resumes a previous conversation, restoring full chat state.
 
 #### Search Conversations
 
@@ -204,7 +301,7 @@ Searches conversation titles and message content.
 }
 ```
 
-Permanently deletes a conversation and all its messages.
+Permanently deletes a conversation.
 
 #### Stop Recording
 
@@ -214,7 +311,7 @@ Permanently deletes a conversation and all its messages.
 }
 ```
 
-Stops voice recording and triggers transcription via faster-whisper.
+Stops voice recording and triggers transcription.
 
 ---
 
@@ -229,73 +326,18 @@ Stops voice recording and triggers transcription via faster-whisper.
 }
 ```
 
-Sent on WebSocket connection. Indicates the server is ready to accept queries.
-
-#### Screenshot Start
-
-```json
-{
-    "type": "screenshot_start",
-    "content": "Screenshot capture starting"
-}
-```
-
-The screenshot capture process has begun. The UI should hide to avoid capturing itself.
+Sent on WebSocket connection.
 
 #### Screenshot Added
 
 ```json
 {
     "type": "screenshot_added",
-    "content": "{\"id\": \"ss_1\", \"name\": \"screenshot.png\", \"thumbnail\": \"data:image/png;base64,...\"}"
+    "content": "{\"id\": \"ss_1\", \"name\": \"screenshot.png\", \"thumbnail\": \"...\"}"
 }
 ```
 
-A screenshot has been captured and added to the current context. Contains a base64 thumbnail for display.
-
-#### Screenshot Removed
-
-```json
-{
-    "type": "screenshot_removed",
-    "content": "{\"id\": \"ss_1\"}"
-}
-```
-
-A screenshot has been removed from context.
-
-#### Screenshots Cleared
-
-```json
-{
-    "type": "screenshots_cleared",
-    "content": ""
-}
-```
-
-All screenshots have been cleared from context (e.g., after being used in a query).
-
-#### Screenshot Ready (Legacy)
-
-```json
-{
-    "type": "screenshot_ready",
-    "content": "Screenshot captured..."
-}
-```
-
-Legacy message for backward compatibility.
-
-#### Query Echo
-
-```json
-{
-    "type": "query",
-    "content": "User's question"
-}
-```
-
-Echoes the user's query back for display in the chat.
+A screenshot has been captured and added.
 
 #### Thinking Chunk
 
@@ -306,18 +348,7 @@ Echoes the user's query back for display in the chat.
 }
 ```
 
-Streaming chunk of the model's thinking/reasoning process (for models that support it, like Qwen).
-
-#### Thinking Complete
-
-```json
-{
-    "type": "thinking_complete",
-    "content": ""
-}
-```
-
-The model has finished its thinking/reasoning phase.
+Streaming chunk of the model's thinking/reasoning process (Ollama DeepSeek/Qwen or Claude/OpenAI reasoning models).
 
 #### Response Chunk
 
@@ -330,34 +361,23 @@ The model has finished its thinking/reasoning phase.
 
 Streaming chunk of the model's visible response.
 
-#### Response Complete
-
-```json
-{
-    "type": "response_complete",
-    "content": ""
-}
-```
-
-The model has finished its response. The full response has been persisted to the database.
-
 #### Tool Call
 
 ```json
 {
     "type": "tool_call",
-    "content": "{\"name\": \"search_web_pages\", \"arguments\": {\"query\": \"latest news\"}, \"server\": \"websearch\"}"
+    "content": "{\"name\": \"search_web_pages\", \"arguments\": {\"query\": \"news\"}, \"server\": \"websearch\"}"
 }
 ```
 
-An MCP tool has been invoked. Displays as a card in the UI.
+An MCP tool has been invoked.
 
 #### Tool Result
 
 ```json
 {
     "type": "tool_result",
-    "content": "{\"name\": \"search_web_pages\", \"result\": \"[...results...]\", \"server\": \"websearch\"}"
+    "content": "{\"name\": \"search_web_pages\", \"result\": \"...\", \"server\": \"websearch\"}"
 }
 ```
 
@@ -368,77 +388,11 @@ The result of an MCP tool execution.
 ```json
 {
     "type": "tool_calls_summary",
-    "content": "[{\"name\": \"add\", \"arguments\": {\"a\": 42, \"b\": 58}, \"result\": \"100.0\", \"server\": \"demo\"}]"
+    "content": "[{\"name\": \"add\", \"result\": \"100\", \"server\": \"demo\"}]"
 }
 ```
 
-Summary of all tool calls made during a response, sent after response completion.
-
-#### Context Cleared
-
-```json
-{
-    "type": "context_cleared",
-    "content": "Context cleared..."
-}
-```
-
-Confirmation that the conversation context has been reset.
-
-#### Conversation Saved
-
-```json
-{
-    "type": "conversation_saved",
-    "content": "{\"conversation_id\": \"uuid-string\"}"
-}
-```
-
-The conversation has been persisted to the database.
-
-#### Conversations List
-
-```json
-{
-    "type": "conversations_list",
-    "content": "[{\"id\": \"uuid\", \"title\": \"...\", \"created_at\": 1234567890, \"updated_at\": 1234567890}]"
-}
-```
-
-Response to `get_conversations`. Contains a JSON array of conversation metadata.
-
-#### Conversation Loaded
-
-```json
-{
-    "type": "conversation_loaded",
-    "content": "{\"conversation_id\": \"uuid\", \"messages\": [...]}"
-}
-```
-
-Response to `load_conversation` or `resume_conversation`. Contains the full message history.
-
-#### Conversation Resumed
-
-```json
-{
-    "type": "conversation_resumed",
-    "content": "{\"conversation_id\": \"uuid\", \"messages\": [...], \"token_usage\": {...}}"
-}
-```
-
-Full state restoration including messages and token counts.
-
-#### Conversation Deleted
-
-```json
-{
-    "type": "conversation_deleted",
-    "content": "{\"conversation_id\": \"uuid\"}"
-}
-```
-
-Confirmation that a conversation has been deleted.
+Summary of all tool calls made during a response.
 
 #### Token Update
 
@@ -449,25 +403,25 @@ Confirmation that a conversation has been deleted.
 }
 ```
 
-Token usage statistics, sent after each response.
+Token usage statistics.
 
 #### Transcription Result
 
 ```json
 {
     "type": "transcription_result",
-    "content": "Transcribed text from audio"
+    "content": "Transcribed text"
 }
 ```
 
-Result of voice-to-text transcription via faster-whisper.
+Result of voice-to-text transcription.
 
 #### Error
 
 ```json
 {
     "type": "error",
-    "content": "Error message describing what went wrong"
+    "content": "Error message"
 }
 ```
 

@@ -23,8 +23,8 @@ Clueless is a desktop application built on three independent layers that communi
                     +-----------+-----------+
                     |           |           |
                     v           v           v
-                 Ollama     SQLite      MCP Servers
-                 (LLM)      (DB)      (child processes)
+                 LLMs       SQLite      MCP Servers
+           (Ollama/Cloud)    (DB)      (child processes)
 ```
 
 ## Layer Details
@@ -65,13 +65,13 @@ The frontend follows a modular architecture with custom hooks for state manageme
 src/ui/
   main.tsx                    # HashRouter setup (/, /settings, /history, /album)
   pages/
-    App.tsx                   # Main chat interface (588 lines)
+    App.tsx                   # Main chat interface
     ChatHistory.tsx           # Conversation browser with search
     Settings.tsx              # Tabbed settings interface
   components/
     Layout.tsx                # App shell with mini mode transitions
     TitleBar.tsx              # Custom draggable title bar
-    WebSocketContext.tsx       # WebSocket provider
+    WebSocketContext.tsx      # WebSocket provider
     chat/
       ChatMessage.tsx         # Individual message rendering
       ThinkingSection.tsx     # Collapsible reasoning display
@@ -83,7 +83,9 @@ src/ui/
       ScreenshotChips.tsx     # Screenshot thumbnail chips
       TokenUsagePopup.tsx     # Context window usage indicator
     settings/
-      SettingsModels.tsx      # Model toggle UI with REST API
+      SettingsModels.tsx      # Model toggle UI
+      SettingsApiKey.tsx      # API key management (Anthropic/OpenAI/Gemini)
+      SettingsConnections.tsx # Google OAuth connection card
   hooks/
     useChatState.ts           # Chat history, streaming, status
     useScreenshots.ts         # Screenshot context management
@@ -102,7 +104,7 @@ src/ui/
 
 **Communication:**
 - Real-time operations (chat, streaming, history) use WebSocket
-- Configuration operations (model management) use REST API
+- Configuration operations (model management, keys, auth) use REST API
 - Electron IPC for window management only
 
 ### 3. Python Backend (`source/`)
@@ -124,15 +126,21 @@ source/
     state.py                  # Global mutable state (AppState)
     connection.py             # WebSocket connection registry
     lifecycle.py              # Graceful shutdown & cleanup
+    thread_pool.py            # Async execution helper
   services/
     conversations.py          # Chat flow orchestration
     screenshots.py            # Screenshot lifecycle management
     transcription.py          # Voice-to-text (faster-whisper)
+    google_auth.py            # Google OAuth 2.0 flow manager
   llm/
+    router.py                 # Routes requests to Ollama or Cloud providers
     ollama_provider.py        # Ollama streaming bridge with tool support
+    cloud_provider.py         # Anthropic/OpenAI/Gemini streaming
+    key_manager.py            # Encrypted API key storage
   mcp_integration/
     manager.py                # MCP server process management
     handlers.py               # Tool call routing loop
+    cloud_tool_handlers.py    # Tool calling for cloud providers
 ```
 
 **Key Patterns:**
@@ -140,6 +148,7 @@ source/
 - `server_loop_holder` stores the asyncio event loop for cross-thread scheduling (hotkey thread -> WebSocket thread)
 - `find_available_port()` probes ports 8000-8009 to avoid conflicts
 - Thread-safe SQLite with `check_same_thread=False`
+- **Hybrid LLM Support**: Routes requests between local Ollama and cloud APIs (Anthropic, OpenAI, Gemini) dynamically based on the selected model.
 
 ## Data Flow
 
@@ -157,23 +166,32 @@ React (App.tsx) --[WS: submit_query]--> Python (websocket.py)
        |                                        v
        |                              conversations.py: submit_query
        |                                        |
-       |                              +--------+--------+
-       |                              |                 |
-       |                              v                 v
-       |                     MCP tool check      Ollama streaming
-       |                     (if no images)      (ollama_provider.py)
-       |                              |                 |
-       |                              v                 v
-       |                     Tool execution       Stream chunks
-       |                     (up to 30 rounds)    (thinking + response)
-       |                              |                 |
-       |                              +--------+--------+
-       |                                        |
        |                                        v
+       |                              router.py: route_chat
+       |                               /              \
+       |                       (Ollama)                (Cloud: Anthropic/OpenAI/Gemini)
+       |                          |                        |
+       |                          v                        v
+       |                 ollama_provider.py          cloud_provider.py
+       |                  + Tool Detection            + Tool Detection
+       |                          |                        |
+       |                          v                        v
+       |                 MCP Manager / Handlers      Cloud Tool Handlers
+       |                          |                        |
+       |                          v                        v
+       |                     Tool Execution           Tool Execution
+       |                     (MCP Servers)            (MCP Servers)
+       |                          |                        |
+       |                          v                        v
+       |                   Stream Response          Stream Response
+       |                          |                        |
+       |                          +-----------+------------+
+       |                                      |
+       |                                      v
        |                              Save to SQLite
        |                              Clear screenshots
-       |                                        |
-       v                                        v
+       |                                      |
+       v                                      v
 React receives WS messages:         Broadcast results
   - thinking_chunk                   - conversation_saved
   - response_chunk                   - tool_calls_summary
@@ -210,31 +228,31 @@ React receives: screenshot_added
 ### MCP Tool Call Flow
 
 ```
-Ollama returns tool_call in response
+LLM (Ollama or Cloud) returns tool_call
        |
        v
-mcp_integration/handlers.py
+mcp_integration/handlers.py (or cloud_tool_handlers.py)
   - Extract tool name + arguments
   - Broadcast "tool_call" to frontend
        |
        v
 mcp_integration/manager.py
-  - Route to correct MCP server subprocess
+  - Route to correct MCP server subprocess (e.g., 'filesystem', 'gmail')
   - Execute via JSON-RPC over stdio
        |
        v
 MCP Server (child process)
-  - Runs tool function
+  - Runs tool function (e.g., read_email, list_files)
   - Returns result
        |
        v
 handlers.py
   - Broadcast "tool_result" to frontend
-  - Feed result back to Ollama
+  - Feed result back to LLM
   - Loop continues (up to MAX_MCP_TOOL_ROUNDS)
        |
        v
-Ollama generates final response
+LLM generates final response
 ```
 
 ## Database Schema
@@ -265,6 +283,13 @@ CREATE TABLE settings (
 );
 ```
 
+**Key Settings Stored:**
+- `enabled_models`: List of active models
+- `api_key_anthropic`: Encrypted API key
+- `api_key_openai`: Encrypted API key
+- `api_key_gemini`: Encrypted API key
+- `encryption_salt`: Per-install salt for key encryption
+
 ## Technology Stack
 
 | Layer | Technologies |
@@ -272,10 +297,13 @@ CREATE TABLE settings (
 | **Desktop** | Electron 37+, frameless transparent window |
 | **Frontend** | React 19, TypeScript 5.8, Vite 6, React Router 7, react-markdown |
 | **Backend** | Python 3.13+, FastAPI, Uvicorn, asyncio |
-| **LLM** | Ollama (default: qwen3-vl:8b-instruct) |
+| **LLM (Local)** | Ollama (default: qwen3-vl:8b-instruct) |
+| **LLM (Cloud)** | Anthropic (Claude), OpenAI (GPT/o1), Google (Gemini) |
 | **Database** | SQLite3 (thread-safe) |
+| **Security** | Fernet encryption (cryptography) for API keys |
 | **MCP** | Model Context Protocol SDK, stdio transport |
 | **Screenshots** | pynput (hotkeys), Pillow (images), tkinter (overlay) |
 | **Transcription** | faster-whisper, pyaudio |
+| **Auth** | Google OAuth 2.0 (Gmail/Calendar integration) |
 | **Web Search** | DuckDuckGo Search (ddgs), crawl4ai, trafilatura |
 | **Build** | PyInstaller (Python), electron-builder (desktop), UV (package manager) |

@@ -13,6 +13,7 @@ This document covers all configurable aspects of Clueless.
 | `DEFAULT_PORT` | `8000` | Starting port for the FastAPI server |
 | `DEFAULT_MODEL` | `qwen3-vl:8b-instruct` | Default Ollama model |
 | `MAX_MCP_TOOL_ROUNDS` | `30` | Maximum tool call iterations per query |
+| `GOOGLE_TOKEN_FILE` | `user_data/google/token.json` | Stored OAuth credentials |
 
 ### Capture Modes (`CaptureMode` enum)
 
@@ -53,14 +54,6 @@ Restrict this in production deployments if needed.
 | `skipTaskbar` | `true` | Hidden from taskbar |
 | `contentProtection` | `true` | Prevents screen recording |
 
-### Python Process Management (`src/electron/pythonApi.ts`)
-
-| Setting | Value | Description |
-|---------|-------|-------------|
-| Port range | 8000-8009 | Ports probed for availability |
-| Startup verification | stdout + health check | Confirms server is running |
-| Cleanup | Aggressive process kill | Terminates orphaned processes |
-
 ## MCP Server Configuration
 
 ### Server Registry (`mcp_servers/config/servers.json`)
@@ -92,10 +85,12 @@ Each server entry:
 | `demo` | Yes | `add`, `divide` |
 | `filesystem` | Yes | `list_directory`, `read_file`, `write_file`, `create_folder`, `move_file`, `rename_file` |
 | `websearch` | Yes | `search_web_pages`, `read_website` |
-| `gmail` | No | Placeholder |
-| `calendar` | No | Placeholder |
+| `gmail` | Dynamic | Search, read, send, reply, draft, trash, labels, unread count |
+| `calendar` | Dynamic | List events, search, create, update, delete, quick add, free/busy |
 | `discord` | No | Placeholder |
 | `canvas` | No | Placeholder |
+
+> **Note:** Gmail and Calendar servers are started dynamically only after the user connects their Google account in Settings.
 
 ## Frontend Configuration
 
@@ -115,7 +110,7 @@ Uses `createHashRouter` (required for Electron, which uses `file://` protocol):
 | Route | Component | Description |
 |-------|-----------|-------------|
 | `/` | `App` | Main chat interface |
-| `/settings` | `Settings` | Application settings |
+| `/settings` | `Settings` | Application settings (Models, Connections) |
 | `/history` | `ChatHistory` | Conversation browser |
 | `/album` | Album | Screenshot album |
 
@@ -152,15 +147,17 @@ Application settings are stored as key-value pairs in the `settings` table:
 | Key | Value Type | Description |
 |-----|-----------|-------------|
 | `enabled_models` | JSON array | List of enabled model names |
+| `api_key_anthropic` | Encrypted string | Anthropic API key |
+| `api_key_openai` | Encrypted string | OpenAI API key |
+| `api_key_gemini` | Encrypted string | Google Gemini API key |
+| `encryption_salt` | Hex string | Salt for Fernet encryption |
 
 ## Environment Variables
 
 | Variable | Used By | Description |
 |----------|---------|-------------|
-| `GOOGLE_CREDENTIALS_PATH` | Gmail, Calendar MCP | Path to Google OAuth credentials |
-| `GOOGLE_TOKEN_PATH` | Gmail, Calendar MCP | Path to stored OAuth token |
-| `DISCORD_BOT_TOKEN` | Discord MCP | Discord bot authentication token |
-| `CANVAS_API_TOKEN` | Canvas MCP | Canvas LMS API token |
-| `CANVAS_BASE_URL` | Canvas MCP | Canvas instance URL |
-
-These are only relevant for placeholder MCP servers that are not yet implemented.
+| `GOOGLE_TOKEN_FILE` | Gmail/Calendar MCP | Path to stored OAuth token JSON |
+| `GOOGLE_CREDENTIALS_PATH` | Google Auth | Path to OAuth client config (embedded in app) |
+| `DISCORD_BOT_TOKEN` | Discord MCP | Discord bot authentication token (Placeholder) |
+| `CANVAS_API_TOKEN` | Canvas MCP | Canvas LMS API token (Placeholder) |
+| `CANVAS_BASE_URL` | Canvas MCP | Canvas instance URL (Placeholder) |

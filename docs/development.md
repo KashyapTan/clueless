@@ -25,6 +25,7 @@ This guide covers common development tasks, code patterns, and conventions used 
 - **Thread safety**: Use `app_state.server_loop_holder` to schedule coroutines from non-async threads.
 - **Logging**: Use `print()` with `[MODULE]` prefixes (e.g., `[MCP]`, `[WS]`, `[SS]`).
 - **Constants**: All magic numbers and defaults live in `source/config.py`.
+- **Security**: Never commit secrets. Use `KeyManager` for sensitive user data.
 
 ### React Frontend
 
@@ -121,12 +122,22 @@ See the dedicated [MCP Guide](./mcp-guide.md) for detailed instructions.
 3. Update the corresponding read/write methods
 4. If the change affects the frontend, update `src/ui/types/index.ts`
 
-### Changing the Default Ollama Model
+### Adding a Cloud Provider
 
-1. Pull the new model: `ollama pull model-name`
-2. Update `DEFAULT_MODEL` in `source/config.py`
-3. Verify the model supports function calling (required for MCP tools)
-4. Test with images if using a vision model
+1. Implement streaming logic in `source/llm/cloud_provider.py`
+2. Update `source/llm/router.py` to handle the new provider prefix
+3. Add API key management support in `source/api/http.py` and `SettingsApiKey.tsx`
+4. Register available models in `source/api/http.py`
+
+## Google OAuth Setup
+
+The app uses an embedded OAuth client configuration for Google authentication.
+The configuration is loaded from `GOOGLE_CLIENT_CONFIG` in `source/config.py`.
+
+To update the OAuth client:
+1. Download `client_secret_*.json` from Google Cloud Console
+2. Update the `GOOGLE_CLIENT_CONFIG` dictionary in `source/config.py`
+3. Ensure scopes in `GOOGLE_SCOPES` match the required permissions
 
 ## Architecture Patterns
 
@@ -146,19 +157,11 @@ if loop:
 
 ### Streaming Response Handling
 
-Ollama responses are streamed using a producer-consumer pattern:
+**Ollama (Local):**
+Uses a producer-consumer pattern with a background thread reading the synchronous iterator and an asyncio queue for the main loop.
 
-```
-Background Thread (Producer)          Main Thread (Consumer)
-       |                                     |
-  ollama.chat(stream=True)                   |
-       |                                     |
-  for chunk in stream:                       |
-    queue.put(chunk)     ----->        await queue.get()
-       |                               broadcast chunk
-       |                                     |
-  queue.put(SENTINEL)    ----->        break on SENTINEL
-```
+**Cloud Providers:**
+Use native async streaming APIs directly in the main event loop (no background threads needed).
 
 ### WebSocket Ref Pattern (React)
 
@@ -175,27 +178,6 @@ useEffect(() => {
 // In WebSocket handler:
 const currentHistory = chatHistoryRef.current; // Always current
 ```
-
-## Debugging
-
-### Python Backend
-
-- All WebSocket messages are logged with `[WS]` prefix
-- MCP operations are logged with `[MCP]` prefix
-- Screenshot events use `[SS]` prefix
-- Check the terminal running `npm run dev:pyserver` for server logs
-
-### Frontend
-
-- Open Chrome DevTools in Electron (Ctrl+Shift+I in dev mode)
-- WebSocket messages appear in the Network tab under WS connections
-- React DevTools extension works in Electron dev mode
-
-### MCP Servers
-
-- Test servers standalone: `python -m mcp_servers.servers.demo.server`
-- Check `mcp_servers/config/servers.json` for server registration
-- Tool calls display as cards in the UI with arguments and results
 
 ## Build and Packaging
 

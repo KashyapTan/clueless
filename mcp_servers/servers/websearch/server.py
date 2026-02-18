@@ -9,7 +9,7 @@ from io import StringIO
 from contextlib import redirect_stdout
 from crawl4ai import AsyncWebCrawler
 from crawl4ai.async_configs import BrowserConfig, CrawlerRunConfig, CacheMode
-from descriptions import READ_WEBSITE_DESCRIPTION, SEARCH_WEB_PAGES_DESCRIPTION
+from mcp_servers.servers.websearch.websearch_descriptions import READ_WEBSITE_DESCRIPTION, SEARCH_WEB_PAGES_DESCRIPTION
 
 mcp = FastMCP("Web Search Tools")
 

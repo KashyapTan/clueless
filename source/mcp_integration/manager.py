@@ -248,11 +248,11 @@ async def init_mcp_servers():
     ╚══════════════════════════════════════════════════════════════════╝
     """
     # ── Demo server (add two numbers) ──────────────────────────────
-    await mcp_manager.connect_server(
-        "demo",
-        sys.executable,
-        [str(PROJECT_ROOT / "mcp_servers" / "servers" / "demo" / "server.py")],
-    )
+    # await mcp_manager.connect_server(
+    #     "demo",
+    #     sys.executable,
+    #     [str(PROJECT_ROOT / "mcp_servers" / "servers" / "demo" / "server.py")],
+    # )
 
     # ── Filesystem server ──────────────────────────────────────────
     await mcp_manager.connect_server(

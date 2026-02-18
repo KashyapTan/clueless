@@ -2,7 +2,7 @@ import os
 import shutil
 from mcp.server.fastmcp import FastMCP
 
-from descriptions import (
+from mcp_servers.servers.filesystem.filesystem_descriptions import (
     USERNAME, BASE_PATH,
     LIST_DIRECTORY_DESCRIPTION, READ_FILE_DESCRIPTION, 
     WRITE_FILE_DESCRIPTION, CREATE_FOLDER_DESCRIPTION, 

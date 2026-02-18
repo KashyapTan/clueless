@@ -5,7 +5,8 @@ Handles the execution of MCP tool calls from Ollama responses.
 """
 
 import json
-from typing import List, Dict, Any
+import asyncio
+from typing import List, Dict, Any, Optional
 
 from ollama import chat
 
@@ -14,48 +15,90 @@ from ..core.connection import broadcast_message
 from ..core.state import app_state
 
 
+def _extract_response(response) -> Optional[Dict[str, Any]]:
+    """
+    Extract content, thinking, and token stats from an Ollama response object.
+
+    Works for both the initial tool-detection call (no tools needed) and
+    the final call after tool execution completes.
+    """
+    content = ""
+    thinking = ""
+    token_stats = {"prompt_eval_count": 0, "eval_count": 0}
+
+    if hasattr(response, "message") and response.message:
+        msg = response.message
+        if hasattr(msg, "content") and msg.content:
+            content = msg.content
+        if hasattr(msg, "thinking") and msg.thinking:
+            thinking = msg.thinking
+
+    # Extract token stats from top-level response attributes
+    if hasattr(response, "prompt_eval_count"):
+        token_stats["prompt_eval_count"] = (
+            getattr(response, "prompt_eval_count", 0) or 0
+        )
+    if hasattr(response, "eval_count"):
+        token_stats["eval_count"] = getattr(response, "eval_count", 0) or 0
+
+    if content or thinking:
+        return {"content": content, "thinking": thinking, "token_stats": token_stats}
+    return None
+
+
 async def handle_mcp_tool_calls(
     messages: List[Dict[str, Any]], image_paths: List[str]
-) -> tuple[List[Dict[str, Any]], List[Dict[str, Any]]]:
+) -> tuple[List[Dict[str, Any]], List[Dict[str, Any]], Optional[Dict[str, Any]]]:
     """
     Check for and execute MCP tool calls from Ollama.
 
-    If Ollama wants to call MCP tools, this function:
-    1. Makes the tool calls via MCP servers
-    2. Broadcasts tool_call events to the UI so users see what happened
-    3. Appends tool call + result messages to the conversation
-    4. Repeats until Ollama stops requesting tools
+    Makes a non-streamed call with think=False to detect tool requests
+    (workaround for Ollama bug #10976: think+tools=empty output).
+    If tools are needed, executes them via MCP servers and loops until done.
+
+    Always returns pre_computed_response=None so the caller falls through
+    to the streaming path for proper token-by-token response delivery.
 
     Args:
         messages: The conversation message history
         image_paths: List of image paths attached to the query
 
     Returns:
-        (updated_messages, tool_calls_made)
+        (updated_messages, tool_calls_made, pre_computed_response)
         - updated_messages: the messages list with tool exchanges appended
         - tool_calls_made: list of {name, args, result, server} for UI display
+        - pre_computed_response: always None (caller streams the final response)
     """
     tool_calls_made = []
 
     if not mcp_manager.has_tools():
-        return messages, tool_calls_made
+        return messages, tool_calls_made, None
 
     # Only do tool detection for text-only queries (no images)
     # Vision models + tool calling don't always mix well
     has_images = any(msg.get("images") for msg in messages) or bool(image_paths)
     if has_images:
-        return messages, tool_calls_made
+        return messages, tool_calls_made, None
 
     # Non-streamed call to detect tool requests
+    # think=False works around Ollama bug #10976 (think+tools=empty output)
+    # Use asyncio.to_thread to avoid blocking the event loop (critical for thinking models)
     try:
-        response = chat(
+        response = await asyncio.to_thread(
+            chat,
             model=app_state.selected_model,
             messages=messages,
             tools=mcp_manager.get_ollama_tools(),
+            think=False,
         )
     except Exception as e:
         print(f"[MCP] Error in tool detection call: {e}")
-        return messages, tool_calls_made
+        return messages, tool_calls_made, None
+
+    # If no tool calls detected, return None for pre_computed_response so the
+    # caller falls through to the streaming path for proper token-by-token delivery.
+    if not response.message.tool_calls:
+        return messages, tool_calls_made, None
 
     # Loop: keep calling tools until Ollama gives a final text answer
     from ..config import MAX_MCP_TOOL_ROUNDS
@@ -66,7 +109,10 @@ async def handle_mcp_tool_calls(
         rounds += 1
 
         # Add the Assistant's message (requesting tools) to history ONCE for this turn
-        messages.append(response.message.model_dump())
+        # Strip thinking content from the assistant message to avoid confusing follow-up calls
+        assistant_msg = response.message.model_dump()
+        assistant_msg.pop("thinking", None)
+        messages.append(assistant_msg)
 
         # Process all tool calls in this turn
         for tool_call in response.message.tool_calls:
@@ -91,12 +137,11 @@ async def handle_mcp_tool_calls(
 
             # Execute the tool via MCP
             try:
-                # Type hint for arguments is actually dict, but fn_args comes from Pydantic model as dict
                 result = await mcp_manager.call_tool(fn_name, dict(fn_args))
             except Exception as e:
                 result = f"Error executing tool: {e}"
 
-            print(f"[MCP] Tool result:\n{result[0:100]}...")
+            print(f"[MCP] Tool result:\n{str(result)[0:100]}...")
 
             # Truncate result if it's excessively large (e.g. > 100k chars) to prevent context window overflow
             result_str = str(result)
@@ -132,7 +177,6 @@ async def handle_mcp_tool_calls(
             )
 
             # Add tool result to messages
-            # Note: Ollama/OpenAI API expects 'role': 'tool' for the result
             messages.append(
                 {
                     "role": "tool",
@@ -141,14 +185,26 @@ async def handle_mcp_tool_calls(
             )
 
         # Ask Ollama again with tool results
+        # think=False works around Ollama bug #10976 (think+tools=empty output)
         try:
-            response = chat(
+            response = await asyncio.to_thread(
+                chat,
                 model=app_state.selected_model,
                 messages=messages,
                 tools=mcp_manager.get_ollama_tools(),
+                think=False,
             )
         except Exception as e:
             print(f"[MCP] Error in follow-up call: {e}")
             break
 
-    return messages, tool_calls_made
+    # After tool loop completes, return None for pre_computed_response so the
+    # caller falls through to the streaming path. The messages list now contains
+    # the full tool exchange history, so the streaming call will produce the
+    # final response with proper token-by-token delivery and thinking support.
+    if tool_calls_made:
+        print(
+            f"[MCP] Tool loop complete after {rounds} round(s). Falling through to streaming."
+        )
+
+    return messages, tool_calls_made, None

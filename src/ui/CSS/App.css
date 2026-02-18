@@ -488,37 +488,37 @@ input, textarea, [contenteditable="true"] {
 
 /* Thinking section styles */
 .thinking-section {
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-  border-left: none;
-  border-right: none;
-  border-radius: 0;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 6px;
   background-color: rgba(255, 255, 255, 0.02);
   overflow: hidden;
   flex-shrink: 0;
-  width: 100%;
+  width: calc(100% - 3rem);
+  margin: 0.25rem 1.5rem;
+  font-family: 'Montserrat', sans-serif;
 }
 
 .thinking-header {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  padding: 0.75rem 1.5rem;
+  padding: 0.5rem 0.75rem;
   cursor: pointer;
   -webkit-user-select: none;
   user-select: none;
-  background-color: rgba(255, 255, 255, 0.05);
+  background-color: transparent;
   transition: background-color 0.2s ease;
+  font-family: 'Montserrat', sans-serif;
 }
 
 .thinking-header:hover {
-  background-color: rgba(255, 255, 255, 0.1);
+  background-color: rgba(255, 255, 255, 0.05);
 }
 
 .thinking-arrow {
-  font-size: 0.7rem;
+  font-size: 0.6rem;
   transition: transform 0.2s ease;
-  color: rgba(255, 255, 255, 0.6);
+  color: rgba(255, 255, 255, 0.4);
 }
 
 .thinking-arrow.expanded {
@@ -526,22 +526,50 @@ input, textarea, [contenteditable="true"] {
 }
 
 .thinking-label {
-  font-size: 0.85rem;
-  color: rgba(255, 255, 255, 0.7);
-  font-style: italic;
+  font-size: 0.8rem;
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.5);
+  letter-spacing: 0.3px;
+  
 }
 
 .thinking-content {
-  padding: 1rem 1.5rem;
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
-  font-size: 0.9rem;
-  color: rgba(255, 255, 255, 0.6);
+  padding: 0.5rem 0.75rem 0.75rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  font-size: 0.8rem;
+  font-family: 'Montserrat', sans-serif;
+  color: rgba(255, 255, 255, 0.5);
   max-height: 300px;
   overflow-y: auto;
+  line-height: 1.5;
+  -webkit-user-select: text;
+  user-select: text;
 }
 
 .thinking-content p {
   margin-bottom: 0.5em;
+}
+
+.thinking-content code {
+  font-family: 'JetBrains Mono', 'Courier New', monospace;
+  font-size: 0.75rem;
+  background-color: rgba(255, 255, 255, 0.08);
+  padding: 1px 4px;
+  border-radius: 3px;
+}
+
+.thinking-content pre {
+  background-color: rgba(0, 0, 0, 0.3);
+  padding: 0.5em;
+  border-radius: 4px;
+  overflow-x: auto;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.thinking-content pre code {
+  background-color: transparent;
+  padding: 0;
 }
 
 .chat-user {

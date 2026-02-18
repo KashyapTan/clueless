@@ -3,6 +3,7 @@ Conversation management service.
 
 Handles conversation lifecycle, persistence, and query processing.
 """
+
 import os
 import json
 from typing import List, Dict, Any, Optional
@@ -21,72 +22,87 @@ db = DatabaseManager()
 
 class ConversationService:
     """Manages conversation lifecycle and query processing."""
-    
+
     @staticmethod
     async def clear_context():
         """Clear screenshots and chat history for a fresh start."""
         await ScreenshotHandler.clear_screenshots()
         app_state.chat_history = []
         app_state.conversation_id = None
-        
+
         print("Context cleared: screenshots and chat history reset")
-        await broadcast_message("context_cleared", "Context cleared. Ready for new conversation.")
-    
+        await broadcast_message(
+            "context_cleared", "Context cleared. Ready for new conversation."
+        )
+
     @staticmethod
     async def resume_conversation(conversation_id: str):
         """Resume a previously saved conversation."""
         from ..ss import create_thumbnail
-        
+
         # Clear current state
         app_state.chat_history = []
         await ScreenshotHandler.clear_screenshots()
-        
+
         # Load conversation from database
         messages = db.get_full_conversation(conversation_id)
         app_state.conversation_id = conversation_id
-        
+
         # Rebuild in-memory chat history
         for msg in messages:
-            entry = {'role': msg['role'], 'content': msg['content']}
-            if msg.get('model'):
-                entry['model'] = msg['model']
-            if msg.get('images'):
-                entry['images'] = msg['images']
+            entry = {"role": msg["role"], "content": msg["content"]}
+            if msg.get("model"):
+                entry["model"] = msg["model"]
+            if msg.get("images"):
+                entry["images"] = msg["images"]
                 # Generate thumbnails for frontend
                 thumbnails = []
-                for img_path in msg['images']:
+                for img_path in msg["images"]:
                     if os.path.exists(img_path):
                         thumb = create_thumbnail(img_path)
-                        thumbnails.append({'name': os.path.basename(img_path), 'thumbnail': thumb})
+                        thumbnails.append(
+                            {"name": os.path.basename(img_path), "thumbnail": thumb}
+                        )
                     else:
-                        thumbnails.append({'name': os.path.basename(img_path), 'thumbnail': None})
-                msg['images'] = thumbnails
+                        thumbnails.append(
+                            {"name": os.path.basename(img_path), "thumbnail": None}
+                        )
+                msg["images"] = thumbnails
             app_state.chat_history.append(entry)
-        
-        print(f"Resumed conversation {conversation_id} with {len(app_state.chat_history)} messages")
-        
+
+        print(
+            f"Resumed conversation {conversation_id} with {len(app_state.chat_history)} messages"
+        )
+
         # Notify client
         token_usage = db.get_token_usage(conversation_id)
-        await broadcast_message("conversation_resumed", json.dumps({
-            "conversation_id": conversation_id,
-            "messages": messages,
-            "token_usage": token_usage
-        }))
-    
+        await broadcast_message(
+            "conversation_resumed",
+            json.dumps(
+                {
+                    "conversation_id": conversation_id,
+                    "messages": messages,
+                    "token_usage": token_usage,
+                }
+            ),
+        )
+
     @staticmethod
     async def submit_query(user_query: str, capture_mode: str = "none"):
         """
         Handle query submission from a client.
-        
+
         Args:
             user_query: The user's question
             capture_mode: 'fullscreen', 'precision', or 'none'
         """
         from ..ss import take_fullscreen_screenshot, create_thumbnail
-        
+
         current_model = app_state.selected_model
-        print(f"[DEBUG] submit_query: model={current_model}, capture_mode={capture_mode}, screenshots={len(app_state.screenshot_list)}")
-        
+        print(
+            f"[DEBUG] submit_query: model={current_model}, capture_mode={capture_mode}, screenshots={len(app_state.screenshot_list)}"
+        )
+
         async with app_state.stream_lock:
             if app_state.is_streaming:
                 await broadcast_message("error", "Already streaming. Please wait.")
@@ -95,9 +111,11 @@ class ConversationService:
 
         try:
             # Auto-capture fullscreen on first message of new conversation
-            if (capture_mode == CaptureMode.FULLSCREEN and 
-                len(app_state.screenshot_list) == 0 and 
-                len(app_state.chat_history) == 0):
+            if (
+                capture_mode == CaptureMode.FULLSCREEN
+                and len(app_state.screenshot_list) == 0
+                and len(app_state.chat_history) == 0
+            ):
                 await ScreenshotHandler.capture_fullscreen()
 
             # Get image paths
@@ -108,81 +126,115 @@ class ConversationService:
 
             # Reset stop flag
             app_state.stop_streaming = False
-            
+
             # Stream the response
             response_text, token_stats, tool_calls = await stream_ollama_chat(
                 user_query, image_paths, app_state.chat_history.copy()
             )
-            
+
             # Create conversation on first message
             if app_state.conversation_id is None:
-                title = user_query[:50] + ('...' if len(user_query) > 50 else '')
+                title = user_query[:50] + ("..." if len(user_query) > 50 else "")
                 app_state.conversation_id = db.start_new_conversation(title)
                 print(f"Created conversation: {app_state.conversation_id}")
-            
+
             # Persist token usage
             input_tokens = token_stats.get("prompt_eval_count", 0)
             output_tokens = token_stats.get("eval_count", 0)
             if input_tokens or output_tokens:
                 try:
-                    db.add_token_usage(app_state.conversation_id, input_tokens, output_tokens)
+                    db.add_token_usage(
+                        app_state.conversation_id, input_tokens, output_tokens
+                    )
                 except Exception as e:
                     print(f"Error saving token usage: {e}")
-            
+
             # Broadcast tool calls summary
             if tool_calls:
                 await broadcast_message("tool_calls_summary", json.dumps(tool_calls))
-            
+
             # Add to chat history
-            user_msg: Dict[str, Any] = {'role': 'user', 'content': user_query}
+            user_msg: Dict[str, Any] = {"role": "user", "content": user_query}
             if image_paths:
-                user_msg['images'] = image_paths
+                user_msg["images"] = image_paths
             app_state.chat_history.append(user_msg)
-            
+
             if response_text.strip():
-                assistant_msg: Dict[str, Any] = {'role': 'assistant', 'content': response_text, 'model': current_model}
+                assistant_msg: Dict[str, Any] = {
+                    "role": "assistant",
+                    "content": response_text,
+                    "model": current_model,
+                }
                 if tool_calls:
-                    assistant_msg['tool_calls'] = tool_calls
+                    assistant_msg["tool_calls"] = tool_calls
                 app_state.chat_history.append(assistant_msg)
-            
+            elif tool_calls:
+                # Safety net: tool calls were made but response was empty.
+                # Save a fallback message so conversation history isn't broken.
+                fallback_text = (
+                    "[Tool calls completed but model returned empty response]"
+                )
+                assistant_msg = {
+                    "role": "assistant",
+                    "content": fallback_text,
+                    "model": current_model,
+                    "tool_calls": tool_calls,
+                }
+                app_state.chat_history.append(assistant_msg)
+                response_text = fallback_text
+                print(
+                    f"[WARN] Empty response after tool calls — saved fallback message"
+                )
+
             # Persist to database
-            db.add_message(app_state.conversation_id, 'user', user_query, image_paths if image_paths else None)
+            db.add_message(
+                app_state.conversation_id,
+                "user",
+                user_query,
+                image_paths if image_paths else None,
+            )
             if response_text.strip():
-                db.add_message(app_state.conversation_id, 'assistant', response_text, model=current_model)
-            
+                db.add_message(
+                    app_state.conversation_id,
+                    "assistant",
+                    response_text,
+                    model=current_model,
+                )
+
             # Notify frontend
-            await broadcast_message("conversation_saved", json.dumps({
-                "conversation_id": app_state.conversation_id
-            }))
-            
+            await broadcast_message(
+                "conversation_saved",
+                json.dumps({"conversation_id": app_state.conversation_id}),
+            )
+
             print(f"Chat history: {len(app_state.chat_history)} messages")
-            
+
             # Clear screenshots after embedding in history
             if image_paths and len(app_state.screenshot_list) > 0:
                 app_state.screenshot_list.clear()
                 await broadcast_message("screenshots_cleared", "")
-                
+
         except Exception as e:
             await broadcast_message("error", f"Error processing: {e}")
         finally:
             async with app_state.stream_lock:
                 app_state.is_streaming = False
-    
+
     @staticmethod
     def get_conversations(limit: int = 50, offset: int = 0) -> List[Dict]:
         """Get recent conversations."""
         return db.get_recent_conversations(limit=limit, offset=offset)
-    
+
     @staticmethod
     def search_conversations(query: str) -> List[Dict]:
         """Search conversations by text."""
         return db.search_conversations(query)
-    
+
     @staticmethod
     def delete_conversation(conversation_id: str):
         """Delete a conversation."""
         db.delete_conversation(conversation_id)
-    
+
     @staticmethod
     def get_full_conversation(conversation_id: str) -> List[Dict]:
         """Get all messages from a conversation."""

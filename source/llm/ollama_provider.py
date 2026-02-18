@@ -8,7 +8,7 @@ import os
 import threading
 import asyncio
 import json
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 
 from ollama import chat
 
@@ -16,6 +16,33 @@ from ..core.connection import broadcast_message
 from ..core.state import app_state
 from ..mcp_integration.handlers import handle_mcp_tool_calls
 from ..mcp_integration.manager import mcp_manager
+
+
+def _build_messages(
+    chat_history: List[Dict[str, Any]],
+    user_query: str,
+    image_paths: List[str],
+) -> List[Dict[str, Any]]:
+    """Build the messages list from chat history + current user query."""
+    messages = []
+    for msg in chat_history:
+        message_data = {
+            "role": msg["role"],
+            "content": msg["content"],
+        }
+        if msg.get("images"):
+            existing_images = [p for p in msg["images"] if os.path.exists(p)]
+            if existing_images:
+                message_data["images"] = existing_images
+        messages.append(message_data)
+
+    existing_image_paths = [p for p in image_paths if os.path.exists(p)]
+    user_msg: Dict[str, Any] = {"role": "user", "content": user_query}
+    if existing_image_paths:
+        user_msg["images"] = existing_image_paths
+    messages.append(user_msg)
+
+    return messages
 
 
 async def stream_ollama_chat(
@@ -37,6 +64,43 @@ async def stream_ollama_chat(
         Tuple of (response_text, token_stats, tool_calls)
     """
     loop = asyncio.get_running_loop()
+
+    # Build messages
+    messages = _build_messages(chat_history, user_query, image_paths)
+
+    # ── MCP Tool Calling Phase (runs on the event loop, not in producer thread) ──
+    tool_calls_list: List[Dict[str, Any]] = []
+    pre_computed_response: Optional[Dict[str, Any]] = None
+
+    if mcp_manager.has_tools():
+        try:
+            (
+                updated_messages,
+                tool_calls_list,
+                pre_computed_response,
+            ) = await handle_mcp_tool_calls(messages.copy(), image_paths)
+            messages = updated_messages
+        except Exception as e:
+            print(f"[MCP] Tool calling phase failed: {e}")
+
+    # If the MCP phase produced a pre-computed response, broadcast it directly.
+    # (This path is currently unused since handle_mcp_tool_calls always returns
+    # pre_computed_response=None, but kept as a safety net.)
+    if pre_computed_response:
+        return await _broadcast_tool_final_response(
+            pre_computed_response, tool_calls_list
+        )
+
+    # ── Streaming Phase ──────────────────────────────────────────
+    # Reached in all normal cases:
+    # - No MCP tools configured (tool detection skipped)
+    # - Images present (tool detection skipped)
+    # - Tool detection ran but no tools needed (messages unchanged)
+    # - Tool calls completed (messages now include tool exchange history)
+    # The streaming call produces the final response with proper token-by-token
+    # delivery and thinking support. Don't pass tools — they're handled above.
+    should_pass_tools = False
+
     done_future: asyncio.Future[tuple[str, Dict[str, int], List[Dict[str, Any]]]] = (
         loop.create_future()
     )
@@ -56,71 +120,17 @@ async def stream_ollama_chat(
             "eval_count": 0,
         }
 
-        # Build messages list from chat history
-        messages = []
-        for msg in chat_history:
-            message_data = {
-                "role": msg["role"],
-                "content": msg["content"],
-            }
-            # Include images only if they still exist on disk
-            if msg.get("images"):
-                existing_images = [p for p in msg["images"] if os.path.exists(p)]
-                if existing_images:
-                    message_data["images"] = existing_images
-            messages.append(message_data)
-
-        # Add current user query
-        existing_image_paths = [p for p in image_paths if os.path.exists(p)]
-        if existing_image_paths:
-            messages.append(
-                {
-                    "role": "user",
-                    "content": user_query,
-                    "images": existing_image_paths,
-                }
-            )
-        else:
-            messages.append(
-                {
-                    "role": "user",
-                    "content": user_query,
-                }
-            )
-
-        # ── MCP Tool Calling Phase ─────────────────────────────────
-        tool_calls_list = []
-        if mcp_manager.has_tools():
-            import concurrent.futures
-
-            future = concurrent.futures.Future()
-
-            async def _do_tool_calls():
-                try:
-                    updated, calls = await handle_mcp_tool_calls(
-                        messages.copy(), image_paths
-                    )
-                    future.set_result((updated, calls))
-                except Exception as e:
-                    future.set_exception(e)
-
-            try:
-                loop.call_soon_threadsafe(asyncio.ensure_future, _do_tool_calls())
-                updated_messages, tool_calls_list = future.result(timeout=90)
-                messages = updated_messages
-            except Exception as e:
-                print(f"[MCP] Tool calling phase failed: {e}")
-
         try:
-            generator = chat(
-                model=app_state.selected_model,
-                messages=messages,
-                tools=mcp_manager.get_ollama_tools(),
-                stream=True,
-                options={
-                    "num_ctx": 32768,  # Increase context window to handle large tool outputs
-                },
-            )
+            chat_kwargs: Dict[str, Any] = {
+                "model": app_state.selected_model,
+                "messages": messages,
+                "stream": True,
+                "options": {"num_ctx": 32768},
+            }
+            if should_pass_tools:
+                chat_kwargs["tools"] = mcp_manager.get_ollama_tools()
+
+            generator = chat(**chat_kwargs)
 
             for idx, chunk in enumerate(generator):
                 # Check if stop was requested
@@ -141,13 +151,11 @@ async def stream_ollama_chat(
                     accumulated.append(content_token)
                     safe_schedule(broadcast_message("response_chunk", content_token))
 
-                # Handle unexpected tool calls in the final stream (fallback)
+                # Handle unexpected tool calls in the stream
                 if hasattr(chunk, "message"):
                     msg = getattr(chunk, "message")
                     if msg and hasattr(msg, "tool_calls") and msg.tool_calls:
                         for tool_call in msg.tool_calls:
-                            # If the model tries to call a tool in the final stream, capture it as text
-                            # to avoid "No content" errors.
                             fn = tool_call.function.name
                             args = tool_call.function.arguments
                             tool_text = f"\n\n[Model requested tool: {fn}({args})]"
@@ -162,7 +170,6 @@ async def stream_ollama_chat(
                                 broadcast_message("response_chunk", tool_text)
                             )
                 elif isinstance(chunk, dict):
-                    # Fallback for dict-based chunks (older clients)
                     msg = chunk.get("message", {})
                     if isinstance(msg, dict) and msg.get("tool_calls"):
                         for tool_call in msg["tool_calls"]:
@@ -212,30 +219,32 @@ async def stream_ollama_chat(
                 )
             elif not accumulated and not app_state.stop_streaming:
                 # Fallback to non-streaming call if streaming yielded nothing
-                # (Common issue with some models/tool-use combinations)
                 try:
                     print("[Ollama] Stream empty. Attempting non-streamed fallback...")
-                    fallback = chat(
-                        model=app_state.selected_model,
-                        messages=messages,
-                        tools=mcp_manager.get_ollama_tools(),
-                        stream=False,
-                        options={"num_ctx": 32768},
-                    )
+                    fallback_kwargs: Dict[str, Any] = {
+                        "model": app_state.selected_model,
+                        "messages": messages,
+                        "stream": False,
+                        "options": {"num_ctx": 32768},
+                    }
+                    # Don't pass tools in fallback - just get a text response
+                    fallback = chat(**fallback_kwargs)
 
                     content_str = ""
                     if hasattr(fallback, "message"):
                         msg = getattr(fallback, "message")
                         if msg:
+                            # Check for thinking content in fallback
+                            if hasattr(msg, "thinking") and msg.thinking:
+                                safe_schedule(
+                                    broadcast_message("thinking_chunk", msg.thinking)
+                                )
+                                safe_schedule(
+                                    broadcast_message("thinking_complete", "")
+                                )
+
                             if hasattr(msg, "content") and msg.content:
                                 content_str = msg.content
-
-                            # Also check for tool calls in fallback and convert to text
-                            if hasattr(msg, "tool_calls") and msg.tool_calls:
-                                for tool_call in msg.tool_calls:
-                                    fn = tool_call.function.name
-                                    args = tool_call.function.arguments
-                                    content_str += f"\n\n[Model requested tool (fallback): {fn}({args})]"
 
                     if content_str:
                         accumulated.append(content_str)
@@ -273,6 +282,46 @@ async def stream_ollama_chat(
 
     threading.Thread(target=producer, daemon=True).start()
     return await done_future
+
+
+async def _broadcast_tool_final_response(
+    pre_computed: Dict[str, Any],
+    tool_calls_list: List[Dict[str, Any]],
+) -> tuple[str, Dict[str, int], List[Dict[str, Any]]]:
+    """
+    Broadcast a pre-computed response directly (no re-streaming needed).
+
+    This is used in two scenarios:
+    1. MCP tool detection ran but found no tools needed — the non-streamed
+       response already contains the full answer (content + thinking + token stats).
+    2. MCP tool calls were made — the final response after the tool loop is
+       captured and broadcast directly.
+
+    Broadcasting directly avoids the double-call problem that breaks streaming,
+    loses thinking tokens, and loses token stats due to Ollama's KV cache.
+    """
+    thinking = pre_computed.get("thinking", "")
+    content = pre_computed.get("content", "")
+    token_stats = pre_computed.get(
+        "token_stats", {"prompt_eval_count": 0, "eval_count": 0}
+    )
+
+    # Broadcast thinking if present
+    if thinking:
+        await broadcast_message("thinking_chunk", thinking)
+        await broadcast_message("thinking_complete", "")
+
+    # Broadcast the content
+    if content:
+        await broadcast_message("response_chunk", content)
+
+    await broadcast_message("response_complete", "")
+
+    # Broadcast token stats
+    if token_stats.get("prompt_eval_count") or token_stats.get("eval_count"):
+        await broadcast_message("token_usage", json.dumps(token_stats))
+
+    return content, token_stats, tool_calls_list
 
 
 def _extract_token(chunk) -> tuple[str | None, str | None]:

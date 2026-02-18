@@ -187,4 +187,71 @@ export const api = {
       return false;
     }
   },
+
+  // ============================================
+  // API Key Management
+  // ============================================
+
+  /**
+   * Get status of all provider API keys.
+   * Returns {provider: {has_key: boolean, masked: string|null}} for each provider.
+   */
+  async getApiKeyStatus(): Promise<Record<string, { has_key: boolean; masked: string | null }>> {
+    try {
+      const response = await fetch(`${HTTP_BASE_URL}/api/keys`);
+      if (!response.ok) throw new Error('Failed to fetch API key status');
+      return response.json();
+    } catch {
+      return {};
+    }
+  },
+
+  /**
+   * Save an API key for a provider. Validates the key on the backend before storing.
+   * Returns {status, provider, masked} on success.
+   * Throws an error with the validation message on failure.
+   */
+  async saveApiKey(provider: string, key: string): Promise<{ status: string; provider: string; masked: string }> {
+    const response = await fetch(`${HTTP_BASE_URL}/api/keys/${provider}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ key }),
+    });
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ detail: 'Failed to save API key' }));
+      throw new Error(error.detail || 'Failed to save API key');
+    }
+    return response.json();
+  },
+
+  /**
+   * Delete a stored API key for a provider.
+   */
+  async deleteApiKey(provider: string): Promise<void> {
+    try {
+      await fetch(`${HTTP_BASE_URL}/api/keys/${provider}`, {
+        method: 'DELETE',
+      });
+    } catch {
+      console.error(`Failed to delete API key for ${provider}`);
+    }
+  },
+
+  // ============================================
+  // Cloud Provider Models
+  // ============================================
+
+  /**
+   * Fetch available models for a cloud provider.
+   * Returns models with provider prefix (e.g., "anthropic/claude-sonnet-4-20250514").
+   */
+  async getProviderModels(provider: string): Promise<{ name: string; provider: string; description: string }[]> {
+    try {
+      const response = await fetch(`${HTTP_BASE_URL}/api/models/${provider}`);
+      if (!response.ok) throw new Error(`Failed to fetch ${provider} models`);
+      return response.json();
+    } catch {
+      return [];
+    }
+  },
 };

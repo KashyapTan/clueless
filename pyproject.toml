@@ -5,13 +5,17 @@ description = "AI-powered desktop assistant with Electron, React, and Python"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
+    "anthropic>=0.80.0",
     "crawl4ai>=0.8.0",
+    "cryptography>=46.0.5",
     "ddgs>=9.10.0",
     "fastapi>=0.116.1",
     "faster-whisper>=1.2.1",
+    "google-genai>=1.63.0",
     "mcp[cli]>=1.26.0",
     "numpy>=2.4.2",
     "ollama>=0.5.3",
+    "openai>=2.21.0",
     "pillow>=11.3.0",
     "pyaudio>=0.2.14",
     "pynput>=1.8.1",

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import TitleBar from '../components/TitleBar';
 import SettingsModels from '../components/SettingsModels';
+import SettingsApiKey from '../components/SettingsApiKey';
 import '../CSS/Settings.css';
 import modelsIcon from '../assets/models.svg';
 import connectionsIcon from '../assets/mcp.svg';
@@ -43,9 +44,9 @@ const Settings: React.FC = () => {
     { id: 'models', label: 'Models', icon: modelsIcon, className: 'settings-models', component: <SettingsModels /> },
     { id: 'connections', label: 'Connections', icon: connectionsIcon, className: 'settings-mcp-connections', component: <Placeholder title="MCP Connections" /> },
     { id: 'ollama', label: 'Ollama', icon: ollamaIcon, className: 'settings-ollama-model', component: <Placeholder title="Ollama Settings" /> },
-    { id: 'anthropic', label: 'Anthropic', icon: anthropicIcon, className: 'settings-anthropic-api-key', component: <Placeholder title="Anthropic API Key" /> },
-    { id: 'gemini', label: 'Gemini', icon: geminiIcon, className: 'settings-gemini-api-key', component: <Placeholder title="Gemini API Key" /> },
-    { id: 'openai', label: 'OpenAI', icon: openaiIcon, className: 'settings-openai-api-key', component: <Placeholder title="OpenAI API Key" /> },
+    { id: 'anthropic', label: 'Anthropic', icon: anthropicIcon, className: 'settings-anthropic-api-key', component: <SettingsApiKey provider="anthropic" /> },
+    { id: 'gemini', label: 'Gemini', icon: geminiIcon, className: 'settings-gemini-api-key', component: <SettingsApiKey provider="gemini" /> },
+    { id: 'openai', label: 'OpenAI', icon: openaiIcon, className: 'settings-openai-api-key', component: <SettingsApiKey provider="openai" /> },
   ];
 
   // "models" is selected by default

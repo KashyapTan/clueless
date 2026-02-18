@@ -11,7 +11,7 @@ from typing import List, Dict, Any, Optional
 from ..core.state import app_state
 from ..core.connection import broadcast_message
 from ..database import DatabaseManager
-from ..llm.ollama_provider import stream_ollama_chat
+from ..llm.router import route_chat
 from ..config import SCREENSHOT_FOLDER, CaptureMode
 from .screenshots import ScreenshotHandler
 
@@ -127,9 +127,9 @@ class ConversationService:
             # Reset stop flag
             app_state.stop_streaming = False
 
-            # Stream the response
-            response_text, token_stats, tool_calls = await stream_ollama_chat(
-                user_query, image_paths, app_state.chat_history.copy()
+            # Stream the response (routes to Ollama or cloud provider based on model prefix)
+            response_text, token_stats, tool_calls = await route_chat(
+                current_model, user_query, image_paths, app_state.chat_history.copy()
             )
 
             # Create conversation on first message

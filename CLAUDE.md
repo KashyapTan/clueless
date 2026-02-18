@@ -4,12 +4,15 @@
 
 Electron + React + Python desktop app for AI chat with screenshot and voice capabilities. Key features:
 - Ollama LLM integration (default: qwen3-vl:8b-instruct) with streaming and model selection
+- **Hybrid LLM Support**: Seamlessly switch between local Ollama models and cloud providers (Anthropic, OpenAI, Gemini)
 - Screenshot capture (Alt+. hotkey, fullscreen + precision modes) with vision model processing
 - Voice-to-text transcription via faster-whisper
 - WebSocket-based bidirectional communication (FastAPI backend)
 - REST API for model management and configuration
 - SQLite chat history persistence with search
-- MCP (Model Context Protocol) tool integration (demo, filesystem, websearch)
+- **Secure Key Management**: Encrypted storage for API keys (Fernet)
+- **Google Integration**: OAuth 2.0 flow for Gmail and Calendar access
+- MCP (Model Context Protocol) tool integration (demo, filesystem, websearch, gmail, calendar)
 - Web search and page reading via DuckDuckGo + crawl4ai
 - Always-on-top frameless window with mini mode (52x52)
 - Stop streaming support for interrupting AI responses
@@ -25,17 +28,20 @@ Electron (main.ts) -> Window mgmt, Python lifecycle, IPC bridge
               +---> database.py -> SQLite (conversations, messages, settings)
               +---> ss.py -> Screenshot capture (Alt+., tkinter overlay, DPI-aware)
               +---> transcription.py -> Voice-to-text (faster-whisper, pyaudio)
-              +---> MCP servers -> stdio child processes (demo, filesystem, websearch)
-              +---> ollama_provider.py -> Streaming with thinking/tool support
+              +---> MCP servers -> stdio child processes (demo, filesystem, websearch, gmail, calendar)
+              +---> ollama_provider.py -> Local Ollama streaming
+              +---> cloud_provider.py -> Cloud LLM streaming (Claude, GPT, Gemini)
+              +---> router.py -> Routes requests to appropriate provider
 ```
 
 ## Tech Stack
 
 **Frontend**: React 19 + TypeScript 5.8 + Vite 6 + React Router 7 + react-markdown
-**Backend**: Python 3.13+ + FastAPI + Ollama (qwen3-vl:8b-instruct) + SQLite3 + MCP
+**Backend**: Python 3.13+ + FastAPI + Ollama + Cloud SDKs (Anthropic/OpenAI/Google) + SQLite3 + MCP
 **Desktop**: Electron 37+ (frameless, always-on-top, screen-saver level)
 **LLM Tools**: MCP SDK, DuckDuckGo Search, crawl4ai, trafilatura
 **Voice**: faster-whisper, pyaudio
+**Security**: Fernet encryption (cryptography) for API keys, Google OAuth 2.0
 **Utils**: pynput (hotkeys), Pillow (images), tkinter (overlays), PyInstaller (bundling), UV (package manager)
 
 ## Directory Structure (Essential Paths)
@@ -49,6 +55,7 @@ src/
       chat/                # ChatMessage, ThinkingSection, ToolCallsDisplay, CodeBlock
       input/               # QueryInput, ModeSelector, ScreenshotChips, TokenUsagePopup
       settings/            # SettingsModels.tsx
+      settings/            # SettingsModels.tsx, SettingsApiKey.tsx, SettingsConnections.tsx
     hooks/                 # useChatState, useScreenshots, useTokenUsage
     services/              # api.ts (REST + WS command factory)
     types/                 # index.ts (TypeScript interfaces)
@@ -61,21 +68,27 @@ source/                    # Python backend
   ss.py                    # Screenshot service (DPI-aware, multi-monitor)
   api/
     websocket.py           # /ws endpoint, message routing
-    http.py                # /api/* REST endpoints (health, models)
+    http.py                # /api/* REST endpoints (health, models, keys, auth)
     handlers.py            # WebSocket message handler logic (MessageHandler class)
   core/
     state.py               # Global mutable state (AppState singleton)
     connection.py          # WebSocket connection registry (ConnectionManager)
     lifecycle.py           # Graceful shutdown & cleanup
+    thread_pool.py         # Async execution helper
   services/
     conversations.py       # Chat flow orchestration (submit, resume, clear)
     screenshots.py         # Screenshot lifecycle (capture -> broadcast)
     transcription.py       # Voice-to-text via faster-whisper
+    google_auth.py         # Google OAuth 2.0 flow manager
   llm/
+    router.py              # Routes requests to Ollama or Cloud providers
     ollama_provider.py     # Ollama streaming bridge (thinking extraction, tool fallback)
+    cloud_provider.py      # Anthropic/OpenAI/Gemini streaming
+    key_manager.py         # Encrypted API key storage
   mcp_integration/
     manager.py             # MCP server process management (McpToolManager)
     handlers.py            # Tool call routing loop (up to 30 rounds)
+    cloud_tool_handlers.py # Tool calling logic for cloud providers
 mcp_servers/
   client/                  # ollama_bridge.py (standalone bridge for testing)
   config/                  # servers.json (server registry)
@@ -83,8 +96,8 @@ mcp_servers/
     demo/                  # Calculator (add, divide)
     filesystem/            # File ops (list, read, write, create, move, rename)
     websearch/             # Web search (search_web_pages, read_website)
-    gmail/                 # Placeholder
-    calendar/              # Placeholder
+    gmail/                 # Gmail tools (search, read, send, reply, labels)
+    calendar/              # Calendar tools (events, free/busy)
     discord/               # Placeholder
     canvas/                # Placeholder
 docs/                      # Production documentation
@@ -139,12 +152,17 @@ user_data/                 # Persistent app data (DB, screenshots)
 - `_handle_stop_recording`: Uses `asyncio.to_thread` for transcription
 - All handlers use `ConnectionManager.broadcast_json()` for responses
 
-### `source/api/http.py` (98 lines)
+### `source/api/http.py` (528 lines)
 **REST API Endpoints**
 - `GET /api/health`: Health check
-- `GET /api/models/ollama`: Lists locally installed Ollama models via `ollama.list()`
-- `GET /api/models/enabled`: Fetches enabled models from DB settings table
-- `PUT /api/models/enabled`: Persists enabled models list to DB
+- `GET /api/models/ollama`: Lists locally installed Ollama models
+- `GET /api/models/anthropic|openai|gemini`: Lists cloud provider models (requires key)
+- `GET /api/models/enabled`: Fetches enabled models
+- `PUT /api/models/enabled`: Updates enabled models
+- `GET /api/keys`: Gets API key status (masked)
+- `PUT /api/keys/{provider}`: Saves encrypted API key
+- `GET /api/google/status`: Checks OAuth connection
+- `POST /api/google/connect`: Initiates OAuth flow
 
 ### `source/database.py` (367 lines)
 **SQLite Operations with Thread Safety**
@@ -290,6 +308,18 @@ IPC handlers:
 - Fetches enabled models via `GET /api/models/enabled`
 - Toggle switches to enable/disable models via `PUT /api/models/enabled`
 
+### `src/ui/components/settings/SettingsApiKey.tsx` (157 lines)
+**API Key Management**
+- Secure input for Anthropic, OpenAI, and Gemini keys
+- Shows validation state and masked keys
+- Communicates with `PUT /api/keys/{provider}`
+
+### `src/ui/components/settings/SettingsConnections.tsx` (152 lines)
+**Google Integration**
+- Connect/Disconnect Google account
+- Visual status of Gmail/Calendar access
+- Handles OAuth flow via `POST /api/google/connect`
+
 ### `src/ui/hooks/`
 - **`useChatState.ts`**: Core chat logic. Manages `chatHistory` array, streaming buffers (thinking, response), `toolCalls`, status, and refs.
 - **`useScreenshots.ts`**: Manages screenshot carousel, `captureMode`, and `screenshotsRef`.
@@ -333,7 +363,18 @@ IPC handlers:
 - `read_website(url)`: Async crawl4ai with stealth mode (rotating UAs, noise reduction, randomized timing)
 - Falls back to trafilatura for content extraction
 
-#### Placeholder servers: `gmail/`, `calendar/`, `discord/`, `canvas/` (skeleton files)
+#### `mcp_servers/servers/gmail/server.py` (523 lines)
+**Gmail Integration**:
+- Search, read, send, reply, trash, labels, drafts
+- Requires Google Auth (token injected via env)
+
+#### `mcp_servers/servers/calendar/server.py` (470 lines)
+**Google Calendar Integration**:
+- Events (list, search, create, update, delete)
+- Free/busy check, quick add
+- Requires Google Auth
+
+#### Placeholder servers: `discord/`, `canvas/` (skeleton files)
 
 ## Development Commands
 
@@ -541,4 +582,4 @@ Streaming responses can't reliably indicate tool calls; a quick non-streamed che
 
 ---
 
-*Last updated: February 17 2026 | Version: 0.1.0*
+*Last updated: February 18 2026 | Version: 0.2.0*

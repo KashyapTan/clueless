@@ -77,6 +77,7 @@ src/ui/
       ThinkingSection.tsx     # Collapsible reasoning display
       ToolCallsDisplay.tsx    # MCP tool execution cards
       CodeBlock.tsx           # Syntax-highlighted code blocks
+      ResponseArea.tsx        # Chat history display area
     input/
       QueryInput.tsx          # User input with attachments
       ModeSelector.tsx        # Screenshot mode selector
@@ -86,6 +87,7 @@ src/ui/
       SettingsModels.tsx      # Model toggle UI
       SettingsApiKey.tsx      # API key management (Anthropic/OpenAI/Gemini)
       SettingsConnections.tsx # Google OAuth connection card
+      SettingsTools.tsx       # Semantic tool retrieval configuration
   hooks/
     useChatState.ts           # Chat history, streaming, status
     useScreenshots.ts         # Screenshot context management
@@ -95,6 +97,13 @@ src/ui/
   types/
     index.ts                  # TypeScript interfaces
   CSS/                        # Component stylesheets
+    App.css
+    ChatHistory.css
+    Settings.css
+    SettingsApiKey.css
+    SettingsConnections.css
+    SettingsModels.css
+    SettingsTools.css
 ```
 
 **State Management Pattern:**

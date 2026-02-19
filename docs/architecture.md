@@ -139,6 +139,7 @@ source/
     key_manager.py            # Encrypted API key storage
   mcp_integration/
     manager.py                # MCP server process management
+    retriever.py              # Semantic tool retrieval (Top-K selection)
     handlers.py               # Tool call routing loop
     cloud_tool_handlers.py    # Tool calling for cloud providers
 ```
@@ -236,6 +237,10 @@ mcp_integration/handlers.py (or cloud_tool_handlers.py)
   - Broadcast "tool_call" to frontend
        |
        v
+mcp_integration/retriever.py
+  - Semantically select relevant tools for the next round (if enabled)
+       |
+       v
 mcp_integration/manager.py
   - Route to correct MCP server subprocess (e.g., 'filesystem', 'gmail')
   - Execute via JSON-RPC over stdio
@@ -289,6 +294,8 @@ CREATE TABLE settings (
 - `api_key_openai`: Encrypted API key
 - `api_key_gemini`: Encrypted API key
 - `encryption_salt`: Per-install salt for key encryption
+- `tool_always_on`: List of tool names to always include in context
+- `tool_retriever_top_k`: Number of semantic matches for tool retrieval
 
 ## Technology Stack
 

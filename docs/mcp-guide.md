@@ -29,6 +29,26 @@ The Model Context Protocol is a standardized way to give LLMs access to external
 
 **Important**: Tool detection is skipped when images are present in the query for some models, as vision models often struggle with simultaneous tool calling and image analysis.
 
+## Tool Retrieval and Selection
+
+As the number of available tools grows, sending all tool definitions to the LLM can exceed context limits or confuse the model. Clueless implements a **Semantic Tool Retriever** to dynamically select the most relevant tools for each query.
+
+### How Retrieval Works
+
+1. **Embedding**: On startup, Clueless generates semantic embeddings for all available tool names and descriptions.
+2. **Query Vectorization**: When a user sends a query, it is converted into a vector using an embedding model (e.g., `nomic-embed-text` via Ollama).
+3. **Similarity Search**: The retriever calculates cosine similarity between the query vector and all tool vectors.
+4. **Filtering**:
+   - **Always-on Tools**: Tools manually enabled by the user in Settings are always included.
+   - **Top-K Matches**: The top `K` semantically similar tools are added to the list.
+5. **Inference**: Only the selected subset of tools is sent to the LLM.
+
+### Configuration
+
+Users can configure retrieval behavior in **Settings > Tools**:
+- **Top K Retrieved Tools**: Control how many semantic matches to include (default: 5).
+- **Connected MCP Servers**: Manually toggle tools to be "Always On".
+
 ## Active Servers
 
 ### Demo Calculator (`demo`)

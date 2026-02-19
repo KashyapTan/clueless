@@ -178,6 +178,57 @@ POST /api/google/disconnect
 
 Revokes the OAuth token and removes stored credentials.
 
+### MCP Tools and Retrieval Settings
+
+#### List MCP Servers and Tools
+
+```
+GET /api/mcp/servers
+```
+
+Returns a list of connected MCP servers and the tools they provide.
+
+**Response:**
+```json
+[
+    {
+        "server": "filesystem",
+        "tools": ["list_directory", "read_file", "write_file", ...]
+    }
+]
+```
+
+#### Get Tool Retrieval Settings
+
+```
+GET /api/settings/tools
+```
+
+Returns current tool retrieval settings.
+
+**Response:**
+```json
+{
+    "always_on": ["search_web_pages", "read_website"],
+    "top_k": 5
+}
+```
+
+#### Update Tool Retrieval Settings
+
+```
+PUT /api/settings/tools
+Content-Type: application/json
+```
+
+**Request Body:**
+```json
+{
+    "always_on": ["list_directory"],
+    "top_k": 3
+}
+```
+
 ---
 
 ## WebSocket Protocol

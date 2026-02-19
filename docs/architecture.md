@@ -24,7 +24,8 @@ Clueless is a desktop application built on three independent layers that communi
                     |           |           |
                     v           v           v
                  LLMs       SQLite      MCP Servers
-           (Ollama/Cloud)    (DB)      (child processes)
+            (Ollama/Cloud)    (DB)      (child processes)
+                                        (Terminal handled inline)
 ```
 
 ## Layer Details
@@ -133,32 +134,38 @@ source/
     handlers.py               # WebSocket message handler logic
   core/
     state.py                  # Global mutable state (AppState)
+    request_context.py        # Request lifecycle (RequestContext class)
     connection.py             # WebSocket connection registry
     lifecycle.py              # Graceful shutdown & cleanup
     thread_pool.py            # Async execution helper
   services/
-    conversations.py          # Chat flow orchestration
+    conversations.py          # Chat flow orchestration (lifecycle + streaming)
     screenshots.py            # Screenshot lifecycle management
     transcription.py          # Voice-to-text (faster-whisper)
     google_auth.py            # Google OAuth 2.0 flow manager
+    terminal.py               # Terminal approval flow, PTY, notice tracking
   llm/
     router.py                 # Routes requests to Ollama or Cloud providers
     ollama_provider.py        # Ollama streaming bridge with tool support
     cloud_provider.py         # Anthropic/OpenAI/Gemini streaming
     key_manager.py            # Encrypted API key storage
   mcp_integration/
-    manager.py                # MCP server process management
+    manager.py                # MCP server process management + inline tools
     retriever.py              # Semantic tool retrieval (Top-K selection)
-    handlers.py               # Tool call routing loop
+    handlers.py               # Tool call routing loop (up to 30 rounds)
     cloud_tool_handlers.py    # Tool calling for cloud providers
+    terminal_executor.py      # Unified terminal tool execution logic
 ```
 
 **Key Patterns:**
 - `AppState` (singleton) holds all mutable state, shared across threads
+- `RequestContext` replaces raw boolean flags for managing request lifecycles (cancellation, cleanup).
 - `server_loop_holder` stores the asyncio event loop for cross-thread scheduling (hotkey thread -> WebSocket thread)
 - `find_available_port()` probes ports 8000-8009 to avoid conflicts
 - Thread-safe SQLite with `check_same_thread=False`
 - **Hybrid LLM Support**: Routes requests between local Ollama and cloud APIs (Anthropic, OpenAI, Gemini) dynamically based on the selected model.
+- **Unified Terminal Executor**: Centralizes all terminal tool logic (approval, PTY, notice tracking, DB) in a single module.
+- **Ghost Process Prevention**: Terminal tools are registered inline; no background process is spawned.
 
 ## Data Flow
 
@@ -175,6 +182,7 @@ React (App.tsx) --[WS: submit_query]--> Python (websocket.py)
        |                                        |
        |                                        v
        |                              conversations.py: submit_query
+       |                                (Creates RequestContext)
        |                                        |
        |                                        v
        |                              router.py: route_chat
@@ -190,7 +198,7 @@ React (App.tsx) --[WS: submit_query]--> Python (websocket.py)
        |                          |                        |
        |                          v                        v
        |                     Tool Execution           Tool Execution
-       |                     (MCP Servers)            (MCP Servers)
+       |                   (MCP / Terminal)          (MCP / Terminal)
        |                          |                        |
        |                          v                        v
        |                   Stream Response          Stream Response
@@ -199,7 +207,8 @@ React (App.tsx) --[WS: submit_query]--> Python (websocket.py)
        |                                      |
        |                                      v
        |                              Save to SQLite
-       |                              Clear screenshots
+       |                              Auto-expire terminal session
+       |                              Finalize RequestContext
        |                                      |
        v                                      v
 React receives WS messages:         Broadcast results
@@ -207,6 +216,41 @@ React receives WS messages:         Broadcast results
   - response_chunk                   - tool_calls_summary
   - tool_call / tool_result          - token_update
   - response_complete
+```
+
+### Terminal Tool Flow
+
+```
+LLM returns terminal tool_call (e.g., run_command)
+       |
+       v
+mcp_integration/handlers.py (or cloud_tool_handlers.py)
+       |
+       v
+mcp_integration/terminal_executor.py
+       |
+       v
+services/terminal.py: check_approval
+  - Blocks via asyncio.Event
+  - Broadcasts "terminal_approval_request"
+       |
+       v
+User approves in UI (App.tsx) --[WS: terminal_approval_response]--> websocket.py
+       |                                                           |
+       |                                                           v
+       +<----------------------------------------------------------+
+       |
+       v
+terminal.py: execute_command (PTY or Sync)
+  - Broadcasts live output via "terminal_output"
+  - Handles 10s running notices
+  - Obeys RequestContext cancellation
+       |
+       v
+Save event to terminal_events table
+       |
+       v
+Return result to LLM
 ```
 
 ### Screenshot Flow

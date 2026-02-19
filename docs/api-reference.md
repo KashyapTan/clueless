@@ -254,7 +254,9 @@ All WebSocket messages use JSON with `type` and optional `content` fields:
 }
 ```
 
-Submits a user query. If screenshots are in context, they are automatically included. The `model` field can be a local Ollama model or a cloud model ID (e.g., `anthropic/claude-3-5-sonnet`).
+Submits a user query and creates a **RequestContext**. If screenshots are in context, they are automatically included. The `model` field can be a local Ollama model or a cloud model ID (e.g., `anthropic/claude-3-5-sonnet`).
+
+**Note**: Submitting a query while another is in progress will return an error.
 
 #### Clear Context
 
@@ -264,7 +266,7 @@ Submits a user query. If screenshots are in context, they are automatically incl
 }
 ```
 
-Starts a new conversation. Clears chat history, screenshots, and resets state.
+Starts a new conversation. Clears chat history, screenshots, and resets state (including terminal session mode).
 
 #### Stop Streaming
 
@@ -274,7 +276,7 @@ Starts a new conversation. Clears chat history, screenshots, and resets state.
 }
 ```
 
-Interrupts the current AI response mid-stream.
+Interrupts the current AI response mid-stream by cancelling the active `RequestContext`. This triggers immediate cleanup of associated resources (e.g., killing running shell processes).
 
 #### Set Capture Mode
 
@@ -363,6 +365,32 @@ Permanently deletes a conversation.
 ```
 
 Stops voice recording and triggers transcription.
+
+### Terminal Interaction Messages
+
+#### Terminal Approval Response
+
+```json
+{
+    "type": "terminal_approval_response",
+    "request_id": "req_uuid",
+    "approved": true,
+    "remember": false
+}
+```
+
+Sent by the client to approve or deny a command execution request.
+
+#### Terminal Session Response
+
+```json
+{
+    "type": "terminal_session_response",
+    "approved": true
+}
+```
+
+Sent by the client to approve or deny a request to enter autonomous session mode.
 
 ---
 
@@ -477,3 +505,49 @@ Result of voice-to-text transcription.
 ```
 
 An error occurred during processing.
+
+### Terminal Events
+
+#### Terminal Approval Request
+
+```json
+{
+    "type": "terminal_approval_request",
+    "content": "{\"request_id\": \"...\", \"command\": \"...\", \"cwd\": \"...\"}"
+}
+```
+
+The server is waiting for user approval before executing a command.
+
+#### Terminal Output
+
+```json
+{
+    "type": "terminal_output",
+    "content": "{\"request_id\": \"...\", \"output\": \"...\"}"
+}
+```
+
+Live stdout/stderr stream from an executing command.
+
+#### Terminal Command Complete
+
+```json
+{
+    "type": "terminal_command_complete",
+    "content": "{\"request_id\": \"...\", \"exit_code\": 0, \"duration_ms\": 1234}"
+}
+```
+
+A terminal command has finished executing.
+
+#### Terminal Running Notice
+
+```json
+{
+    "type": "terminal_running_notice",
+    "content": "{\"request_id\": \"...\", \"command\": \"...\", \"elapsed_seconds\": 15}"
+}
+```
+
+Sent every 10 seconds for long-running commands to keep the UI informed.

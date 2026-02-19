@@ -21,8 +21,10 @@ This guide covers common development tasks, code patterns, and conventions used 
 ### Python Backend
 
 - **Async-first**: All API handlers are async. CPU-bound work uses `asyncio.to_thread()`.
+- **Lifecycle Management**: Every user query is wrapped in a `RequestContext` (`source/core/request_context.py`). Use `ctx.on_cancel()` to register cleanup handlers (e.g., killing processes).
 - **State management**: Global state lives in `AppState` (singleton in `source/core/state.py`).
 - **Thread safety**: Use `app_state.server_loop_holder` to schedule coroutines from non-async threads.
+- **Unified Terminal Logic**: Use `execute_terminal_tool()` from `source/mcp_integration/terminal_executor.py` for any shell-related tool calls. This ensures approval flow and PTY consistency.
 - **Logging**: Use `print()` with `[MODULE]` prefixes (e.g., `[MCP]`, `[WS]`, `[SS]`).
 - **Constants**: All magic numbers and defaults live in `source/config.py`.
 - **Security**: Never commit secrets. Use `KeyManager` for sensitive user data.

@@ -29,6 +29,16 @@ The Model Context Protocol is a standardized way to give LLMs access to external
 
 **Important**: Tool detection is skipped when images are present in the query for some models, as vision models often struggle with simultaneous tool calling and image analysis.
 
+## Inline Tool Registration (Ghost Process Prevention)
+
+For tools that require deep integration with the core application (like terminal execution or system settings), Clueless uses **Inline Tool Registration**.
+
+Instead of spawning a standalone MCP server as a child process, these tools are registered directly in the `McpToolManager`. This avoids the overhead of "ghost processes" -- servers that exist purely to provide schemas but whose execution is intercepted by the backend.
+
+- **Implementation**: Handled via `mcp_manager.register_inline_tools(server_name, tools)`.
+- **Execution**: Intercepted in `mcp_integration/handlers.py` or `mcp_integration/cloud_tool_handlers.py` and routed to a dedicated internal executor (e.g., `terminal_executor.py`).
+- **Benefits**: Lower memory usage, faster startup, and deterministic lifecycle management (e.g., stopping a request immediately kills associated terminal processes).
+
 ## Tool Retrieval and Selection
 
 As the number of available tools grows, sending all tool definitions to the LLM can exceed context limits or confuse the model. Clueless implements a **Semantic Tool Retriever** to dynamically select the most relevant tools for each query.
@@ -88,6 +98,27 @@ Internet search and web page reading capabilities.
 - Uses DuckDuckGo for privacy-respecting search
 - `read_website` uses crawl4ai with stealth mode (rotating User-Agents, noise reduction, randomized timing)
 - Falls back to trafilatura for content extraction if crawl4ai fails
+
+### Terminal Tools (`terminal`)
+
+**Handled inline — no child process spawned.** Integrated with a multi-layer security system and approval flow.
+
+| Tool | Parameters | Description |
+|------|-----------|-------------|
+| `get_environment` | none | Returns OS, shell, cwd, and versions of common tools |
+| `run_command` | `command, cwd, pty, background, timeout` | Runs a shell command. `pty=True` for TUIs; `background=True` for persistence. |
+| `find_files` | `pattern, directory` | Glob-based file search |
+| `request_session_mode` | `reason` | Request autonomous multi-step execution |
+| `end_session_mode` | none | Manually end autonomous execution (note: sessions auto-expire after each turn) |
+| `send_input` | `session_id, input_text` | Type into a persistent background PTY session |
+| `read_output` | `session_id` | Read recent history from a background session |
+| `kill_process` | `session_id` | Terminate a background session |
+
+**Security**:
+1. **Blocklist**: Prevents destructive commands (e.g., `rm -rf /`).
+2. **PATH Protection**: Prevents `PATH` injection; uses a locked execution environment.
+3. **Timeout**: 120s hard ceiling for foreground commands.
+4. **Approval Flow**: Configurable "ask level" (Always/On-Miss/Off).
 
 ### Gmail Tools (`gmail`)
 
@@ -276,9 +307,10 @@ Tool calls appear as cards in the UI:
 ```
 source/mcp_integration/
   manager.py        # McpToolManager: launches servers, discovers tools,
-                    #   converts schemas to Ollama format, routes calls
+                    #   handles inline registration, routes calls
   handlers.py       # Tool call loop: detects tool requests, executes them,
                     #   feeds results back to LLM
+  terminal_executor.py # Unified terminal tool execution logic
 
 mcp_servers/
   client/
@@ -289,6 +321,7 @@ mcp_servers/
     demo/             # Reference calculator server
     filesystem/       # File system operations
     websearch/        # Web search + page reading
+    terminal/         # Ghost process (inline tools reference)
     gmail/            # Email operations (search, send, read)
     calendar/         # Calendar operations (events, free/busy)
 ```

@@ -3,20 +3,23 @@
    ============================================ */
 
 .terminal-panel-overlay {
+  font-family: 'Montserrat', sans-serif;
   position: absolute;
   bottom: 125px;  /* sits above the input section */
   left: 5px;
   right: 5px;
   z-index: 1100;  /* above the input section (z-index: 1000) */
-  background: #1a1a2e;
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.95); /* Matches app styling */
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px; /* Standard app border radius */
   display: flex;
   flex-direction: column;
-  overflow: hidden;
-  box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.5);
-  max-height: 500px;
+  overflow-x: hidden;
+  overflow-y: auto;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.5);
+  max-height: 200px;
   animation: terminal-slide-up 0.2s ease-out;
+  backdrop-filter: blur(10px); /* Adds glass morphism effect common in modern UIs */
 }
 
 @keyframes terminal-slide-up {
@@ -36,35 +39,40 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 6px 12px;
+  padding: 8px 12px;
   cursor: pointer;
   user-select: none;
-  background: rgba(255, 255, 255, 0.03);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-  min-height: 36px;
+  background: rgba(255, 255, 255, 0.05);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  min-height: 40px;
   box-sizing: border-box;
+  font-family: 'Montserrat', sans-serif;
 }
 
 .terminal-header:hover {
-  background: rgba(255, 255, 255, 0.06);
+  background: rgba(255, 255, 255, 0.08);
 }
 
 .terminal-header-left {
   display: flex;
   align-items: center;
-  gap: 8px;
-  font-size: 12px;
-  color: #a0a0b8;
+  gap: 10px;
+  font-size: 0.9rem;
+  color: rgba(255, 255, 255, 0.9);
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 500;
   overflow: hidden;
 }
 
 .terminal-icon {
   font-size: 14px;
+  color: rgba(255, 255, 255, 0.7);
 }
 
 .terminal-title {
-  font-weight: 600;
-  color: #c0c0d8;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.9);
+  letter-spacing: 0.5px;
 }
 
 .terminal-ask-level {
@@ -119,6 +127,7 @@
   border-radius: 4px;
   cursor: pointer;
   outline: none;
+  font-family: 'Montserrat', sans-serif;
 }
 
 .terminal-ask-select:hover {
@@ -126,8 +135,8 @@
 }
 
 .terminal-ask-select option {
-  background: #1a1a2e;
-  color: #c0c0d8;
+  background: rgba(0, 0, 0, 0.95);
+  color: white;
 }
 
 .terminal-toggle {
@@ -139,8 +148,10 @@
 
 .terminal-body {
   flex: 1;
-  overflow: hidden;
+  overflow: auto; /* Hide overflow here, let xterm handle scrolling internally */
   min-height: 120px;
+  position: relative; /* Ensure xterm is positioned relative to this container */
+  padding-left: 5px;
 }
 
 .terminal-xterm {
@@ -152,6 +163,21 @@
 /* Override xterm's default padding */
 .terminal-xterm .xterm-viewport {
   overflow-y: auto !important;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.3) transparent;
+}
+
+.terminal-xterm .xterm-viewport::-webkit-scrollbar {
+  width: 6px;
+}
+
+.terminal-xterm .xterm-viewport::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.terminal-xterm .xterm-viewport::-webkit-scrollbar-thumb {
+  background-color: rgba(255, 255, 255, 0.3);
+  border-radius: 3px;
 }
 
 /* ── Approval Card ─────────────────────────── */
@@ -211,6 +237,7 @@
   background: rgba(255, 80, 80, 0.1);
   color: #ff6060;
   transition: all 0.15s ease;
+  font-family: 'Montserrat', sans-serif;
 }
 
 .btn-deny:hover {
@@ -228,6 +255,7 @@
   background: rgba(80, 200, 80, 0.1);
   color: #50c850;
   transition: all 0.15s ease;
+  font-family: 'Montserrat', sans-serif;
 }
 
 .btn-allow:hover {
@@ -245,6 +273,7 @@
   background: rgba(100, 140, 255, 0.1);
   color: #648cff;
   transition: all 0.15s ease;
+  font-family: 'Montserrat', sans-serif;
 }
 
 .btn-allow-remember:hover {

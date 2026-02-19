@@ -67,17 +67,17 @@ export function TerminalPanel({
   const isVisible = hasInteraction || hasOutput;
 
   // ── xterm lifecycle ──────────────────────────────────────────────
-  // Initialize xterm.js when expanded AND output exists (container is in DOM).
+  // Initialize xterm.js when output exists (container is in DOM).
   // Flush any buffered writes that arrived before initialization.
   useEffect(() => {
-    if (!isExpanded || !hasOutput || !terminalRef.current || xtermRef.current) return;
+    if (!hasOutput || !terminalRef.current || xtermRef.current) return;
 
     const term = new Terminal({
       theme: {
-        background: '#1a1a2e',
-        foreground: '#e0e0e0',
-        cursor: '#e0e0e0',
-        selectionBackground: '#3a3a5e',
+        background: '#000000', // Matches app container background
+        foreground: '#ffffff', // Standard white text
+        cursor: '#ffffff',
+        selectionBackground: 'rgba(255, 255, 255, 0.3)',
       },
       fontSize: 13,
       fontFamily: "'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, monospace",
@@ -86,6 +86,7 @@ export function TerminalPanel({
       disableStdin: true,
       scrollback: 5000,
       convertEol: true,
+      allowProposedApi: true,
     });
 
     const fitAddon = new FitAddon();
@@ -114,19 +115,25 @@ export function TerminalPanel({
             term.writeln(entry.text);
           }
         }
-        pendingWrites.current = [];
+        // Force scroll to bottom after flushing pending writes
+        term.scrollToBottom();
       }
+      pendingWrites.current = [];
     });
 
     const container = terminalRef.current;
     const resizeObserver = new ResizeObserver(() => {
-      try {
-        fitAddon.fit();
-        // Report updated dimensions after resize
-        if (onTerminalResize && term.cols && term.rows) {
-          onTerminalResize(term.cols, term.rows);
-        }
-      } catch { /* ignore */ }
+      // Only fit if visible
+      if (container.offsetParent) {
+          try {
+            fitAddon.fit();
+            term.scrollToBottom(); // Ensure we stay at bottom on resize if already there
+            // Report updated dimensions after resize
+            if (onTerminalResize && term.cols && term.rows) {
+              onTerminalResize(term.cols, term.rows);
+            }
+          } catch { /* ignore */ }
+      }
     });
     resizeObserver.observe(container);
 
@@ -136,7 +143,27 @@ export function TerminalPanel({
       xtermRef.current = null;
       fitAddonRef.current = null;
     };
-  }, [isExpanded, hasOutput]);
+  }, [hasOutput]); // Removed isExpanded dependency
+
+  // Fit terminal when expanded state changes and scroll to bottom
+  useEffect(() => {
+    if (isExpanded && fitAddonRef.current && xtermRef.current) {
+      // Use double RAF to ensure layout is settled after display: block
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          try {
+            fitAddonRef.current?.fit();
+            xtermRef.current?.scrollToBottom();
+            // Report dimensions after fit
+            if (onTerminalResize && xtermRef.current?.cols && xtermRef.current?.rows) {
+              onTerminalResize(xtermRef.current.cols, xtermRef.current.rows);
+            }
+          } catch { /* ignore */ }
+        });
+      });
+    }
+  }, [isExpanded, onTerminalResize]);
+
 
   // Auto-expand when there's an approval request or session request
   useEffect(() => {
@@ -152,6 +179,7 @@ export function TerminalPanel({
   const writeLine = useCallback((text: string) => {
     if (xtermRef.current) {
       xtermRef.current.writeln(text);
+      xtermRef.current.scrollToBottom();
     } else {
       pendingWrites.current.push({ type: 'line', text });
     }
@@ -161,6 +189,7 @@ export function TerminalPanel({
   const writeRaw = useCallback((text: string) => {
     if (xtermRef.current) {
       xtermRef.current.write(text);
+      // Don't auto-scroll raw writes as they might be cursor movements/TUI updates
     } else {
       pendingWrites.current.push({ type: 'raw', text });
     }
@@ -211,7 +240,7 @@ export function TerminalPanel({
       {/* Header bar */}
       <div className="terminal-header" onClick={() => setIsExpanded(!isExpanded)}>
         <div className="terminal-header-left">
-          <span className="terminal-icon">&#128421;</span>
+          {/*<span className="terminal-icon">&#128421;</span>*/}
           <span className="terminal-title">Terminal</span>
           {runningText && <span className="terminal-running">{runningText}</span>}
         </div>
@@ -276,10 +305,12 @@ export function TerminalPanel({
         />
       )}
 
-      {/* Terminal output area — rendered only when output exists.
-          xterm initializes once this container appears in the DOM. */}
-      {isExpanded && hasOutput && (
-        <div className="terminal-body">
+      {/* Terminal output area — always rendered if output exists, but hidden via CSS if collapsed */}
+      {hasOutput && (
+        <div 
+          className="terminal-body" 
+          style={{ display: isExpanded ? 'block' : 'none' }}
+        >
           <div ref={terminalRef} className="terminal-xterm" />
         </div>
       )}

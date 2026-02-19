@@ -419,7 +419,7 @@ async def get_openai_models() -> List[dict]:
         response = await client.models.list()
 
         # Filter to chat-capable models (gpt-*, o1*, o3*, o4*, chatgpt-*)
-        chat_prefixes = ("gpt-4", "gpt-3.5", "o1", "o3", "o4", "chatgpt-")
+        chat_prefixes = ("gpt-4", "o1", "o3", "o4", "chatgpt-", "gpt-5")
         exclude_keywords = (
             "instruct",
             "realtime",
@@ -525,3 +525,66 @@ async def get_gemini_models() -> List[dict]:
         }
         for m in GEMINI_FALLBACK
     ]
+
+
+# ============================================
+# MCP Tools API
+# ============================================
+
+
+class ToolsSettingsUpdate(BaseModel):
+    """Request body for updating tool settings."""
+
+    always_on: List[str]
+    top_k: int
+
+
+@router.get("/mcp/servers")
+async def get_mcp_servers():
+    """Get connected MCP servers and their tools."""
+    from ..mcp_integration.manager import mcp_manager
+
+    servers = []
+    # iterate over connections to get server names
+    for server_name in mcp_manager._connections.keys():
+        # find tools for this server
+        tools = []
+        for tool_name, entry in mcp_manager._tool_registry.items():
+            if entry["server_name"] == server_name:
+                tools.append(tool_name)
+
+        servers.append({"server": server_name, "tools": sorted(tools)})
+
+    return sorted(servers, key=lambda x: x["server"])
+
+
+@router.get("/settings/tools")
+async def get_tools_settings():
+    """Get current tool retrieval settings."""
+    from ..database import db
+    import json
+
+    always_on_json = db.get_setting("tool_always_on")
+    always_on = []
+    if always_on_json:
+        try:
+            always_on = json.loads(always_on_json)
+        except:
+            pass
+
+    top_k_str = db.get_setting("tool_retriever_top_k")
+    top_k = int(top_k_str) if top_k_str else 5
+
+    return {"always_on": always_on, "top_k": top_k}
+
+
+@router.put("/settings/tools")
+async def set_tools_settings(body: ToolsSettingsUpdate):
+    """Update tool retrieval settings."""
+    from ..database import db
+    import json
+
+    db.set_setting("tool_always_on", json.dumps(body.always_on))
+    db.set_setting("tool_retriever_top_k", str(body.top_k))
+
+    return {"status": "updated", "settings": body.dict()}

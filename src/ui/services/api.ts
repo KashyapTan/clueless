@@ -123,7 +123,52 @@ export function createApiService(send: (message: Record<string, unknown>) => voi
     //   if (!response.ok) throw new Error('Health check failed');
     //   return response.json();
     // },
-  };
+  // ============================================
+  // MCP Tools
+  // ============================================
+
+  /**
+   * Get connected MCP servers and their tools.
+   */
+  async getMcpServers(): Promise<{ server: string; tools: string[] }[]> {
+    try {
+      const response = await fetch(`${HTTP_BASE_URL}/api/mcp/servers`);
+      if (!response.ok) throw new Error('Failed to fetch MCP servers');
+      return response.json();
+    } catch {
+      return [];
+    }
+  },
+
+  /**
+   * Get tool retrieval settings (always_on, top_k).
+   */
+  async getToolsSettings(): Promise<{ always_on: string[]; top_k: number }> {
+    try {
+      const response = await fetch(`${HTTP_BASE_URL}/api/settings/tools`);
+      if (!response.ok) throw new Error('Failed to fetch tool settings');
+      return response.json();
+    } catch {
+      return { always_on: [], top_k: 5 };
+    }
+  },
+
+  /**
+   * Update tool retrieval settings.
+   */
+  async setToolsSettings(alwaysOn: string[], topK: number): Promise<void> {
+    try {
+      await fetch(`${HTTP_BASE_URL}/api/settings/tools`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ always_on: alwaysOn, top_k: topK }),
+      });
+    } catch {
+      console.error('Failed to save tool settings');
+    }
+  },
+};
+
 }
 
 // Singleton for direct imports (when WebSocket context is not needed)
@@ -302,5 +347,50 @@ export const api = {
       method: 'POST',
     });
     return response.json();
+  },
+
+  // ============================================
+  // MCP Tools
+  // ============================================
+
+  /**
+   * Get connected MCP servers and their tools.
+   */
+  async getMcpServers(): Promise<{ server: string; tools: string[] }[]> {
+    try {
+      const response = await fetch(`${HTTP_BASE_URL}/api/mcp/servers`);
+      if (!response.ok) throw new Error('Failed to fetch MCP servers');
+      return response.json();
+    } catch {
+      return [];
+    }
+  },
+
+  /**
+   * Get tool retrieval settings (always_on, top_k).
+   */
+  async getToolsSettings(): Promise<{ always_on: string[]; top_k: number }> {
+    try {
+      const response = await fetch(`${HTTP_BASE_URL}/api/settings/tools`);
+      if (!response.ok) throw new Error('Failed to fetch tool settings');
+      return response.json();
+    } catch {
+      return { always_on: [], top_k: 5 };
+    }
+  },
+
+  /**
+   * Update tool retrieval settings.
+   */
+  async setToolsSettings(alwaysOn: string[], topK: number): Promise<void> {
+    try {
+      await fetch(`${HTTP_BASE_URL}/api/settings/tools`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ always_on: alwaysOn, top_k: topK }),
+      });
+    } catch {
+      console.error('Failed to save tool settings');
+    }
   },
 };

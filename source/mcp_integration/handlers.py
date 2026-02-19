@@ -11,6 +11,8 @@ from typing import List, Dict, Any, Optional
 from ollama import chat
 
 from .manager import mcp_manager
+from .retriever import retriever
+from ..database import db
 from ..core.connection import broadcast_message
 from ..core.state import app_state
 from ..core.thread_pool import run_in_thread
@@ -81,6 +83,37 @@ async def handle_mcp_tool_calls(
     if has_images:
         return messages, tool_calls_made, None
 
+    # Retrieve relevant tools
+    user_query = ""
+    for msg in reversed(messages):
+        if msg.get("role") == "user":
+            user_query = msg.get("content", "")
+            break
+
+    # Get settings
+    always_on_json = db.get_setting("tool_always_on")
+    always_on = []
+    if always_on_json:
+        try:
+            always_on = json.loads(always_on_json)
+        except:
+            pass
+
+    top_k_str = db.get_setting("tool_retriever_top_k")
+    top_k = int(top_k_str) if top_k_str else 5
+
+    all_tools = mcp_manager.get_ollama_tools() or []
+
+    # Filter tools using the retriever
+    filtered_tools = retriever.retrieve_tools(
+        query=user_query, all_tools=all_tools, always_on=always_on, top_k=top_k
+    )
+
+    if len(filtered_tools) < len(all_tools):
+        print(
+            f"[MCP] Retriever selected {len(filtered_tools)}/{len(all_tools)} tools for query: '{user_query[:30]}...'"
+        )
+
     # Non-streamed call to detect tool requests
     # think=False works around Ollama bug #10976 (think+tools=empty output)
     # Use run_in_thread to avoid blocking the event loop (critical for thinking models)
@@ -89,7 +122,7 @@ async def handle_mcp_tool_calls(
             chat,
             model=app_state.selected_model,
             messages=messages,
-            tools=mcp_manager.get_ollama_tools(),
+            tools=filtered_tools,
             think=False,
         )
     except Exception as e:
@@ -97,6 +130,7 @@ async def handle_mcp_tool_calls(
         return messages, tool_calls_made, None
 
     # If no tool calls detected, return None for pre_computed_response so the
+
     # caller falls through to the streaming path for proper token-by-token delivery.
     if not response.message.tool_calls:
         return messages, tool_calls_made, None
@@ -192,7 +226,7 @@ async def handle_mcp_tool_calls(
                 chat,
                 model=app_state.selected_model,
                 messages=messages,
-                tools=mcp_manager.get_ollama_tools(),
+                tools=filtered_tools,
                 think=False,
             )
         except Exception as e:

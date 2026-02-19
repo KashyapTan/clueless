@@ -9,6 +9,7 @@ import sys
 from typing import List, Dict, Any
 
 from ..config import PROJECT_ROOT
+from .retriever import retriever
 
 
 class McpToolManager:
@@ -130,6 +131,8 @@ class McpToolManager:
             print(
                 f"[MCP] Connected to '{server_name}' — {len(tools_result.tools)} tool(s)"
             )
+            # Re-embed tools for the retriever
+            retriever.embed_tools(self._ollama_tools)
         except Exception as e:
             print(f"[MCP] ERROR connecting to '{server_name}': {e}")
             print(f"[MCP] The server will work without '{server_name}' tools.")
@@ -264,6 +267,8 @@ class McpToolManager:
         ]
 
         print(f"[MCP] Removed {len(tools_to_remove)} tool(s) from '{server_name}'")
+        # Re-embed tools for the retriever
+        retriever.embed_tools(self._ollama_tools)
 
     def is_server_connected(self, server_name: str) -> bool:
         """Check if a specific MCP server is currently connected."""

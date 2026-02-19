@@ -10,6 +10,8 @@ import asyncio
 from typing import List, Dict, Any, Optional
 
 from .manager import mcp_manager
+from .retriever import retriever
+from ..database import db
 from ..core.connection import broadcast_message
 from ..core.thread_pool import run_in_thread
 from ..config import MAX_MCP_TOOL_ROUNDS
@@ -46,12 +48,51 @@ async def handle_cloud_tool_calls(
     if has_images:
         return messages, tool_calls_made, None
 
+    # Retrieve relevant tools logic
+    user_query = ""
+    for msg in reversed(messages):
+        if msg.get("role") == "user":
+            user_query = msg.get("content", "")
+            break
+
+    # Get settings
+    always_on_json = db.get_setting("tool_always_on")
+    always_on = []
+    if always_on_json:
+        try:
+            always_on = json.loads(always_on_json)
+        except:
+            pass
+
+    top_k_str = db.get_setting("tool_retriever_top_k")
+    top_k = int(top_k_str) if top_k_str else 5
+
+    # Use Ollama tools format for retrieval as it's the standard for the retriever
+    all_ollama_tools = mcp_manager.get_ollama_tools() or []
+
+    filtered_ollama_tools = retriever.retrieve_tools(
+        query=user_query, all_tools=all_ollama_tools, always_on=always_on, top_k=top_k
+    )
+
+    allowed_tool_names = {t["function"]["name"] for t in filtered_ollama_tools}
+
+    if len(filtered_ollama_tools) < len(all_ollama_tools):
+        print(
+            f"[MCP] Retriever selected {len(filtered_ollama_tools)}/{len(all_ollama_tools)} tools for query: '{user_query[:30]}...'"
+        )
+
     if provider == "anthropic":
-        return await _handle_anthropic_tools(model, api_key, messages, tool_calls_made)
+        return await _handle_anthropic_tools(
+            model, api_key, messages, tool_calls_made, allowed_tool_names
+        )
     elif provider == "openai":
-        return await _handle_openai_tools(model, api_key, messages, tool_calls_made)
+        return await _handle_openai_tools(
+            model, api_key, messages, tool_calls_made, allowed_tool_names
+        )
     elif provider == "gemini":
-        return await _handle_gemini_tools(model, api_key, messages, tool_calls_made)
+        return await _handle_gemini_tools(
+            model, api_key, messages, tool_calls_made, allowed_tool_names
+        )
 
     return messages, tool_calls_made, None
 
@@ -66,11 +107,16 @@ async def _handle_anthropic_tools(
     api_key: str,
     messages: List[Dict[str, Any]],
     tool_calls_made: List[Dict[str, Any]],
+    allowed_tool_names: set[str],
 ) -> tuple[List[Dict[str, Any]], List[Dict[str, Any]], Optional[Dict[str, Any]]]:
     """Handle MCP tool calls via Anthropic Claude API."""
     import anthropic
 
-    tools = mcp_manager.get_anthropic_tools()
+    all_tools = mcp_manager.get_anthropic_tools()
+    if not all_tools:
+        return messages, tool_calls_made, None
+
+    tools = [t for t in all_tools if t["name"] in allowed_tool_names]
     if not tools:
         return messages, tool_calls_made, None
 
@@ -219,11 +265,16 @@ async def _handle_openai_tools(
     api_key: str,
     messages: List[Dict[str, Any]],
     tool_calls_made: List[Dict[str, Any]],
+    allowed_tool_names: set[str],
 ) -> tuple[List[Dict[str, Any]], List[Dict[str, Any]], Optional[Dict[str, Any]]]:
     """Handle MCP tool calls via OpenAI API."""
     import openai
 
-    tools = mcp_manager.get_openai_tools()
+    all_tools = mcp_manager.get_openai_tools()
+    if not all_tools:
+        return messages, tool_calls_made, None
+
+    tools = [t for t in all_tools if t["function"]["name"] in allowed_tool_names]
     if not tools:
         return messages, tool_calls_made, None
 
@@ -355,14 +406,28 @@ async def _handle_gemini_tools(
     api_key: str,
     messages: List[Dict[str, Any]],
     tool_calls_made: List[Dict[str, Any]],
+    allowed_tool_names: set[str],
 ) -> tuple[List[Dict[str, Any]], List[Dict[str, Any]], Optional[Dict[str, Any]]]:
     """Handle MCP tool calls via Gemini API."""
     from google import genai
     from google.genai import types
 
-    tools = mcp_manager.get_gemini_tools()
-    if not tools:
+    gemini_tools_list = mcp_manager.get_gemini_tools()
+    if not gemini_tools_list:
         return messages, tool_calls_made, None
+
+    # Filter tools based on allowed names
+    filtered_declarations = []
+    for tool in gemini_tools_list:
+        if hasattr(tool, "function_declarations") and tool.function_declarations:
+            for fd in tool.function_declarations:
+                if fd.name in allowed_tool_names:
+                    filtered_declarations.append(fd)
+
+    if not filtered_declarations:
+        return messages, tool_calls_made, None
+
+    tools = [types.Tool(function_declarations=filtered_declarations)]
 
     client = genai.Client(api_key=api_key)
 

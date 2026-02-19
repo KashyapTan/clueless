@@ -12,6 +12,7 @@ Electron + React + Python desktop app for AI chat with screenshot and voice capa
 - SQLite chat history persistence with search
 - **Secure Key Management**: Encrypted storage for API keys (Fernet)
 - **Google Integration**: OAuth 2.0 flow for Gmail and Calendar access
+- **Semantic Tool Retrieval**: Dynamically select relevant MCP tools using vector embeddings (Top-K)
 - MCP (Model Context Protocol) tool integration (demo, filesystem, websearch, gmail, calendar)
 - Web search and page reading via DuckDuckGo + crawl4ai
 - Always-on-top frameless window with mini mode (52x52)
@@ -54,8 +55,7 @@ src/
     components/            # Layout.tsx, TitleBar.tsx, WebSocketContext.tsx
       chat/                # ChatMessage, ThinkingSection, ToolCallsDisplay, CodeBlock
       input/               # QueryInput, ModeSelector, ScreenshotChips, TokenUsagePopup
-      settings/            # SettingsModels.tsx
-      settings/            # SettingsModels.tsx, SettingsApiKey.tsx, SettingsConnections.tsx
+      settings/            # SettingsModels.tsx, SettingsApiKey.tsx, SettingsConnections.tsx, SettingsTools.tsx
     hooks/                 # useChatState, useScreenshots, useTokenUsage
     services/              # api.ts (REST + WS command factory)
     types/                 # index.ts (TypeScript interfaces)
@@ -87,6 +87,7 @@ source/                    # Python backend
     key_manager.py         # Encrypted API key storage
   mcp_integration/
     manager.py             # MCP server process management (McpToolManager)
+    retriever.py           # Semantic tool retriever (Top-K selection)
     handlers.py            # Tool call routing loop (up to 30 rounds)
     cloud_tool_handlers.py # Tool calling logic for cloud providers
 mcp_servers/
@@ -319,6 +320,12 @@ IPC handlers:
 - Connect/Disconnect Google account
 - Visual status of Gmail/Calendar access
 - Handles OAuth flow via `POST /api/google/connect`
+
+### `src/ui/components/settings/SettingsTools.tsx` (173 lines)
+**Tool Retrieval UI**
+- Configure Top-K dynamic tool selection
+- Toggle "Always On" tools for MCP servers
+- Communicates with `GET/PUT /api/settings/tools`
 
 ### `src/ui/hooks/`
 - **`useChatState.ts`**: Core chat logic. Manages `chatHistory` array, streaming buffers (thinking, response), `toolCalls`, status, and refs.

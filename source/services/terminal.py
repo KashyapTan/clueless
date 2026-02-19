@@ -51,12 +51,12 @@ _ORIGINAL_ENV = dict(os.environ)
 
 # ANSI escape code stripper (for LLM-readable output from PTY)
 _ANSI_RE = re.compile(
-    r"\x1b\[[0-9;]*[a-zA-Z]"      # CSI sequences (colors, cursor)
-    r"|\x1b\][^\x07]*\x07"         # OSC sequences (title, etc)
-    r"|\x1b[()][AB012]"            # Character set selection
-    r"|\x1b\[[\?0-9;]*[hlm]"      # Private mode set/reset
-    r"|\x1b[=>]"                   # Keypad modes
-    r"|\r"                         # Carriage returns
+    r"\x1b\[[0-9;]*[a-zA-Z]"  # CSI sequences (colors, cursor)
+    r"|\x1b\][^\x07]*\x07"  # OSC sequences (title, etc)
+    r"|\x1b[()][AB012]"  # Character set selection
+    r"|\x1b\[[\?0-9;]*[hlm]"  # Private mode set/reset
+    r"|\x1b[=>]"  # Keypad modes
+    r"|\r"  # Carriage returns
 )
 
 
@@ -80,7 +80,7 @@ class TerminalSession:
         self.cwd = cwd
         self.process: Optional[object] = None  # PtyProcess
         self.output_buffer: list[str] = []  # Raw output chunks
-        self.text_buffer: list[str] = []    # ANSI-stripped for LLM
+        self.text_buffer: list[str] = []  # ANSI-stripped for LLM
         self.reader_task: Optional[asyncio.Task] = None
         self.start_time: float = time.time()
         self.exit_code: Optional[int] = None
@@ -187,14 +187,20 @@ class TerminalService:
         self._approval_remember[request_id] = False
 
         # Broadcast approval request to frontend
-        await manager.broadcast(json.dumps({
-            "type": "terminal_approval_request",
-            "content": json.dumps({
-                "command": command,
-                "cwd": cwd,
-                "request_id": request_id,
-            })
-        }))
+        await manager.broadcast(
+            json.dumps(
+                {
+                    "type": "terminal_approval_request",
+                    "content": json.dumps(
+                        {
+                            "command": command,
+                            "cwd": cwd,
+                            "request_id": request_id,
+                        }
+                    ),
+                }
+            )
+        )
 
         # Block until user responds (timeout = 120s)
         try:
@@ -234,13 +240,19 @@ class TerminalService:
         self._session_event = asyncio.Event()
         self._session_result = None
 
-        await manager.broadcast(json.dumps({
-            "type": "terminal_session_request",
-            "content": json.dumps({
-                "reason": reason,
-                "request_id": request_id,
-            })
-        }))
+        await manager.broadcast(
+            json.dumps(
+                {
+                    "type": "terminal_session_request",
+                    "content": json.dumps(
+                        {
+                            "reason": reason,
+                            "request_id": request_id,
+                        }
+                    ),
+                }
+            )
+        )
 
         try:
             await asyncio.wait_for(self._session_event.wait(), timeout=120.0)
@@ -253,10 +265,9 @@ class TerminalService:
 
         if approved:
             self._session_mode = True
-            await manager.broadcast(json.dumps({
-                "type": "terminal_session_started",
-                "content": ""
-            }))
+            await manager.broadcast(
+                json.dumps({"type": "terminal_session_started", "content": ""})
+            )
 
         return approved
 
@@ -269,10 +280,9 @@ class TerminalService:
     async def end_session(self):
         """End session mode."""
         self._session_mode = False
-        await manager.broadcast(json.dumps({
-            "type": "terminal_session_ended",
-            "content": ""
-        }))
+        await manager.broadcast(
+            json.dumps({"type": "terminal_session_ended", "content": ""})
+        )
 
     def track_running_command(self, request_id: str, command: str):
         """Start tracking a running command for the 10s notice."""
@@ -292,20 +302,28 @@ class TerminalService:
             elapsed_ms = int((now - info["start_time"]) * 1000)
             if elapsed_ms >= 10000 and not info["notified"]:
                 info["notified"] = True
-                await manager.broadcast(json.dumps({
-                    "type": "terminal_running_notice",
-                    "content": json.dumps({
-                        "request_id": request_id,
-                        "command": info["command"],
-                        "elapsed_ms": elapsed_ms,
-                    })
-                }))
+                await manager.broadcast(
+                    json.dumps(
+                        {
+                            "type": "terminal_running_notice",
+                            "content": json.dumps(
+                                {
+                                    "request_id": request_id,
+                                    "command": info["command"],
+                                    "elapsed_ms": elapsed_ms,
+                                }
+                            ),
+                        }
+                    )
+                )
 
     def stop_tracking_command(self, request_id: str):
         """Stop tracking a running command."""
         self._running_commands.pop(request_id, None)
 
-    async def broadcast_output(self, request_id: str, text: str, stream: bool = False, raw: bool = False):
+    async def broadcast_output(
+        self, request_id: str, text: str, stream: bool = False, raw: bool = False
+    ):
         """Broadcast terminal output to frontend.
 
         Args:
@@ -315,31 +333,49 @@ class TerminalService:
             raw: If True, frontend uses term.write() (raw ANSI for PTY/TUI).
                  If False, frontend uses term.writeln() (line-by-line).
         """
-        await manager.broadcast(json.dumps({
-            "type": "terminal_output",
-            "content": json.dumps({
-                "text": text,
-                "request_id": request_id,
-                "stream": stream,
-                "raw": raw,
-            })
-        }))
+        await manager.broadcast(
+            json.dumps(
+                {
+                    "type": "terminal_output",
+                    "content": json.dumps(
+                        {
+                            "text": text,
+                            "request_id": request_id,
+                            "stream": stream,
+                            "raw": raw,
+                        }
+                    ),
+                }
+            )
+        )
 
-    async def broadcast_complete(self, request_id: str, exit_code: int, duration_ms: int):
+    async def broadcast_complete(
+        self, request_id: str, exit_code: int, duration_ms: int
+    ):
         """Broadcast command completion to frontend."""
-        await manager.broadcast(json.dumps({
-            "type": "terminal_command_complete",
-            "content": json.dumps({
-                "request_id": request_id,
-                "exit_code": exit_code,
-                "duration_ms": duration_ms,
-            })
-        }))
+        await manager.broadcast(
+            json.dumps(
+                {
+                    "type": "terminal_command_complete",
+                    "content": json.dumps(
+                        {
+                            "request_id": request_id,
+                            "exit_code": exit_code,
+                            "duration_ms": duration_ms,
+                        }
+                    ),
+                }
+            )
+        )
 
     # ── Direct Command Execution ────────────────────────────────────────
 
     async def execute_command(
-        self, command: str, cwd: str, timeout: int = 120, request_id: Optional[str] = None
+        self,
+        command: str,
+        cwd: str,
+        timeout: int = 120,
+        request_id: Optional[str] = None,
     ) -> tuple[str, int, int, bool]:
         """
         Execute a command directly using asyncio subprocess with real-time
@@ -359,7 +395,7 @@ class TerminalService:
             (full_output, exit_code, duration_ms, timed_out)
         """
         # Enforce timeout ceiling
-        timeout = min(timeout, _MAX_TIMEOUT)
+        effective_timeout = min(timeout, _MAX_TIMEOUT)
 
         # Resolve working directory
         work_dir = cwd or os.getcwd()
@@ -402,9 +438,13 @@ class TerminalService:
             assert process.stdout is not None
             try:
                 while True:
+                    # Compute remaining time from the original capped timeout
+                    elapsed = time.time() - start_time
+                    remaining = max(0.1, effective_timeout - elapsed)
+
                     try:
                         line_bytes = await asyncio.wait_for(
-                            process.stdout.readline(), timeout=timeout
+                            process.stdout.readline(), timeout=remaining
                         )
                     except asyncio.TimeoutError:
                         # Timeout reading — kill the process
@@ -419,15 +459,15 @@ class TerminalService:
                         # EOF — process has finished writing
                         break
 
-                    line = line_bytes.decode("utf-8", errors="replace").rstrip("\n").rstrip("\r")
+                    line = (
+                        line_bytes.decode("utf-8", errors="replace")
+                        .rstrip("\n")
+                        .rstrip("\r")
+                    )
                     output_lines.append(line)
 
                     # Stream this line to the frontend immediately
                     await self.broadcast_output(request_id, line, stream=True)
-
-                    # Recalculate remaining timeout
-                    elapsed = time.time() - start_time
-                    timeout = max(0.1, min(timeout, _MAX_TIMEOUT) - elapsed)
 
             except asyncio.CancelledError:
                 try:
@@ -459,10 +499,12 @@ class TerminalService:
         full_output = "\n".join(output_lines) if output_lines else "(no output)"
 
         if timed_out:
-            timeout_msg = f"Command timed out after {_MAX_TIMEOUT} seconds"
+            timeout_msg = f"Command timed out after {effective_timeout} seconds"
             output_lines.append(timeout_msg)
             full_output += f"\n{timeout_msg}"
-            await self.broadcast_output(request_id, f"\x1b[31m{timeout_msg}\x1b[0m", stream=True)
+            await self.broadcast_output(
+                request_id, f"\x1b[31m{timeout_msg}\x1b[0m", stream=True
+            )
 
         if exit_code != 0 and not timed_out:
             full_output += f"\n[exit code: {exit_code}]"
@@ -543,7 +585,10 @@ class TerminalService:
             return (
                 "Error: pywinpty is not installed. PTY mode requires pywinpty "
                 "(pip install pywinpty). Falling back to standard execution.",
-                1, 0, False, None,
+                1,
+                0,
+                False,
+                None,
             )
 
         max_timeout = _MAX_BACKGROUND_TIMEOUT if background else _MAX_TIMEOUT
@@ -554,7 +599,13 @@ class TerminalService:
         if not os.path.isabs(work_dir):
             work_dir = os.path.abspath(work_dir)
         if not os.path.isdir(work_dir):
-            return f"Error: Working directory does not exist: {work_dir}", 1, 0, False, None
+            return (
+                f"Error: Working directory does not exist: {work_dir}",
+                1,
+                0,
+                False,
+                None,
+            )
 
         # Security: check blocklist
         blocked, reason = check_blocklist(command)
@@ -618,7 +669,9 @@ class TerminalService:
                 # Process is done
                 session._alive = False
                 try:
-                    session.exit_code = pty_proc.exitstatus if hasattr(pty_proc, 'exitstatus') else 0
+                    session.exit_code = (
+                        pty_proc.exitstatus if hasattr(pty_proc, "exitstatus") else 0
+                    )
                 except Exception:
                     session.exit_code = 0
                 session._done_event.set()
@@ -652,7 +705,10 @@ class TerminalService:
                     return (
                         f"Process running (session_id: {session_id}).\n"
                         f"--- Recent Output ---\n{output}",
-                        0, session.duration_ms, False, session_id,
+                        0,
+                        session.duration_ms,
+                        False,
+                        session_id,
                     )
             else:
                 # Foreground: wait for completion up to timeout
@@ -669,14 +725,19 @@ class TerminalService:
                     return output, exit_code, duration_ms, False, None
                 else:
                     # Timed out — kill the process
-                    await self._kill_session(session_id, f"Command timed out after {timeout}s")
+                    await self._kill_session(
+                        session_id, f"Command timed out after {timeout}s"
+                    )
 
                     output = session.get_recent_output(200)
                     duration_ms = session.duration_ms
 
                     return (
                         output + f"\n[Timed out after {timeout}s]",
-                        -1, duration_ms, True, None,
+                        -1,
+                        duration_ms,
+                        True,
+                        None,
                     )
 
         except Exception as e:
@@ -689,8 +750,11 @@ class TerminalService:
     # ── Session Interaction (send_input / read_output / kill_process) ──
 
     async def send_input(
-        self, session_id: str, text: str,
-        press_enter: bool = True, wait_ms: int = 3000,
+        self,
+        session_id: str,
+        text: str,
+        press_enter: bool = True,
+        wait_ms: int = 3000,
     ) -> str:
         """
         Send input text to a running PTY session.
@@ -713,11 +777,11 @@ class TerminalService:
 
         try:
             # Decode JSON escape sequences (\r\n → actual CR LF, \x03 → Ctrl-C, etc.)
-            decoded = text.encode('raw_unicode_escape').decode('unicode_escape')
+            decoded = text.encode("raw_unicode_escape").decode("unicode_escape")
 
             # Auto-append Enter if requested and not already present
-            if press_enter and not decoded.endswith(('\r', '\n')):
-                decoded += '\r'
+            if press_enter and not decoded.endswith(("\r", "\n")):
+                decoded += "\r"
 
             # PtyProcess.write() may block — run in thread
             await asyncio.to_thread(session.process.write, decoded)
@@ -729,10 +793,7 @@ class TerminalService:
             # Return recent output so the LLM sees the result
             output = session.get_recent_output(50)
             alive = "running" if session.is_alive else "exited"
-            return (
-                f"Input sent. Session is {alive}.\n"
-                f"--- Recent Output ---\n{output}"
-            )
+            return f"Input sent. Session is {alive}.\n--- Recent Output ---\n{output}"
         except Exception as e:
             return f"Error sending input: {e}"
 

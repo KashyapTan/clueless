@@ -13,11 +13,11 @@ from ollama import chat
 
 from .manager import mcp_manager
 from .retriever import retriever
+from .terminal_executor import is_terminal_tool, execute_terminal_tool
 from ..database import db
 from ..core.connection import broadcast_message
 from ..core.state import app_state
 from ..core.thread_pool import run_in_thread
-from ..services.terminal import terminal_service
 
 
 def _extract_response(response) -> Optional[Dict[str, Any]]:
@@ -185,23 +185,10 @@ async def handle_mcp_tool_calls(
                 break
 
             # ── Terminal tool interception ──────────────────────────────
-            # Handle terminal tools with approval/session logic before
-            # routing to the MCP server.
-            if server_name == "terminal" and fn_name == "run_command":
-                result = await _handle_terminal_run_command(
-                    fn_name, fn_args, server_name
-                )
-            elif server_name == "terminal" and fn_name == "request_session_mode":
-                result = await _handle_terminal_session_request(fn_args)
-            elif server_name == "terminal" and fn_name == "end_session_mode":
-                await terminal_service.end_session()
-                result = "session ended"
-            elif server_name == "terminal" and fn_name == "send_input":
-                result = await _handle_terminal_send_input(fn_args)
-            elif server_name == "terminal" and fn_name == "read_output":
-                result = await _handle_terminal_read_output(fn_args)
-            elif server_name == "terminal" and fn_name == "kill_process":
-                result = await _handle_terminal_kill_process(fn_args)
+            # Handle terminal tools with approval/session logic directly
+            # (no MCP subprocess needed).
+            if is_terminal_tool(fn_name, server_name):
+                result = await execute_terminal_tool(fn_name, fn_args, server_name)
             else:
                 # ── Standard tool execution ─────────────────────────────
 
@@ -297,205 +284,3 @@ async def handle_mcp_tool_calls(
         )
 
     return messages, tool_calls_made, None
-
-
-async def _handle_terminal_session_request(fn_args: dict) -> str:
-    """Handle a request_session_mode tool call."""
-    reason = fn_args.get("reason", "Autonomous operation requested")
-    approved = await terminal_service.request_session(reason)
-    return "session started" if approved else "session request denied"
-
-
-# ─── Terminal Tool Interception Helpers ─────────────────────────────────
-
-
-async def _handle_terminal_run_command(
-    fn_name: str, fn_args: dict, server_name: str
-) -> str:
-    """
-    Handle a run_command tool call with approval checking.
-
-    Routes to PTY execution when pty=True, standard execution otherwise.
-
-    Flow:
-    1. Check approval (may block waiting for user)
-    2. If approved, execute via terminal_service
-    3. Broadcast output and completion to frontend
-    4. Save terminal event to database
-    """
-    command = fn_args.get("command", "")
-    cwd = fn_args.get("cwd", "")
-    timeout = fn_args.get("timeout", 120)
-    use_pty = fn_args.get("pty", False)
-    background = fn_args.get("background", False)
-    yield_ms = fn_args.get("yield_ms", 10000)
-
-    # Check approval (blocks until user responds if needed)
-    approved, request_id = await terminal_service.check_approval(command, cwd)
-
-    if not approved:
-        # Save denied event (defer if no conversation yet)
-        event_data = dict(
-            message_index=len(app_state.chat_history),
-            command=command,
-            exit_code=-1,
-            output="Command denied by user",
-            cwd=cwd,
-            duration_ms=0,
-            denied=True,
-        )
-        if app_state.conversation_id:
-            db.save_terminal_event(
-                conversation_id=app_state.conversation_id,
-                message_index=len(app_state.chat_history),
-                command=command,
-                exit_code=-1,
-                output="Command denied by user",
-                cwd=cwd,
-                duration_ms=0,
-                denied=True,
-            )
-        else:
-            terminal_service.queue_terminal_event(event_data)
-
-        # Don't broadcast tool_call here — the main loop handles it
-        return "Command denied by user"
-
-    # Approved — broadcast "calling" status
-    await broadcast_message(
-        "tool_call",
-        json.dumps(
-            {
-                "name": fn_name,
-                "args": fn_args,
-                "server": server_name,
-                "status": "calling",
-            }
-        ),
-    )
-
-    # Track for running notice
-    terminal_service.track_running_command(request_id, command)
-
-    # Start a background task to check for 10s notices
-    async def _notice_checker():
-        while request_id in terminal_service._running_commands:
-            await terminal_service.check_running_notices()
-            await asyncio.sleep(2)
-
-    notice_task = asyncio.create_task(_notice_checker())
-
-    if use_pty:
-        # PTY execution for interactive CLIs
-        (
-            result_str,
-            exit_code,
-            duration_ms,
-            timed_out,
-            session_id,
-        ) = await terminal_service.execute_command_pty(
-            command=command,
-            cwd=cwd,
-            timeout=timeout,
-            request_id=request_id,
-            background=background,
-            yield_ms=yield_ms,
-        )
-    else:
-        # Standard execution with line-by-line streaming
-        (
-            result_str,
-            exit_code,
-            duration_ms,
-            timed_out,
-        ) = await terminal_service.execute_command(
-            command=command,
-            cwd=cwd,
-            timeout=timeout,
-            request_id=request_id,
-        )
-        session_id = None
-
-    # Stop tracking
-    terminal_service.stop_tracking_command(request_id)
-    notice_task.cancel()
-
-    # If this is NOT a background session that's still running,
-    # broadcast completion to terminal panel
-    if session_id is None:
-        await terminal_service.broadcast_complete(request_id, exit_code, duration_ms)
-
-    # Save terminal event to database (defer if no conversation yet)
-    if app_state.conversation_id:
-        db.save_terminal_event(
-            conversation_id=app_state.conversation_id,
-            message_index=len(app_state.chat_history),
-            command=command,
-            exit_code=exit_code,
-            output=result_str[:50000],  # Cap output for DB
-            cwd=cwd,
-            duration_ms=duration_ms,
-            pty=use_pty,
-            background=background,
-            timed_out=timed_out,
-        )
-    else:
-        # Re-build event_data for queueing if needed
-        event_data = dict(
-            message_index=len(app_state.chat_history),
-            command=command,
-            exit_code=exit_code,
-            output=result_str[:50000],
-            cwd=cwd,
-            duration_ms=duration_ms,
-            pty=use_pty,
-            background=background,
-            timed_out=timed_out,
-        )
-        terminal_service.queue_terminal_event(event_data)
-
-    return result_str
-
-
-async def _handle_terminal_send_input(fn_args: dict) -> str:
-    """Handle a send_input tool call — send text to a running PTY session."""
-    session_id = fn_args.get("session_id", "")
-    input_text = fn_args.get("input_text", "")
-    press_enter = fn_args.get("press_enter", True)
-    wait_ms = fn_args.get("wait_ms", 3000)
-
-    if not session_id:
-        return "Error: session_id is required"
-    if not input_text and not press_enter:
-        return "Error: input_text is required when press_enter is False"
-
-    result = await terminal_service.send_input(
-        session_id,
-        input_text,
-        press_enter=press_enter,
-        wait_ms=wait_ms,
-    )
-    return result
-
-
-async def _handle_terminal_read_output(fn_args: dict) -> str:
-    """Handle a read_output tool call — read recent output from a PTY session."""
-    session_id = fn_args.get("session_id", "")
-    lines = fn_args.get("lines", 50)
-
-    if not session_id:
-        return "Error: session_id is required"
-
-    result = await terminal_service.read_output(session_id, lines)
-    return result
-
-
-async def _handle_terminal_kill_process(fn_args: dict) -> str:
-    """Handle a kill_process tool call — terminate a PTY session."""
-    session_id = fn_args.get("session_id", "")
-
-    if not session_id:
-        return "Error: session_id is required"
-
-    result = await terminal_service.kill_process(session_id)
-    return result

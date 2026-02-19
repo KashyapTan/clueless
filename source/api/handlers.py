@@ -73,10 +73,17 @@ class MessageHandler:
 
     async def _handle_stop_streaming(self, data: Dict[str, Any]):
         """Handle stop streaming request — cancels all in-flight work."""
+        # Cancel via RequestContext (new path)
+        ctx = app_state.current_request
+        if ctx is not None:
+            ctx.cancel()
+
+        # Legacy flag for subsystems not yet migrated
         app_state.stop_streaming = True
 
         # Cancel any pending terminal approvals/sessions so tool loop unblocks
         from ..services.terminal import terminal_service
+
         terminal_service.cancel_all_pending()
 
     async def _handle_get_conversations(self, data: Dict[str, Any]):
@@ -151,9 +158,7 @@ class MessageHandler:
 
         if app_state.transcription_service:
             # Run transcription in a separate thread to avoid blocking the event loop
-            text = await run_in_thread(
-                app_state.transcription_service.stop_recording
-            )
+            text = await run_in_thread(app_state.transcription_service.stop_recording)
 
             await self.websocket.send_text(
                 json.dumps({"type": "transcription_result", "content": text})

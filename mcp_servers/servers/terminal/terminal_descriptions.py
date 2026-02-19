@@ -23,6 +23,9 @@ RUN_COMMAND_DESCRIPTION = """
     - yield_ms: when background=True, how long (ms) to wait before returning
                 control to you. You'll get whatever output appeared so far plus
                 the session_id. Default: 10000 (10 seconds).
+    - PATH QUOTING: Always wrap file paths in double quotes (e.g., "C:/Users/Name With Space/script.py"). 
+      Windows shells split commands at spaces; failing to quote paths containing spaces 
+      will cause 'File Not Found' errors.
 
     Security:
     - Commands touching OS system paths are always blocked regardless of other settings
@@ -64,8 +67,11 @@ REQUEST_SESSION_MODE_DESCRIPTION = """
 """
 
 END_SESSION_MODE_DESCRIPTION = """
-    Signal that your autonomous task is complete.
-    Always call this when you finish a multi-step session.
+    Signal that your autonomous task is complete early.
+    Session mode auto-expires at the end of each turn, so calling this
+    is optional. Use it only if you want to relinquish autonomous
+    access before your response is finished (e.g. after encountering
+    an error that requires user input).
     Returns: 'session ended'
 """
 

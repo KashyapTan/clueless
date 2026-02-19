@@ -6,17 +6,15 @@ Same loop logic as handle_mcp_tool_calls but uses cloud APIs instead of Ollama.
 """
 
 import json
-import asyncio
 from typing import List, Dict, Any, Optional
 
 from .manager import mcp_manager
 from .retriever import retriever
 from ..database import db
 from ..core.connection import broadcast_message
-from ..core.state import app_state
 from ..core.thread_pool import run_in_thread
 from ..config import MAX_MCP_TOOL_ROUNDS
-from ..services.terminal import terminal_service
+from .terminal_executor import is_terminal_tool, execute_terminal_tool
 
 
 async def handle_cloud_tool_calls(
@@ -170,8 +168,8 @@ async def _handle_anthropic_tools(
             )
 
             # Terminal tool interception — same approval/PTY/streaming as Ollama
-            if _is_terminal_tool(fn_name, server_name):
-                result = await _execute_terminal_tool(fn_name, fn_args, server_name)
+            if is_terminal_tool(fn_name, server_name):
+                result = await execute_terminal_tool(fn_name, fn_args, server_name)
             else:
                 await broadcast_message(
                     "tool_call",
@@ -192,7 +190,7 @@ async def _handle_anthropic_tools(
 
             result_str = _truncate_result(result)
 
-            if not _is_terminal_tool(fn_name, server_name):
+            if not is_terminal_tool(fn_name, server_name):
                 await broadcast_message(
                     "tool_call",
                     json.dumps(
@@ -325,8 +323,8 @@ async def _handle_openai_tools(
             print(f"[MCP/OpenAI] Tool call: {fn_name}({fn_args}) from '{server_name}'")
 
             # Terminal tool interception
-            if _is_terminal_tool(fn_name, server_name):
-                result = await _execute_terminal_tool(fn_name, fn_args, server_name)
+            if is_terminal_tool(fn_name, server_name):
+                result = await execute_terminal_tool(fn_name, fn_args, server_name)
             else:
                 await broadcast_message(
                     "tool_call",
@@ -347,7 +345,7 @@ async def _handle_openai_tools(
 
             result_str = _truncate_result(result)
 
-            if not _is_terminal_tool(fn_name, server_name):
+            if not is_terminal_tool(fn_name, server_name):
                 await broadcast_message(
                     "tool_call",
                     json.dumps(
@@ -483,8 +481,8 @@ async def _handle_gemini_tools(
             print(f"[MCP/Gemini] Tool call: {fn_name}({fn_args}) from '{server_name}'")
 
             # Terminal tool interception
-            if _is_terminal_tool(fn_name, server_name):
-                result = await _execute_terminal_tool(fn_name, fn_args, server_name)
+            if is_terminal_tool(fn_name, server_name):
+                result = await execute_terminal_tool(fn_name, fn_args, server_name)
             else:
                 await broadcast_message(
                     "tool_call",
@@ -505,7 +503,7 @@ async def _handle_gemini_tools(
 
             result_str = _truncate_result(result)
 
-            if not _is_terminal_tool(fn_name, server_name):
+            if not is_terminal_tool(fn_name, server_name):
                 await broadcast_message(
                     "tool_call",
                     json.dumps(
@@ -597,143 +595,6 @@ def _extract_gemini_function_calls(response) -> List[Dict[str, Any]]:
             )
 
     return fn_calls
-
-
-# ---------------------------------------------------------------------------
-# Terminal tool interception (shared by all cloud providers)
-# ---------------------------------------------------------------------------
-
-# Terminal tool names that must be intercepted
-_TERMINAL_TOOLS = {"run_command", "request_session_mode", "end_session_mode",
-                   "send_input", "read_output", "kill_process"}
-
-
-def _is_terminal_tool(fn_name: str, server_name: str) -> bool:
-    """Check if a tool call should be intercepted as a terminal tool."""
-    return server_name == "terminal" and fn_name in _TERMINAL_TOOLS
-
-
-async def _execute_terminal_tool(fn_name: str, fn_args: dict, server_name: str) -> str:
-    """
-    Execute a terminal tool with approval/session/PTY logic.
-
-    Mirrors the interception in handlers.py so cloud providers get the
-    same terminal UI, approval flow, PTY execution, and streaming.
-    """
-    if fn_name == "run_command":
-        return await _cloud_handle_run_command(fn_name, fn_args, server_name)
-    elif fn_name == "request_session_mode":
-        reason = fn_args.get("reason", "")
-        approved = await terminal_service.request_session(reason)
-        return "approved" if approved else "denied"
-    elif fn_name == "end_session_mode":
-        await terminal_service.end_session()
-        return "session ended"
-    elif fn_name == "send_input":
-        session_id = fn_args.get("session_id", "")
-        input_text = fn_args.get("input_text", "")
-        press_enter = fn_args.get("press_enter", True)
-        wait_ms = fn_args.get("wait_ms", 3000)
-        if not session_id:
-            return "Error: session_id is required"
-        return await terminal_service.send_input(
-            session_id, input_text, press_enter=press_enter, wait_ms=wait_ms
-        )
-    elif fn_name == "read_output":
-        session_id = fn_args.get("session_id", "")
-        lines = fn_args.get("lines", 50)
-        if not session_id:
-            return "Error: session_id is required"
-        return await terminal_service.read_output(session_id, lines)
-    elif fn_name == "kill_process":
-        session_id = fn_args.get("session_id", "")
-        if not session_id:
-            return "Error: session_id is required"
-        return await terminal_service.kill_process(session_id)
-
-    return f"Unknown terminal tool: {fn_name}"
-
-
-async def _cloud_handle_run_command(fn_name: str, fn_args: dict, server_name: str) -> str:
-    """Handle run_command with approval, PTY, and streaming for cloud providers."""
-    command = fn_args.get("command", "")
-    cwd = fn_args.get("cwd", "")
-    timeout = fn_args.get("timeout", 120)
-    use_pty = fn_args.get("pty", False)
-    background = fn_args.get("background", False)
-    yield_ms = fn_args.get("yield_ms", 10000)
-
-    import uuid
-
-    # Check approval
-    approved, request_id = await terminal_service.check_approval(command, cwd)
-
-    if not approved:
-        event_data = dict(
-            message_index=len(app_state.chat_history),
-            command=command, exit_code=-1,
-            output="Command denied by user", cwd=cwd,
-            duration_ms=0, denied=True,
-        )
-        if app_state.conversation_id:
-            db.save_terminal_event(conversation_id=app_state.conversation_id, **event_data)
-        else:
-            terminal_service.queue_terminal_event(event_data)
-        return "Command denied by user"
-
-    # Broadcast "calling" status
-    await broadcast_message(
-        "tool_call",
-        json.dumps({
-            "name": fn_name, "args": fn_args,
-            "server": server_name, "status": "calling",
-        }),
-    )
-
-    # Track for running notice
-    terminal_service.track_running_command(request_id, command)
-
-    async def _notice_checker():
-        while request_id in terminal_service._running_commands:
-            await terminal_service.check_running_notices()
-            await asyncio.sleep(2)
-
-    notice_task = asyncio.create_task(_notice_checker())
-
-    if use_pty:
-        result_str, exit_code, duration_ms, timed_out, session_id = (
-            await terminal_service.execute_command_pty(
-                command=command, cwd=cwd, timeout=timeout,
-                request_id=request_id, background=background, yield_ms=yield_ms,
-            )
-        )
-    else:
-        result_str, exit_code, duration_ms, timed_out = (
-            await terminal_service.execute_command(
-                command=command, cwd=cwd, timeout=timeout, request_id=request_id,
-            )
-        )
-        session_id = None
-
-    terminal_service.stop_tracking_command(request_id)
-    notice_task.cancel()
-
-    if session_id is None:
-        await terminal_service.broadcast_complete(request_id, exit_code, duration_ms)
-
-    event_data = dict(
-        message_index=len(app_state.chat_history),
-        command=command, exit_code=exit_code,
-        output=result_str[:50000], cwd=cwd,
-        duration_ms=duration_ms, pty=use_pty,
-        background=background, timed_out=timed_out,
-    )
-    if app_state.conversation_id:
-        db.save_terminal_event(conversation_id=app_state.conversation_id, **event_data)
-    else:
-        terminal_service.queue_terminal_event(event_data)
-
-    return result_str
 
 
 # ---------------------------------------------------------------------------

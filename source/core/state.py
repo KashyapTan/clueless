@@ -8,6 +8,7 @@ maintainability and testability.
 from typing import List, Dict, Any, Optional
 import threading
 from ..ss import ScreenshotService
+from .request_context import RequestContext
 import asyncio
 
 
@@ -24,7 +25,15 @@ class AppState:
         self.screenshot_list: List[Dict[str, Any]] = []
         self.screenshot_counter: int = 0
 
-        # Streaming state
+        # Request lifecycle — the canonical way to manage streaming state.
+        # conversations.py creates a RequestContext at the start of submit_query
+        # and stores it here.  All subsystems check ctx.cancelled.
+        self.current_request: Optional[RequestContext] = None
+        self._request_lock: asyncio.Lock = asyncio.Lock()
+
+        # Legacy streaming flags — kept so ollama_provider.py and other
+        # subsystems that haven't been migrated yet continue to work.
+        # conversations.py keeps these in sync with current_request.
         self.is_streaming: bool = False
         self.stop_streaming: bool = False
         self.stream_lock: asyncio.Lock = asyncio.Lock()

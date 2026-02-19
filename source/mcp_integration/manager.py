@@ -137,6 +137,53 @@ class McpToolManager:
             print(f"[MCP] ERROR connecting to '{server_name}': {e}")
             print(f"[MCP] The server will work without '{server_name}' tools.")
 
+    def register_inline_tools(
+        self, server_name: str, tools: List[Dict[str, Any]]
+    ) -> None:
+        """Register tool schemas without spawning a subprocess.
+
+        Use this for tools that are intercepted at the handler layer and
+        never routed to an MCP server (e.g. terminal tools).  Each item
+        in *tools* must have: name, description, parameters (JSON Schema).
+
+        The tool registry entry has ``session=None`` so ``call_tool()``
+        will return an error if something accidentally tries to call the
+        MCP session — the handler layer should intercept first.
+        """
+        for tool in tools:
+            name = tool["name"]
+            description = tool.get("description", "")
+            parameters = tool.get("parameters", {"type": "object", "properties": {}})
+
+            self._tool_registry[name] = {
+                "session": None,  # no subprocess — intercepted at handler layer
+                "server_name": server_name,
+            }
+
+            ollama_tool = {
+                "type": "function",
+                "function": {
+                    "name": name,
+                    "description": description,
+                    "parameters": parameters,
+                },
+            }
+            self._ollama_tools.append(ollama_tool)
+
+            self._raw_tools.append(
+                {
+                    "name": name,
+                    "description": description,
+                    "input_schema": parameters,
+                }
+            )
+
+            print(f"[MCP] Registered inline tool: {name} (from {server_name})")
+
+        print(f"[MCP] Registered {len(tools)} inline tool(s) for '{server_name}'")
+        # Re-embed tools for the retriever
+        retriever.embed_tools(self._ollama_tools)
+
     async def call_tool(self, tool_name: str, arguments: dict) -> str:
         """Route a tool call to the correct MCP server."""
         if tool_name not in self._tool_registry:
@@ -146,13 +193,14 @@ class McpToolManager:
         session = entry["session"]
 
         import asyncio
+
         try:
             result = await asyncio.wait_for(
                 session.call_tool(tool_name, arguments=arguments),
                 timeout=180.0,  # 3 min safety ceiling
             )
         except asyncio.TimeoutError:
-            server = entry.get('server_name', 'unknown')
+            server = entry.get("server_name", "unknown")
             return f"Error: Tool '{tool_name}' (server '{server}') timed out after 180s"
 
         output_parts = []
@@ -388,11 +436,167 @@ async def init_mcp_servers():
         [str(PROJECT_ROOT / "mcp_servers" / "servers" / "websearch" / "server.py")],
     )
 
-    # ── Terminal server ────────────────────────────────────────────
-    await mcp_manager.connect_server(
+    # ── Terminal tools (inline — no subprocess) ─────────────────────
+    # Terminal tools are intercepted at the handler layer and executed
+    # directly by terminal_executor.py.  We register their schemas here
+    # so they appear in the tool list sent to LLMs, but no MCP server
+    # subprocess is spawned.
+    from mcp_servers.servers.terminal.terminal_descriptions import (
+        GET_ENVIRONMENT_DESCRIPTION,
+        RUN_COMMAND_DESCRIPTION,
+        FIND_FILES_DESCRIPTION,
+        REQUEST_SESSION_MODE_DESCRIPTION,
+        END_SESSION_MODE_DESCRIPTION,
+        SEND_INPUT_DESCRIPTION,
+        READ_OUTPUT_DESCRIPTION,
+        KILL_PROCESS_DESCRIPTION,
+    )
+
+    mcp_manager.register_inline_tools(
         "terminal",
-        sys.executable,
-        [str(PROJECT_ROOT / "mcp_servers" / "servers" / "terminal" / "server.py")],
+        [
+            {
+                "name": "get_environment",
+                "description": GET_ENVIRONMENT_DESCRIPTION.strip(),
+                "parameters": {"type": "object", "properties": {}},
+            },
+            {
+                "name": "run_command",
+                "description": RUN_COMMAND_DESCRIPTION.strip(),
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "command": {
+                            "type": "string",
+                            "description": "Shell command to execute",
+                        },
+                        "cwd": {
+                            "type": "string",
+                            "description": "Working directory (absolute path)",
+                        },
+                        "timeout": {
+                            "type": "integer",
+                            "description": "Seconds before force-killing (max 120 foreground, 1800 background)",
+                            "default": 120,
+                        },
+                        "pty": {
+                            "type": "boolean",
+                            "description": "Use PTY for interactive/TUI commands",
+                            "default": False,
+                        },
+                        "background": {
+                            "type": "boolean",
+                            "description": "Run in background, return session_id",
+                            "default": False,
+                        },
+                        "yield_ms": {
+                            "type": "integer",
+                            "description": "Ms to wait before returning for background processes",
+                            "default": 10000,
+                        },
+                    },
+                    "required": ["command"],
+                },
+            },
+            {
+                "name": "find_files",
+                "description": FIND_FILES_DESCRIPTION.strip(),
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "pattern": {
+                            "type": "string",
+                            "description": "Glob pattern (e.g. '*.py', '**/*.ts')",
+                        },
+                        "directory": {
+                            "type": "string",
+                            "description": "Directory to search in",
+                        },
+                    },
+                    "required": ["pattern"],
+                },
+            },
+            {
+                "name": "request_session_mode",
+                "description": REQUEST_SESSION_MODE_DESCRIPTION.strip(),
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "reason": {
+                            "type": "string",
+                            "description": "Why you need autonomous operation",
+                        },
+                    },
+                    "required": ["reason"],
+                },
+            },
+            {
+                "name": "end_session_mode",
+                "description": END_SESSION_MODE_DESCRIPTION.strip(),
+                "parameters": {"type": "object", "properties": {}},
+            },
+            {
+                "name": "send_input",
+                "description": SEND_INPUT_DESCRIPTION.strip(),
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "session_id": {
+                            "type": "string",
+                            "description": "Session ID from run_command",
+                        },
+                        "input_text": {
+                            "type": "string",
+                            "description": "Text to send to the session",
+                        },
+                        "press_enter": {
+                            "type": "boolean",
+                            "description": "Auto-press Enter after input",
+                            "default": True,
+                        },
+                        "wait_ms": {
+                            "type": "integer",
+                            "description": "Ms to wait after sending before returning output",
+                            "default": 3000,
+                        },
+                    },
+                    "required": ["session_id", "input_text"],
+                },
+            },
+            {
+                "name": "read_output",
+                "description": READ_OUTPUT_DESCRIPTION.strip(),
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "session_id": {
+                            "type": "string",
+                            "description": "Session ID from run_command",
+                        },
+                        "lines": {
+                            "type": "integer",
+                            "description": "Number of recent lines to return",
+                            "default": 50,
+                        },
+                    },
+                    "required": ["session_id"],
+                },
+            },
+            {
+                "name": "kill_process",
+                "description": KILL_PROCESS_DESCRIPTION.strip(),
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "session_id": {
+                            "type": "string",
+                            "description": "Session ID from run_command",
+                        },
+                    },
+                    "required": ["session_id"],
+                },
+            },
+        ],
     )
 
     # ── Add more servers here as you implement them ────────────────

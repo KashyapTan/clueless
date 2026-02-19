@@ -74,6 +74,7 @@ source/                    # Python backend
     handlers.py            # WebSocket message handler logic (MessageHandler class)
   core/
     state.py               # Global mutable state (AppState singleton)
+    request_context.py     # Request lifecycle (RequestContext class)
     connection.py          # WebSocket connection registry (ConnectionManager)
     lifecycle.py           # Graceful shutdown & cleanup
     thread_pool.py         # Async execution helper
@@ -90,10 +91,11 @@ source/                    # Python backend
     cloud_provider.py      # Anthropic/OpenAI/Gemini streaming
     key_manager.py         # Encrypted API key storage
   mcp_integration/
-    manager.py             # MCP server process management (McpToolManager)
+    manager.py             # MCP server process management + inline tool registration
     retriever.py           # Semantic tool retriever (Top-K selection)
     handlers.py            # Tool call routing loop (up to 30 rounds)
     cloud_tool_handlers.py # Tool calling logic for cloud providers
+    terminal_executor.py   # Unified terminal tool executor (shared by all providers)
 mcp_servers/
   client/                  # ollama_bridge.py (standalone bridge for testing)
   config/                  # servers.json (server registry)
@@ -193,11 +195,21 @@ Key functions:
 **Global Mutable State**
 - `AppState` class (singleton):
   - `screenshot_list`: Active screenshots in context
-  - `is_streaming` / `stop_streaming`: LLM response control flags
+  - `current_request`: Active `RequestContext` (replaces raw `is_streaming`/`stop_streaming`)
+  - `_request_lock`: Async lock for request lifecycle transitions
+  - `is_streaming` / `stop_streaming`: Legacy flags kept for backward compat
   - `capture_mode`: Current screenshot behavior (CaptureMode enum)
   - `chat_history`: In-memory multi-turn conversation history
   - `server_loop_holder`: Stores main asyncio loop for thread-safe scheduling
   - `selected_model`: Currently selected Ollama model
+
+### `source/core/request_context.py`
+**Request Lifecycle**
+- `RequestContext` class: replaces `stream_lock + is_streaming + stop_streaming` with a single lifecycle object
+- `cancel()`: Signal cancellation from the handler layer
+- `mark_done()`: Called in the `finally` block of `submit_query`
+- `on_cancel(callback)`: Register cleanup callbacks (e.g. terminal kill)
+- `is_done` / `is_cancelled` properties for status checks
 
 ### `source/core/connection.py` (64 lines)
 **WebSocket Connection Registry**
@@ -229,6 +241,7 @@ Components:
 ### `source/services/conversations.py` (190 lines)
 **Conversation Logic**
 - `submit_query`: Handles user input, image processing, auto-screenshot (fullscreen mode), Ollama streaming, persistence, token tracking
+- Creates a `RequestContext` for lifecycle management; auto-expires terminal session mode in `finally`
 - `resume_conversation`: Reconstructs chat state from DB, regenerates thumbnails, restores token counts
 - `clear_context`: Resets state for new chat, clears screenshots
 - Post-response: broadcasts `conversation_saved`, `tool_calls_summary`, clears used screenshots
@@ -250,10 +263,11 @@ Components:
 ### `source/mcp_integration/manager.py` (192 lines)
 **MCP Server Manager**
 - `McpToolManager`: Launches MCP servers as subprocesses via stdio transport
+- `register_inline_tools(server_name, tools)`: Registers tool schemas without spawning a subprocess (used for terminal tools)
 - Discovers tools via JSON-RPC handshake
 - Converts JSON Schema to Ollama function-calling format
 - Routes tool calls to correct server process
-- Active servers on startup: demo, filesystem, websearch
+- Active servers on startup: filesystem, websearch (terminal tools registered inline)
 
 ### `source/mcp_integration/handlers.py` (155 lines)
 **Tool Call Routing Loop**
@@ -264,6 +278,13 @@ Components:
 - Broadcasts `tool_call` and `tool_result` messages to frontend
 - **Terminal interception**: `run_command` routed through approval flow, `request_session_mode`/`end_session_mode` handled inline
 - Defers terminal event DB saves when `conversation_id` is None (first message); flushed after conversation creation
+
+### `source/mcp_integration/terminal_executor.py`
+**Unified Terminal Tool Executor**
+- Single source of truth for ALL terminal tool execution (run_command, send_input, read_output, kill_process, get_environment, find_files, request_session_mode, end_session_mode)
+- Used by both `handlers.py` (Ollama) and `cloud_tool_handlers.py` (cloud providers)
+- Handles approval flow, PTY execution, notice task lifecycle (try/finally), and DB persistence
+- `_save_terminal_event()`: Defers DB writes when conversation_id is not yet assigned
 
 ### `source/services/terminal.py`
 **Terminal Approval & Session Management**
@@ -403,11 +424,13 @@ IPC handlers:
 - Falls back to trafilatura for content extraction
 
 #### `mcp_servers/servers/terminal/server.py`
-**Terminal command execution** (LLM-facing MCP server):
+**Terminal command execution** (reference only — NOT spawned as subprocess):
+- All terminal tools are registered inline via `register_inline_tools()` and intercepted at the handler layer
+- The MCP server file exists for reference and standalone testing but is never connected in production
 - `run_command(command, cwd, timeout)`: Executes via subprocess.run with blocklist check, PATH injection protection, 120s hard timeout cap
 - `get_environment()`: Returns OS, shell, cwd, and installed tool versions
 - `find_files(pattern, directory)`: Glob-based file search
-- `request_session_mode(reason)` / `end_session_mode()`: Session mode lifecycle
+- `request_session_mode(reason)` / `end_session_mode()`: Session mode lifecycle (auto-expires after each turn)
 - Captures `_ORIGINAL_PATH` at startup to prevent PATH injection
 
 #### `mcp_servers/servers/terminal/blocklist.py`
@@ -667,6 +690,18 @@ asyncio.Event can't cross process boundaries. The MCP terminal server runs as a 
 **Why 4 security layers for terminal?**
 Layer 1 (invisible): OS path blocklist in MCP server. Layer 2 (invisible): PATH injection protection. Layer 3 (invisible): 120s hard timeout ceiling. Layer 4 (visible): User-facing approval prompts with configurable ask level. Invisible layers are never shown to the user or LLM to prevent social engineering around them.
 
+**Why inline registration for terminal tools instead of an MCP subprocess?**
+Every terminal tool call was intercepted at the handler layer before reaching the MCP server — the subprocess was a "ghost process" doing nothing. `register_inline_tools()` registers tool schemas directly in the manager without spawning a child process, saving memory and startup time. The MCP server file stays for reference/standalone testing.
+
+**Why RequestContext instead of raw flags?**
+A single `RequestContext` object replaces scattered `stream_lock + is_streaming + stop_streaming` flags with a proper lifecycle: `cancel()`, `mark_done()`, `on_cancel(callback)`. This prevents state inconsistencies and makes cleanup deterministic (e.g. terminal kill on cancellation).
+
+**Why auto-expire session mode?**
+LLMs reliably request session mode but almost never call `end_session_mode` to release it. Auto-expiring in the `finally` block of `submit_query` guarantees cleanup without depending on LLM behavior. The explicit tool still works for early opt-out.
+
+**Why a unified terminal executor?**
+Both `handlers.py` (Ollama) and `cloud_tool_handlers.py` (cloud providers) need identical terminal logic — approval, PTY execution, notice tasks, DB persistence. Duplicating ~200 lines led to type errors and divergent behavior. `terminal_executor.py` is the single source of truth.
+
 ---
 
-*Last updated: February 18 2026 | Version: 0.2.0*
+*Last updated: February 19 2026 | Version: 0.2.0*

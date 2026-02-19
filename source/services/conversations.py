@@ -9,6 +9,7 @@ import json
 from typing import List, Dict, Any, Optional
 
 from ..core.state import app_state
+from ..core.request_context import RequestContext
 from ..core.connection import broadcast_message
 from ..database import DatabaseManager
 from ..llm.router import route_chat
@@ -108,11 +109,19 @@ class ConversationService:
             f"[DEBUG] submit_query: model={current_model}, capture_mode={capture_mode}, screenshots={len(app_state.screenshot_list)}"
         )
 
-        async with app_state.stream_lock:
-            if app_state.is_streaming:
+        # ── Request lifecycle: create context ─────────────────────────
+        async with app_state._request_lock:
+            if (
+                app_state.current_request is not None
+                and not app_state.current_request.is_done
+            ):
                 await broadcast_message("error", "Already streaming. Please wait.")
                 return
+            ctx = RequestContext()
+            app_state.current_request = ctx
+            # Legacy sync
             app_state.is_streaming = True
+            app_state.stop_streaming = False
 
         try:
             # Auto-capture fullscreen on first message of new conversation
@@ -129,7 +138,7 @@ class ConversationService:
             # Echo query to clients
             await broadcast_message("query", user_query)
 
-            # Reset stop flag
+            # Reset stop flag (use the context now)
             app_state.stop_streaming = False
 
             # Stream the response (routes to Ollama or cloud provider based on model prefix)
@@ -145,6 +154,7 @@ class ConversationService:
 
                 # Flush any terminal events that were queued before conversation existed
                 from .terminal import terminal_service
+
                 terminal_service.flush_pending_events(app_state.conversation_id)
 
             # Persist token usage
@@ -226,8 +236,20 @@ class ConversationService:
         except Exception as e:
             await broadcast_message("error", f"Error processing: {e}")
         finally:
-            async with app_state.stream_lock:
+            # ── Request lifecycle: mark done ──────────────────────────
+            ctx.mark_done()
+            async with app_state._request_lock:
+                app_state.current_request = None
+                # Legacy sync
                 app_state.is_streaming = False
+
+            # Auto-expire session mode after each turn so the LLM
+            # doesn't need to remember to call end_session_mode.
+            from .terminal import terminal_service
+
+            if terminal_service.session_mode:
+                await terminal_service.end_session()
+                print("[Terminal] Session mode auto-expired after turn")
 
     @staticmethod
     def get_conversations(limit: int = 50, offset: int = 0) -> List[Dict]:

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { api } from '../services/api';
-import '../CSS/SettingsTools.css';
+import { api } from '../../services/api';
+import '../../CSS/SettingsTools.css';
 
 interface McpServer {
   server: string;
@@ -28,7 +28,7 @@ const SettingsTools: React.FC = () => {
         setTopK(settings.top_k);
         
         // Expand all servers by default
-        setExpandedServers(new Set(mcpServers.map(s => s.server)));
+        // setExpandedServers(new Set(mcpServers.map(s => s.server)));
       } catch (error) {
         console.error("Failed to load tools data", error);
       } finally {
@@ -91,7 +91,7 @@ const SettingsTools: React.FC = () => {
     <div className="settings-tools-container">
       <div className="settings-tools-header">
         <h2>Tool Retrieval</h2>
-        <p>Configure how tools are selected for the AI context.</p>
+        <p>Configure how tools are selected for Clueless to use.</p>
       </div>
 
       <div className="settings-tools-section">

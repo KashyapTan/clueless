@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { api } from '../services/api';
-import '../CSS/SettingsModels.css';
+import { api } from '../../services/api';
+import '../../CSS/SettingsModels.css';
 
 interface OllamaModel {
   name: string;

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { api } from '../services/api';
-import '../CSS/SettingsApiKey.css';
+import { api } from '../../services/api';
+import '../../CSS/SettingsApiKey.css';
 
 interface SettingsApiKeyProps {
   provider: 'anthropic' | 'openai' | 'gemini';

@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import TitleBar from '../components/TitleBar';
-import SettingsModels from '../components/SettingsModels';
-import SettingsTools from '../components/SettingsTools';
-import SettingsApiKey from '../components/SettingsApiKey';
+import SettingsModels from '../components/settings/SettingsModels';
+import SettingsTools from '../components/settings/SettingsTools';
+import SettingsApiKey from '../components/settings/SettingsApiKey';
 import SettingsConnections from '../components/settings/SettingsConnections';
 import '../CSS/Settings.css';
 import modelsIcon from '../assets/models.svg';
@@ -45,8 +45,8 @@ const Settings: React.FC = () => {
   // Define all tabs
   const tabs: SettingsTab[] = [
     { id: 'models', label: 'Models', icon: modelsIcon, className: 'settings-models', component: <SettingsModels /> },
-    { id: 'tools', label: 'Tools', icon: toolsIcon, className: 'settings-tools', component: <SettingsTools /> },
     { id: 'connections', label: 'Connections', icon: connectionsIcon, className: 'settings-mcp-connections', component: <SettingsConnections /> },
+    { id: 'tools', label: 'Tools', icon: toolsIcon, className: 'settings-tools', component: <SettingsTools /> },
     { id: 'ollama', label: 'Ollama', icon: ollamaIcon, className: 'settings-ollama-model', component: <Placeholder title="Ollama Settings" /> },
     { id: 'anthropic', label: 'Anthropic', icon: anthropicIcon, className: 'settings-anthropic-api-key', component: <SettingsApiKey provider="anthropic" /> },
     { id: 'gemini', label: 'Gemini', icon: geminiIcon, className: 'settings-gemini-api-key', component: <SettingsApiKey provider="gemini" /> },

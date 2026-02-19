@@ -87,7 +87,7 @@ const SettingsConnections: React.FC = () => {
     <div className="settings-connections-section">
       <div className="settings-connections-header">Connections</div>
       <div className="settings-connections-subtitle">
-        Connect external services to give the AI access to your email and calendar.
+        Connect external services to give Clueless more tools!
       </div>
 
       {error && <div className="settings-connections-error">{error}</div>}

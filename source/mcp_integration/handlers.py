@@ -152,8 +152,23 @@ async def handle_mcp_tool_calls(
 
         # Add the Assistant's message (requesting tools) to history ONCE for this turn
         # Strip thinking content from the assistant message to avoid confusing follow-up calls
-        assistant_msg = response.message.model_dump()
-        assistant_msg.pop("thinking", None)
+        # Only keep essential fields: role, content, tool_calls
+        raw_msg = response.message
+        assistant_msg = {
+            "role": "assistant",
+            "content": raw_msg.content or "",
+        }
+        if hasattr(raw_msg, "tool_calls") and raw_msg.tool_calls:
+            assistant_msg["tool_calls"] = [
+                {
+                    "function": {
+                        "name": tc.function.name,
+                        "arguments": tc.function.arguments,
+                    }
+                }
+                for tc in raw_msg.tool_calls
+            ]
+
         messages.append(assistant_msg)
 
         # Process all tool calls in this turn
@@ -173,7 +188,9 @@ async def handle_mcp_tool_calls(
             # Handle terminal tools with approval/session logic before
             # routing to the MCP server.
             if server_name == "terminal" and fn_name == "run_command":
-                result = await _handle_terminal_run_command(fn_name, fn_args, server_name)
+                result = await _handle_terminal_run_command(
+                    fn_name, fn_args, server_name
+                )
             elif server_name == "terminal" and fn_name == "request_session_mode":
                 result = await _handle_terminal_session_request(fn_args)
             elif server_name == "terminal" and fn_name == "end_session_mode":
@@ -247,6 +264,7 @@ async def handle_mcp_tool_calls(
                 {
                     "role": "tool",
                     "content": result_str,
+                    "name": fn_name,
                 }
             )
 
@@ -281,7 +299,15 @@ async def handle_mcp_tool_calls(
     return messages, tool_calls_made, None
 
 
+async def _handle_terminal_session_request(fn_args: dict) -> str:
+    """Handle a request_session_mode tool call."""
+    reason = fn_args.get("reason", "Autonomous operation requested")
+    approved = await terminal_service.request_session(reason)
+    return "session started" if approved else "session request denied"
+
+
 # ─── Terminal Tool Interception Helpers ─────────────────────────────────
+
 
 async def _handle_terminal_run_command(
     fn_name: str, fn_args: dict, server_name: str
@@ -319,7 +345,16 @@ async def _handle_terminal_run_command(
             denied=True,
         )
         if app_state.conversation_id:
-            db.save_terminal_event(conversation_id=app_state.conversation_id, **event_data)
+            db.save_terminal_event(
+                conversation_id=app_state.conversation_id,
+                message_index=len(app_state.chat_history),
+                command=command,
+                exit_code=-1,
+                output="Command denied by user",
+                cwd=cwd,
+                duration_ms=0,
+                denied=True,
+            )
         else:
             terminal_service.queue_terminal_event(event_data)
 
@@ -329,12 +364,14 @@ async def _handle_terminal_run_command(
     # Approved — broadcast "calling" status
     await broadcast_message(
         "tool_call",
-        json.dumps({
-            "name": fn_name,
-            "args": fn_args,
-            "server": server_name,
-            "status": "calling",
-        }),
+        json.dumps(
+            {
+                "name": fn_name,
+                "args": fn_args,
+                "server": server_name,
+                "status": "calling",
+            }
+        ),
     )
 
     # Track for running notice
@@ -350,25 +387,32 @@ async def _handle_terminal_run_command(
 
     if use_pty:
         # PTY execution for interactive CLIs
-        result_str, exit_code, duration_ms, timed_out, session_id = (
-            await terminal_service.execute_command_pty(
-                command=command,
-                cwd=cwd,
-                timeout=timeout,
-                request_id=request_id,
-                background=background,
-                yield_ms=yield_ms,
-            )
+        (
+            result_str,
+            exit_code,
+            duration_ms,
+            timed_out,
+            session_id,
+        ) = await terminal_service.execute_command_pty(
+            command=command,
+            cwd=cwd,
+            timeout=timeout,
+            request_id=request_id,
+            background=background,
+            yield_ms=yield_ms,
         )
     else:
         # Standard execution with line-by-line streaming
-        result_str, exit_code, duration_ms, timed_out = (
-            await terminal_service.execute_command(
-                command=command,
-                cwd=cwd,
-                timeout=timeout,
-                request_id=request_id,
-            )
+        (
+            result_str,
+            exit_code,
+            duration_ms,
+            timed_out,
+        ) = await terminal_service.execute_command(
+            command=command,
+            cwd=cwd,
+            timeout=timeout,
+            request_id=request_id,
         )
         session_id = None
 
@@ -382,20 +426,32 @@ async def _handle_terminal_run_command(
         await terminal_service.broadcast_complete(request_id, exit_code, duration_ms)
 
     # Save terminal event to database (defer if no conversation yet)
-    event_data = dict(
-        message_index=len(app_state.chat_history),
-        command=command,
-        exit_code=exit_code,
-        output=result_str[:50000],  # Cap output for DB
-        cwd=cwd,
-        duration_ms=duration_ms,
-        pty=use_pty,
-        background=background,
-        timed_out=timed_out,
-    )
     if app_state.conversation_id:
-        db.save_terminal_event(conversation_id=app_state.conversation_id, **event_data)
+        db.save_terminal_event(
+            conversation_id=app_state.conversation_id,
+            message_index=len(app_state.chat_history),
+            command=command,
+            exit_code=exit_code,
+            output=result_str[:50000],  # Cap output for DB
+            cwd=cwd,
+            duration_ms=duration_ms,
+            pty=use_pty,
+            background=background,
+            timed_out=timed_out,
+        )
     else:
+        # Re-build event_data for queueing if needed
+        event_data = dict(
+            message_index=len(app_state.chat_history),
+            command=command,
+            exit_code=exit_code,
+            output=result_str[:50000],
+            cwd=cwd,
+            duration_ms=duration_ms,
+            pty=use_pty,
+            background=background,
+            timed_out=timed_out,
+        )
         terminal_service.queue_terminal_event(event_data)
 
     return result_str
@@ -414,7 +470,8 @@ async def _handle_terminal_send_input(fn_args: dict) -> str:
         return "Error: input_text is required when press_enter is False"
 
     result = await terminal_service.send_input(
-        session_id, input_text,
+        session_id,
+        input_text,
         press_enter=press_enter,
         wait_ms=wait_ms,
     )

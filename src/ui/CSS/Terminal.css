@@ -14,8 +14,7 @@
   border-radius: 8px; /* Standard app border radius */
   display: flex;
   flex-direction: column;
-  overflow-x: hidden;
-  overflow-y: auto;
+  overflow: hidden;
   box-shadow: 0 4px 24px rgba(0, 0, 0, 0.5);
   max-height: 200px;
   animation: terminal-slide-up 0.2s ease-out;
@@ -152,6 +151,7 @@
   min-height: 120px;
   position: relative; /* Ensure xterm is positioned relative to this container */
   padding-left: 5px;
+  padding-top: 5px;
 }
 
 .terminal-xterm {
@@ -167,6 +167,7 @@
   scrollbar-color: rgba(255, 255, 255, 0.3) transparent;
 }
 
+/* Scrollbar styling for xterm viewport */
 .terminal-xterm .xterm-viewport::-webkit-scrollbar {
   width: 6px;
 }

@@ -8,6 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from .api.websocket import websocket_endpoint
 from .api.http import router as http_router
+from .api.terminal import router as terminal_router
 
 
 def create_app() -> FastAPI:
@@ -36,6 +37,9 @@ def create_app() -> FastAPI:
     
     # Register HTTP REST routes (e.g., /api/models/ollama, /api/models/enabled)
     app.include_router(http_router)
+    
+    # Register terminal API routes (e.g., /api/terminal/settings)
+    app.include_router(terminal_router)
     
     return app
 

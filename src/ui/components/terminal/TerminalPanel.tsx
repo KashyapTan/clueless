@@ -1,0 +1,288 @@
+/**
+ * Terminal Panel Component.
+ *
+ * Floating overlay above the chat input area. Only visible when there's
+ * an approval request, session request, or terminal output to show.
+ * Uses xterm.js for terminal-like output rendering.
+ *
+ * Key design decisions:
+ * - Buffers all writes that arrive before xterm is initialized, then
+ *   flushes them once the terminal is ready (avoids race condition
+ *   where requestAnimationFrame fires before useEffect initializes xterm).
+ * - The parent should change the `key` prop on context-clear so internal
+ *   state (hasOutput, buffer, xterm instance) resets cleanly.
+ */
+import { useRef, useEffect, useState, useCallback } from 'react';
+import { Terminal } from '@xterm/xterm';
+import { FitAddon } from '@xterm/addon-fit';
+import '@xterm/xterm/css/xterm.css';
+
+import { ApprovalCard } from './ApprovalCard';
+import { SessionBanner } from './SessionBanner';
+
+import type {
+  TerminalApprovalRequest,
+  TerminalSessionRequest,
+  TerminalRunningNotice,
+} from '../../types';
+
+interface TerminalPanelProps {
+  approvalRequest: TerminalApprovalRequest | null;
+  sessionRequest: TerminalSessionRequest | null;
+  sessionActive: boolean;
+  runningNotice: TerminalRunningNotice | null;
+  commandRunning: boolean;
+  askLevel: string;
+  onApprovalResponse: (requestId: string, approved: boolean, remember: boolean) => void;
+  onSessionResponse: (approved: boolean) => void;
+  onStopSession: () => void;
+  onKillCommand: () => void;
+  onAskLevelChange: (level: string) => void;
+  onTerminalResize?: (cols: number, rows: number) => void;
+}
+
+export function TerminalPanel({
+  approvalRequest,
+  sessionRequest,
+  sessionActive,
+  runningNotice,
+  commandRunning,
+  askLevel,
+  onApprovalResponse,
+  onSessionResponse,
+  onStopSession,
+  onKillCommand,
+  onAskLevelChange,
+  onTerminalResize,
+}: TerminalPanelProps) {
+  const terminalRef = useRef<HTMLDivElement>(null);
+  const xtermRef = useRef<Terminal | null>(null);
+  const fitAddonRef = useRef<FitAddon | null>(null);
+  const pendingWrites = useRef<Array<{ type: 'line' | 'raw'; text: string }>>([]);
+  const [hasOutput, setHasOutput] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(false);
+
+  // Determine if panel should be visible at all
+  const hasInteraction = !!(approvalRequest || sessionRequest || sessionActive || runningNotice || commandRunning);
+  const isVisible = hasInteraction || hasOutput;
+
+  // ── xterm lifecycle ──────────────────────────────────────────────
+  // Initialize xterm.js when expanded AND output exists (container is in DOM).
+  // Flush any buffered writes that arrived before initialization.
+  useEffect(() => {
+    if (!isExpanded || !hasOutput || !terminalRef.current || xtermRef.current) return;
+
+    const term = new Terminal({
+      theme: {
+        background: '#1a1a2e',
+        foreground: '#e0e0e0',
+        cursor: '#e0e0e0',
+        selectionBackground: '#3a3a5e',
+      },
+      fontSize: 13,
+      fontFamily: "'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, monospace",
+      cursorBlink: false,
+      cursorStyle: 'bar',
+      disableStdin: true,
+      scrollback: 5000,
+      convertEol: true,
+    });
+
+    const fitAddon = new FitAddon();
+    term.loadAddon(fitAddon);
+    term.open(terminalRef.current);
+
+    xtermRef.current = term;
+    fitAddonRef.current = fitAddon;
+
+    // Fit after the browser has painted the container
+    requestAnimationFrame(() => {
+      try {
+        fitAddon.fit();
+        // Report terminal dimensions to backend for PTY sizing
+        if (onTerminalResize && term.cols && term.rows) {
+          onTerminalResize(term.cols, term.rows);
+        }
+      } catch { /* ignore */ }
+
+      // Flush any writes that were buffered while xterm was not ready
+      if (pendingWrites.current.length > 0) {
+        for (const entry of pendingWrites.current) {
+          if (entry.type === 'raw') {
+            term.write(entry.text);
+          } else {
+            term.writeln(entry.text);
+          }
+        }
+        pendingWrites.current = [];
+      }
+    });
+
+    const container = terminalRef.current;
+    const resizeObserver = new ResizeObserver(() => {
+      try {
+        fitAddon.fit();
+        // Report updated dimensions after resize
+        if (onTerminalResize && term.cols && term.rows) {
+          onTerminalResize(term.cols, term.rows);
+        }
+      } catch { /* ignore */ }
+    });
+    resizeObserver.observe(container);
+
+    return () => {
+      resizeObserver.disconnect();
+      term.dispose();
+      xtermRef.current = null;
+      fitAddonRef.current = null;
+    };
+  }, [isExpanded, hasOutput]);
+
+  // Auto-expand when there's an approval request or session request
+  useEffect(() => {
+    if (approvalRequest || sessionRequest) {
+      setIsExpanded(true);
+    }
+  }, [approvalRequest, sessionRequest]);
+
+  // ── Write helpers ────────────────────────────────────────────────
+  // Buffer writes when xterm isn't ready; write directly when it is.
+
+  /** Write a line of text (adds newline) — for standard command output. */
+  const writeLine = useCallback((text: string) => {
+    if (xtermRef.current) {
+      xtermRef.current.writeln(text);
+    } else {
+      pendingWrites.current.push({ type: 'line', text });
+    }
+  }, []);
+
+  /** Write raw data (no added newline) — for PTY/TUI ANSI output. */
+  const writeRaw = useCallback((text: string) => {
+    if (xtermRef.current) {
+      xtermRef.current.write(text);
+    } else {
+      pendingWrites.current.push({ type: 'raw', text });
+    }
+  }, []);
+
+  const writeOutput = useCallback((text: string) => {
+    setHasOutput(true);
+    setIsExpanded(true);
+    writeLine(text);
+  }, [writeLine]);
+
+  /** Write raw PTY output — preserves ANSI cursor control for TUI rendering. */
+  const writeOutputRaw = useCallback((text: string) => {
+    setHasOutput(true);
+    setIsExpanded(true);
+    writeRaw(text);
+  }, [writeRaw]);
+
+  const writeCommand = useCallback((command: string) => {
+    setHasOutput(true);
+    setIsExpanded(true);
+    writeLine(`\x1b[36m$ ${command}\x1b[0m`);
+  }, [writeLine]);
+
+  // Expose write functions to the global scope for WebSocket handlers
+  useEffect(() => {
+    const w = window as unknown as Record<string, unknown>;
+    w.__terminalWriteOutput = writeOutput;
+    w.__terminalWriteOutputRaw = writeOutputRaw;
+    w.__terminalWriteCommand = writeCommand;
+    return () => {
+      delete w.__terminalWriteOutput;
+      delete w.__terminalWriteOutputRaw;
+      delete w.__terminalWriteCommand;
+    };
+  }, [writeOutput, writeOutputRaw, writeCommand]);
+
+  // Running notice text
+  const runningText = runningNotice
+    ? `Still running: ${runningNotice.command}  (${Math.round(runningNotice.elapsed_ms / 1000)}s)`
+    : null;
+
+  // Don't render anything if panel has nothing to show
+  if (!isVisible) return null;
+
+  return (
+    <div className="terminal-panel-overlay">
+      {/* Header bar */}
+      <div className="terminal-header" onClick={() => setIsExpanded(!isExpanded)}>
+        <div className="terminal-header-left">
+          <span className="terminal-icon">&#128421;</span>
+          <span className="terminal-title">Terminal</span>
+          {runningText && <span className="terminal-running">{runningText}</span>}
+        </div>
+        <div className="terminal-header-right">
+          {commandRunning && (
+            <button
+              className="btn-kill"
+              onClick={(e) => {
+                e.stopPropagation();
+                onKillCommand();
+              }}
+            >
+              Kill
+            </button>
+          )}
+          <select
+            className="terminal-ask-select"
+            value={askLevel}
+            onChange={(e) => {
+              e.stopPropagation();
+              onAskLevelChange(e.target.value);
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <option value="always">Always Ask</option>
+            <option value="on-miss">Ask on Miss</option>
+            <option value="off">Auto-Approve</option>
+          </select>
+          <span className="terminal-toggle">{isExpanded ? '\u25BC' : '\u25B2'}</span>
+        </div>
+      </div>
+
+      {/* Session mode banner */}
+      {sessionActive && (
+        <SessionBanner onStop={onStopSession} />
+      )}
+
+      {/* Session request */}
+      {sessionRequest && (
+        <div className="terminal-session-request">
+          <div className="session-request-header">&#9889; Clueless wants autonomous mode</div>
+          <div className="session-request-reason">{sessionRequest.reason}</div>
+          <div className="session-request-actions">
+            <button className="btn-deny" onClick={() => onSessionResponse(false)}>
+              Deny
+            </button>
+            <button className="btn-allow" onClick={() => onSessionResponse(true)}>
+              Allow
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Approval card */}
+      {approvalRequest && (
+        <ApprovalCard
+          command={approvalRequest.command}
+          cwd={approvalRequest.cwd}
+          onAllow={() => onApprovalResponse(approvalRequest.request_id, true, false)}
+          onDeny={() => onApprovalResponse(approvalRequest.request_id, false, false)}
+          onAllowRemember={() => onApprovalResponse(approvalRequest.request_id, true, true)}
+        />
+      )}
+
+      {/* Terminal output area — rendered only when output exists.
+          xterm initializes once this container appears in the DOM. */}
+      {isExpanded && hasOutput && (
+        <div className="terminal-body">
+          <div ref={terminalRef} className="terminal-xterm" />
+        </div>
+      )}
+    </div>
+  );
+}

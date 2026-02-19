@@ -70,7 +70,7 @@
     transition: background 0.2s ease;
 }
 .settings-model-toggle-track.active {
-    background: rgba(255, 255, 255, 0.85);
+    background: #22c55e;
 }
 .settings-model-toggle-thumb {
     width: 14px;

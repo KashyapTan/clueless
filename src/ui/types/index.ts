@@ -64,6 +64,55 @@ export interface WebSocketMessage {
   content: string | Record<string, unknown>;
 }
 
+// ============================================
+// Terminal Types
+// ============================================
+
+export interface TerminalApprovalRequest {
+  command: string;
+  cwd: string;
+  request_id: string;
+}
+
+export interface TerminalSessionRequest {
+  reason: string;
+  request_id: string;
+}
+
+export interface TerminalOutput {
+  text: string;
+  request_id: string;
+  stream: boolean;
+  raw?: boolean;
+}
+
+export interface TerminalCommandComplete {
+  request_id: string;
+  exit_code: number;
+  duration_ms: number;
+}
+
+export interface TerminalRunningNotice {
+  request_id: string;
+  command: string;
+  elapsed_ms: number;
+}
+
+export interface TerminalEvent {
+  id: string;
+  message_index: number;
+  command: string;
+  exit_code: number;
+  output_preview: string;
+  cwd: string;
+  duration_ms: number;
+  timed_out: boolean;
+  denied: boolean;
+  pty: boolean;
+  background: boolean;
+  created_at: number;
+}
+
 export interface ScreenshotAddedContent {
   id: string;
   name: string;

@@ -49,6 +49,11 @@
             "enabled": true,
             "description": "Web search and scraping tools",
             "module": "mcp_servers.servers.websearch.server"
+        },
+        "terminal": {
+            "enabled": true,
+            "description": "Terminal command execution with approval system",
+            "module": "mcp_servers.servers.terminal.server"
         }
     }
 }

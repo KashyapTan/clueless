@@ -27,6 +27,7 @@ import { QueryInput } from '../components/input/QueryInput';
 import { ModeSelector } from '../components/input/ModeSelector';
 import { TokenUsagePopup } from '../components/input/TokenUsagePopup';
 import { ScreenshotChips } from '../components/input/ScreenshotChips';
+import { TerminalPanel } from '../components/terminal/TerminalPanel';
 
 // Types
 import type { 
@@ -38,10 +39,16 @@ import type {
   ToolCallContent,
   TokenUsageContent,
   ChatMessage,
+  TerminalApprovalRequest,
+  TerminalSessionRequest,
+  TerminalOutput,
+  TerminalCommandComplete,
+  TerminalRunningNotice,
 } from '../types';
 
 // Assets
 import '../CSS/App.css';
+import '../CSS/Terminal.css';
 import micSignSvg from '../assets/mic-icon.svg';
 import fullscreenSSIcon from '../assets/entire-screen-shot-icon.svg';
 import regionSSIcon from '../assets/region-screen-shot-icon.svg';
@@ -68,6 +75,15 @@ function App() {
   const [enabledModels, setEnabledModels] = useState<string[]>([]);
   const [showScrollBottom, setShowScrollBottom] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
+
+  // Terminal state
+  const [terminalApproval, setTerminalApproval] = useState<TerminalApprovalRequest | null>(null);
+  const [terminalSessionRequest, setTerminalSessionRequest] = useState<TerminalSessionRequest | null>(null);
+  const [terminalSessionActive, setTerminalSessionActive] = useState(false);
+  const [terminalRunningNotice, setTerminalRunningNotice] = useState<TerminalRunningNotice | null>(null);
+  const [terminalCommandRunning, setTerminalCommandRunning] = useState(false);
+  const [terminalAskLevel, setTerminalAskLevel] = useState('on-miss');
+  const [terminalKey, setTerminalKey] = useState(0);
 
   // ============================================
   // Refs
@@ -167,6 +183,12 @@ function App() {
         chatState.resetForNewChat();
         screenshotState.clearScreenshots();
         tokenState.resetTokens();
+        setTerminalApproval(null);
+        setTerminalSessionRequest(null);
+        setTerminalSessionActive(false);
+        setTerminalRunningNotice(null);
+        setTerminalCommandRunning(false);
+        setTerminalKey(k => k + 1);  // force TerminalPanel remount to clear internal state
         break;
 
       case 'query':
@@ -280,6 +302,72 @@ function App() {
         setIsRecording(false);
         chatState.setStatus('Transcription complete.');
         break;
+
+      // ── Terminal messages ──────────────────────────────
+      case 'terminal_approval_request': {
+        const approvalData = (typeof data.content === 'string'
+          ? JSON.parse(data.content)
+          : data.content) as unknown as TerminalApprovalRequest;
+        setTerminalApproval(approvalData);
+        break;
+      }
+
+      case 'terminal_session_request': {
+        const sessionData = (typeof data.content === 'string'
+          ? JSON.parse(data.content)
+          : data.content) as unknown as TerminalSessionRequest;
+        setTerminalSessionRequest(sessionData);
+        break;
+      }
+
+      case 'terminal_session_started':
+        setTerminalSessionActive(true);
+        setTerminalSessionRequest(null);
+        break;
+
+      case 'terminal_session_ended':
+        setTerminalSessionActive(false);
+        break;
+
+      case 'terminal_output': {
+        const outputData = (typeof data.content === 'string'
+          ? JSON.parse(data.content)
+          : data.content) as unknown as TerminalOutput;
+        setTerminalCommandRunning(true);
+        // Route to the appropriate writer:
+        // - raw=true → writeOutputRaw (term.write, preserves ANSI cursor control for TUI)
+        // - raw=false → writeOutput (term.writeln, line-by-line for standard commands)
+        if (outputData.raw && (window as any).__terminalWriteOutputRaw) {
+          (window as any).__terminalWriteOutputRaw(outputData.text);
+        } else if ((window as any).__terminalWriteOutput) {
+          (window as any).__terminalWriteOutput(outputData.text);
+        }
+        break;
+      }
+
+      case 'terminal_command_complete': {
+        const completeData = (typeof data.content === 'string'
+          ? JSON.parse(data.content)
+          : data.content) as unknown as TerminalCommandComplete;
+        setTerminalRunningNotice(null);
+        setTerminalCommandRunning(false);
+        const statusIcon = completeData.exit_code === 0 ? '✓' : '✗';
+        const durationSec = (completeData.duration_ms / 1000).toFixed(1);
+        if ((window as any).__terminalWriteOutput) {
+          (window as any).__terminalWriteOutput(
+            `\x1b[90m${statusIcon} Completed in ${durationSec}s (exit ${completeData.exit_code})\x1b[0m`
+          );
+        }
+        break;
+      }
+
+      case 'terminal_running_notice': {
+        const noticeData = (typeof data.content === 'string'
+          ? JSON.parse(data.content)
+          : data.content) as unknown as TerminalRunningNotice;
+        setTerminalRunningNotice(noticeData);
+        break;
+      }
     }
   }, [chatState, screenshotState, tokenState, setIsHidden]);
 
@@ -478,6 +566,63 @@ function App() {
     }
   };
 
+  // ── Terminal Action Handlers ────────────────────────────────
+  const handleTerminalApprovalResponse = (requestId: string, approved: boolean, remember: boolean) => {
+    wsRef.current?.send(JSON.stringify({
+      type: 'terminal_approval_response',
+      request_id: requestId,
+      approved,
+      remember,
+    }));
+    setTerminalApproval(null);
+
+    // Write to terminal and mark as running
+    if (approved) {
+      setTerminalCommandRunning(true);
+      if ((window as any).__terminalWriteCommand) {
+        const cmd = terminalApproval?.command || '';
+        (window as any).__terminalWriteCommand(cmd);
+      }
+    }
+  };
+
+  const handleTerminalSessionResponse = (approved: boolean) => {
+    wsRef.current?.send(JSON.stringify({
+      type: 'terminal_session_response',
+      approved,
+    }));
+    setTerminalSessionRequest(null);
+  };
+
+  const handleStopSession = () => {
+    wsRef.current?.send(JSON.stringify({
+      type: 'terminal_stop_session',
+    }));
+    setTerminalSessionActive(false);
+  };
+
+  const handleKillCommand = () => {
+    wsRef.current?.send(JSON.stringify({
+      type: 'terminal_kill_command',
+    }));
+  };
+
+  const handleAskLevelChange = (level: string) => {
+    wsRef.current?.send(JSON.stringify({
+      type: 'terminal_set_ask_level',
+      level,
+    }));
+    setTerminalAskLevel(level);
+  };
+
+  const handleTerminalResize = (cols: number, rows: number) => {
+    wsRef.current?.send(JSON.stringify({
+      type: 'terminal_resize',
+      cols,
+      rows,
+    }));
+  };
+
   // ============================================
   // Render
   // ============================================
@@ -502,6 +647,22 @@ function App() {
         onScrollToBottom={scrollToBottom}
         responseAreaRef={responseAreaRef}
         scrollDownIcon={scrollDownIcon}
+      />
+
+      <TerminalPanel
+        key={terminalKey}
+        approvalRequest={terminalApproval}
+        sessionRequest={terminalSessionRequest}
+        sessionActive={terminalSessionActive}
+        runningNotice={terminalRunningNotice}
+        commandRunning={terminalCommandRunning}
+        askLevel={terminalAskLevel}
+        onApprovalResponse={handleTerminalApprovalResponse}
+        onSessionResponse={handleTerminalSessionResponse}
+        onStopSession={handleStopSession}
+        onKillCommand={handleKillCommand}
+        onAskLevelChange={handleAskLevelChange}
+        onTerminalResize={handleTerminalResize}
       />
 
       <div className="main-interaction-section">

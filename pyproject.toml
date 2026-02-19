@@ -29,6 +29,7 @@ dependencies = [
     "google-auth-oauthlib>=1.2.0",
     "python-dotenv>=1.2.1",
     "sentence-transformers>=5.2.3",
+    "pywinpty>=3.0.3",
 ]
 
 [dependency-groups]

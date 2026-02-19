@@ -11,6 +11,7 @@ from fastapi import WebSocket
 from ..core.state import app_state
 from ..services.conversations import ConversationService
 from ..services.screenshots import ScreenshotHandler
+from ..services.terminal import terminal_service
 
 
 class MessageHandler:
@@ -71,8 +72,12 @@ class MessageHandler:
             print(f"Capture mode set to: {mode}")
 
     async def _handle_stop_streaming(self, data: Dict[str, Any]):
-        """Handle stop streaming request."""
+        """Handle stop streaming request — cancels all in-flight work."""
         app_state.stop_streaming = True
+
+        # Cancel any pending terminal approvals/sessions so tool loop unblocks
+        from ..services.terminal import terminal_service
+        terminal_service.cancel_all_pending()
 
     async def _handle_get_conversations(self, data: Dict[str, Any]):
         """Handle conversation list request."""
@@ -153,3 +158,41 @@ class MessageHandler:
             await self.websocket.send_text(
                 json.dumps({"type": "transcription_result", "content": text})
             )
+
+    # ---------------------------------------------------------
+    # Terminal Handlers
+    # ---------------------------------------------------------
+
+    async def _handle_terminal_approval_response(self, data: Dict[str, Any]):
+        """Handle user's response to a terminal approval request."""
+        request_id = data.get("request_id", "")
+        approved = data.get("approved", False)
+        remember = data.get("remember", False)
+
+        terminal_service.resolve_approval(request_id, approved, remember)
+
+    async def _handle_terminal_session_response(self, data: Dict[str, Any]):
+        """Handle user's response to a session mode request."""
+        approved = data.get("approved", False)
+        terminal_service.resolve_session(approved)
+
+    async def _handle_terminal_stop_session(self, data: Dict[str, Any]):
+        """Handle user clicking the Stop button on an active session."""
+        await terminal_service.end_session()
+
+    async def _handle_terminal_kill_command(self, data: Dict[str, Any]):
+        """Handle user clicking the Kill button to terminate a running command."""
+        await terminal_service.kill_running_command()
+
+    async def _handle_terminal_set_ask_level(self, data: Dict[str, Any]):
+        """Handle ask level change from frontend."""
+        level = data.get("level", "on-miss")
+        if level in ("always", "on-miss", "off"):
+            terminal_service.ask_level = level
+
+    async def _handle_terminal_resize(self, data: Dict[str, Any]):
+        """Handle terminal panel resize — sync PTY dimensions with xterm viewport."""
+        cols = data.get("cols", 120)
+        rows = data.get("rows", 24)
+        if isinstance(cols, int) and isinstance(rows, int) and cols > 0 and rows > 0:
+            await terminal_service.resize_all_pty(cols, rows)

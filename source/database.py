@@ -108,6 +108,28 @@ class DatabaseManager:
             )
         """)
 
+        # --- TABLE 4: TERMINAL EVENTS ---
+        # Stores terminal command execution history per conversation.
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS terminal_events (
+                id TEXT PRIMARY KEY,
+                conversation_id TEXT,
+                message_index INTEGER,
+                command TEXT,
+                exit_code INTEGER,
+                output_preview TEXT,
+                full_output TEXT,
+                cwd TEXT,
+                duration_ms INTEGER,
+                timed_out INTEGER DEFAULT 0,
+                denied INTEGER DEFAULT 0,
+                pty INTEGER DEFAULT 0,
+                background INTEGER DEFAULT 0,
+                created_at REAL,
+                FOREIGN KEY(conversation_id) REFERENCES conversations(id)
+            )
+        """)
+
         connection.commit()
         connection.close()
 
@@ -408,6 +430,110 @@ class DatabaseManager:
         cursor.execute("DELETE FROM settings WHERE key = ?", (key,))
         connection.commit()
         connection.close()
+
+    # ---------------------------------------------------------
+    # TERMINAL EVENT OPERATIONS
+    # ---------------------------------------------------------
+
+    def save_terminal_event(
+        self,
+        conversation_id: str,
+        message_index: int,
+        command: str,
+        exit_code: int,
+        output: str,
+        cwd: str,
+        duration_ms: int,
+        pty: bool = False,
+        background: bool = False,
+        timed_out: bool = False,
+        denied: bool = False,
+    ) -> str:
+        """
+        Save a terminal command execution event.
+
+        Stores full output up to 50KB, always stores an output_preview
+        (first 500 + last 500 chars). Returns event ID.
+        """
+        connection = self._get_connection()
+        cursor = connection.cursor()
+
+        event_id = str(uuid.uuid4())
+
+        # Build preview: first 500 + last 500 chars
+        if len(output) <= 1000:
+            output_preview = output
+        else:
+            output_preview = output[:500] + "\n...\n" + output[-500:]
+
+        # Truncate full output to 50KB
+        max_output = 50 * 1024
+        full_output = output[:max_output] if len(output) > max_output else output
+
+        cursor.execute(
+            """INSERT INTO terminal_events
+               (id, conversation_id, message_index, command, exit_code,
+                output_preview, full_output, cwd, duration_ms,
+                timed_out, denied, pty, background, created_at)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+            (
+                event_id,
+                conversation_id,
+                message_index,
+                command,
+                exit_code,
+                output_preview,
+                full_output,
+                cwd,
+                duration_ms,
+                1 if timed_out else 0,
+                1 if denied else 0,
+                1 if pty else 0,
+                1 if background else 0,
+                time.time(),
+            ),
+        )
+
+        connection.commit()
+        connection.close()
+        return event_id
+
+    def get_terminal_events(self, conversation_id: str) -> List[Dict]:
+        """
+        Returns all terminal events for a conversation, ordered by created_at.
+        """
+        connection = self._get_connection()
+        cursor = connection.cursor()
+
+        cursor.execute(
+            """SELECT id, message_index, command, exit_code, output_preview,
+                      cwd, duration_ms, timed_out, denied, pty, background, created_at
+               FROM terminal_events
+               WHERE conversation_id = ?
+               ORDER BY created_at ASC""",
+            (conversation_id,),
+        )
+
+        rows = cursor.fetchall()
+        connection.close()
+
+        return [
+            {
+                "id": r[0],
+                "message_index": r[1],
+                "command": r[2],
+                "exit_code": r[3],
+                "output_preview": r[4],
+                "cwd": r[5],
+                "duration_ms": r[6],
+                "timed_out": bool(r[7]),
+                "denied": bool(r[8]),
+                "pty": bool(r[9]),
+                "background": bool(r[10]),
+                "created_at": r[11],
+            }
+            for r in rows
+        ]
 
 
 # Global singleton instance so all modules share the same DB connection logic

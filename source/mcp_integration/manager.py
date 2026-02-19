@@ -145,7 +145,15 @@ class McpToolManager:
         entry = self._tool_registry[tool_name]
         session = entry["session"]
 
-        result = await session.call_tool(tool_name, arguments=arguments)
+        import asyncio
+        try:
+            result = await asyncio.wait_for(
+                session.call_tool(tool_name, arguments=arguments),
+                timeout=180.0,  # 3 min safety ceiling
+            )
+        except asyncio.TimeoutError:
+            server = entry.get('server_name', 'unknown')
+            return f"Error: Tool '{tool_name}' (server '{server}') timed out after 180s"
 
         output_parts = []
         for block in result.content:
@@ -378,6 +386,13 @@ async def init_mcp_servers():
         "websearch",
         sys.executable,
         [str(PROJECT_ROOT / "mcp_servers" / "servers" / "websearch" / "server.py")],
+    )
+
+    # ── Terminal server ────────────────────────────────────────────
+    await mcp_manager.connect_server(
+        "terminal",
+        sys.executable,
+        [str(PROJECT_ROOT / "mcp_servers" / "servers" / "terminal" / "server.py")],
     )
 
     # ── Add more servers here as you implement them ────────────────

@@ -13,7 +13,8 @@ Electron + React + Python desktop app for AI chat with screenshot and voice capa
 - **Secure Key Management**: Encrypted storage for API keys (Fernet)
 - **Google Integration**: OAuth 2.0 flow for Gmail and Calendar access
 - **Semantic Tool Retrieval**: Dynamically select relevant MCP tools using vector embeddings (Top-K)
-- MCP (Model Context Protocol) tool integration (demo, filesystem, websearch, gmail, calendar)
+- MCP (Model Context Protocol) tool integration (demo, filesystem, websearch, gmail, calendar, terminal)
+- **Integrated Terminal**: LLM-driven command execution with 4-layer security (blocklist, PATH protection, hard timeout, approval prompts)
 - Web search and page reading via DuckDuckGo + crawl4ai
 - Always-on-top frameless window with mini mode (52x52)
 - Stop streaming support for interrupting AI responses
@@ -29,7 +30,7 @@ Electron (main.ts) -> Window mgmt, Python lifecycle, IPC bridge
               +---> database.py -> SQLite (conversations, messages, settings)
               +---> ss.py -> Screenshot capture (Alt+., tkinter overlay, DPI-aware)
               +---> transcription.py -> Voice-to-text (faster-whisper, pyaudio)
-              +---> MCP servers -> stdio child processes (demo, filesystem, websearch, gmail, calendar)
+              +---> MCP servers -> stdio child processes (demo, filesystem, websearch, gmail, calendar, terminal)
               +---> ollama_provider.py -> Local Ollama streaming
               +---> cloud_provider.py -> Cloud LLM streaming (Claude, GPT, Gemini)
               +---> router.py -> Routes requests to appropriate provider
@@ -37,7 +38,7 @@ Electron (main.ts) -> Window mgmt, Python lifecycle, IPC bridge
 
 ## Tech Stack
 
-**Frontend**: React 19 + TypeScript 5.8 + Vite 6 + React Router 7 + react-markdown
+**Frontend**: React 19 + TypeScript 5.8 + Vite 6 + React Router 7 + react-markdown + xterm.js
 **Backend**: Python 3.13+ + FastAPI + Ollama + Cloud SDKs (Anthropic/OpenAI/Google) + SQLite3 + MCP
 **Desktop**: Electron 37+ (frameless, always-on-top, screen-saver level)
 **LLM Tools**: MCP SDK, DuckDuckGo Search, crawl4ai, trafilatura
@@ -56,6 +57,7 @@ src/
       chat/                # ChatMessage, ThinkingSection, ToolCallsDisplay, CodeBlock
       input/               # QueryInput, ModeSelector, ScreenshotChips, TokenUsagePopup
       settings/            # SettingsModels.tsx, SettingsApiKey.tsx, SettingsConnections.tsx, SettingsTools.tsx
+      terminal/            # TerminalPanel, ApprovalCard, SessionBanner, TerminalCard
     hooks/                 # useChatState, useScreenshots, useTokenUsage
     services/              # api.ts (REST + WS command factory)
     types/                 # index.ts (TypeScript interfaces)
@@ -80,6 +82,8 @@ source/                    # Python backend
     screenshots.py         # Screenshot lifecycle (capture -> broadcast)
     transcription.py       # Voice-to-text via faster-whisper
     google_auth.py         # Google OAuth 2.0 flow manager
+    terminal.py            # Terminal approval flow, session mode, event queuing
+    approval_history.py    # Persistent approval memory (exec-approvals.json)
   llm/
     router.py              # Routes requests to Ollama or Cloud providers
     ollama_provider.py     # Ollama streaming bridge (thinking extraction, tool fallback)
@@ -97,6 +101,7 @@ mcp_servers/
     demo/                  # Calculator (add, divide)
     filesystem/            # File ops (list, read, write, create, move, rename)
     websearch/             # Web search (search_web_pages, read_website)
+    terminal/              # Terminal tools (run_command, get_environment, find_files, session mode)
     gmail/                 # Gmail tools (search, read, send, reply, labels)
     calendar/              # Calendar tools (events, free/busy)
     discord/               # Placeholder
@@ -257,6 +262,33 @@ Components:
 - Loops up to `MAX_MCP_TOOL_ROUNDS` (30) or until final text response
 - **Skips tool detection when images are present** (vision models struggle with simultaneous tool calling)
 - Broadcasts `tool_call` and `tool_result` messages to frontend
+- **Terminal interception**: `run_command` routed through approval flow, `request_session_mode`/`end_session_mode` handled inline
+- Defers terminal event DB saves when `conversation_id` is None (first message); flushed after conversation creation
+
+### `source/services/terminal.py`
+**Terminal Approval & Session Management**
+- `TerminalService` singleton: manages approval flow, session mode, running command tracking
+- `check_approval(command, cwd)`: checks ask level (always/on-miss/off), blocks via `asyncio.Event` for user response
+- `resolve_approval(request_id, approved, remember)`: unblocks pending approval
+- `request_session(reason)` / `resolve_session(approved)`: session mode negotiation
+- `end_session()`: ends active session, broadcasts `terminal_session_ended`
+- `track_running_command()` / `check_running_notices()`: 10s running notice timer
+- `broadcast_output()` / `broadcast_complete()`: forward command results to xterm panel
+- `queue_terminal_event()` / `flush_pending_events()`: deferred DB saves for pre-conversation events
+- `reset()`: clears state on context clear
+
+### `source/services/approval_history.py`
+**Persistent Approval Memory**
+- Stores approved command signatures in `user_data/exec-approvals.json`
+- `is_command_approved(command)`: checks if normalized command was previously approved
+- `remember_approval(command)`: saves SHA256 hash of normalized command
+- `_normalize_command()`: extracts base command (program + first 2 args) for fuzzy matching
+
+### `source/api/terminal.py`
+**Terminal REST API**
+- `GET /api/terminal/settings`: returns ask_level, session_mode, approval_count
+- `PUT /api/terminal/settings/ask-level`: updates approval prompt level
+- `DELETE /api/terminal/approvals`: clears all remembered approvals
 
 ### `src/electron/main.ts` (148 lines)
 **Electron Main Process**
@@ -370,6 +402,20 @@ IPC handlers:
 - `read_website(url)`: Async crawl4ai with stealth mode (rotating UAs, noise reduction, randomized timing)
 - Falls back to trafilatura for content extraction
 
+#### `mcp_servers/servers/terminal/server.py`
+**Terminal command execution** (LLM-facing MCP server):
+- `run_command(command, cwd, timeout)`: Executes via subprocess.run with blocklist check, PATH injection protection, 120s hard timeout cap
+- `get_environment()`: Returns OS, shell, cwd, and installed tool versions
+- `find_files(pattern, directory)`: Glob-based file search
+- `request_session_mode(reason)` / `end_session_mode()`: Session mode lifecycle
+- Captures `_ORIGINAL_PATH` at startup to prevent PATH injection
+
+#### `mcp_servers/servers/terminal/blocklist.py`
+**Defense-in-depth command filtering**:
+- `check_blocklist(command)`: Blocks destructive commands (format, mkfs, dd, reg delete, rm -rf /, rd /s /q C:\Windows)
+- `check_path_injection(env)`: Detects PATH manipulation via suspicious additions
+- OS-specific path protection (System32, /etc/shadow, ~/.ssh, etc.)
+
 #### `mcp_servers/servers/gmail/server.py` (523 lines)
 **Gmail Integration**:
 - Search, read, send, reply, trash, labels, drafts
@@ -442,6 +488,7 @@ await _mcp_manager.connect_server(
 - **demo**: add, divide (reference implementation)
 - **filesystem**: list_directory, read_file, write_file, create_folder, move_file, rename_file
 - **websearch**: search_web_pages, read_website
+- **terminal**: run_command, get_environment, find_files, request_session_mode, end_session_mode
 - Placeholders: gmail, calendar, discord, canvas
 
 ### Debugging
@@ -467,6 +514,10 @@ The WebSocket connection at `ws://localhost:8000/ws` uses JSON messages with `ty
 {"type": "search_conversations", "query": "search terms"}
 {"type": "delete_conversation", "conversation_id": "uuid-string"}
 {"type": "stop_recording"}
+{"type": "terminal_approval_response", "request_id": "...", "approved": true, "remember": false}
+{"type": "terminal_session_response", "approved": true}
+{"type": "terminal_stop_session"}
+{"type": "terminal_set_ask_level", "level": "always | on-miss | off"}
 ```
 
 ### Server -> Client Messages
@@ -494,6 +545,13 @@ The WebSocket connection at `ws://localhost:8000/ws` uses JSON messages with `ty
 {"type": "token_update", "content": "{\"input\": 123, \"output\": 456, \"total\": 579}"}
 {"type": "transcription_result", "content": "Transcribed text"}
 {"type": "error", "content": "Error message"}
+{"type": "terminal_approval_request", "content": "{\"request_id\": \"...\", \"command\": \"...\", \"cwd\": \"...\"}"}
+{"type": "terminal_session_request", "content": "{\"reason\": \"...\"}"}
+{"type": "terminal_session_started", "content": ""}
+{"type": "terminal_session_ended", "content": ""}
+{"type": "terminal_output", "content": "{\"request_id\": \"...\", \"output\": \"...\"}"}
+{"type": "terminal_command_complete", "content": "{\"request_id\": \"...\", \"exit_code\": 0, \"duration_ms\": 1234}"}
+{"type": "terminal_running_notice", "content": "{\"request_id\": \"...\", \"command\": \"...\", \"elapsed_seconds\": 15}"}
 ```
 
 ## Database Schema
@@ -521,6 +579,22 @@ CREATE TABLE messages (
 CREATE TABLE settings (
     key TEXT PRIMARY KEY,
     value TEXT                        -- JSON-serialized value
+);
+
+CREATE TABLE terminal_events (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    conversation_id TEXT,             -- FK to conversations.id
+    message_index INTEGER,            -- Position in chat_history
+    command TEXT,                      -- Executed command
+    exit_code INTEGER,                -- Process exit code (-1 if denied)
+    output TEXT,                      -- First 50KB of output
+    cwd TEXT,                         -- Working directory
+    duration_ms INTEGER DEFAULT 0,    -- Execution time
+    pty INTEGER DEFAULT 0,            -- Reserved for Phase 2
+    background INTEGER DEFAULT 0,     -- Reserved for Phase 2
+    timed_out INTEGER DEFAULT 0,      -- Whether command hit timeout
+    denied INTEGER DEFAULT 0,         -- Whether user denied command
+    created_at REAL                   -- Timestamp
 );
 ```
 
@@ -586,6 +660,12 @@ Ollama's synchronous generator runs in a background thread; the main async threa
 
 **Why non-streamed initial call for tool detection?**
 Streaming responses can't reliably indicate tool calls; a quick non-streamed check determines if tools are needed before switching to streamed mode.
+
+**Why does terminal approval live in the FastAPI process, not the MCP server?**
+asyncio.Event can't cross process boundaries. The MCP terminal server runs as a stdio child process, so approval blocking must happen in the parent FastAPI process. The MCP server provides defense-in-depth via blocklist only.
+
+**Why 4 security layers for terminal?**
+Layer 1 (invisible): OS path blocklist in MCP server. Layer 2 (invisible): PATH injection protection. Layer 3 (invisible): 120s hard timeout ceiling. Layer 4 (visible): User-facing approval prompts with configurable ask level. Invisible layers are never shown to the user or LLM to prevent social engineering around them.
 
 ---
 

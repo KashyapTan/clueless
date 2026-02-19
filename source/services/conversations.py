@@ -26,9 +26,14 @@ class ConversationService:
     @staticmethod
     async def clear_context():
         """Clear screenshots and chat history for a fresh start."""
+        from .terminal import terminal_service
+
         await ScreenshotHandler.clear_screenshots()
         app_state.chat_history = []
         app_state.conversation_id = None
+
+        # Reset terminal service state (ends session mode, clears tracking)
+        terminal_service.reset()
 
         print("Context cleared: screenshots and chat history reset")
         await broadcast_message(
@@ -137,6 +142,10 @@ class ConversationService:
                 title = user_query[:50] + ("..." if len(user_query) > 50 else "")
                 app_state.conversation_id = db.start_new_conversation(title)
                 print(f"Created conversation: {app_state.conversation_id}")
+
+                # Flush any terminal events that were queued before conversation existed
+                from .terminal import terminal_service
+                terminal_service.flush_pending_events(app_state.conversation_id)
 
             # Persist token usage
             input_tokens = token_stats.get("prompt_eval_count", 0)

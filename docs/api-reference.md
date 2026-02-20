@@ -263,6 +263,40 @@ Updates the custom system prompt template. Send an empty string to reset to the 
 }
 ```
 
+### Skill Management
+
+#### Get All Skills
+
+```
+GET /api/skills
+```
+
+Returns all skills (default and user-created).
+
+#### Create Skill
+
+```
+POST /api/skills
+```
+
+#### Update Skill
+
+```
+PUT /api/skills/{skill_name}
+```
+
+#### Delete Skill
+
+```
+DELETE /api/skills/{skill_name}
+```
+
+#### Reset Skill
+
+```
+POST /api/skills/{skill_name}/reset
+```
+
 ---
 
 ## WebSocket Protocol
@@ -289,6 +323,8 @@ All WebSocket messages use JSON with `type` and optional `content` fields:
 ```
 
 Submits a user query and creates a **RequestContext**. If screenshots are in context, they are automatically included. The `model` field can be a local Ollama model or a cloud model ID (e.g., `anthropic/claude-3-5-sonnet`).
+
+**Slash Commands**: If the `content` contains recognized slash commands (e.g., `/fs`), the corresponding **Skills** are injected into the system prompt for that turn.
 
 **Note**: Submitting a query while another is in progress will return an error.
 

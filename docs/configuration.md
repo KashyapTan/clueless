@@ -155,6 +155,18 @@ Application settings are stored as key-value pairs in the `settings` table:
 | `tool_retriever_top_k` | String/Number | Number of semantic tool matches |
 | `system_prompt_template` | String | Custom system prompt template |
 
+### Skills Table
+
+| Column | Type | Description |
+|--------|------|-------------|
+| `skill_name` | TEXT | Unique identifier (e.g., 'filesystem') |
+| `display_name` | TEXT | Human-readable name |
+| `slash_command` | TEXT | Unique command (e.g., 'fs') |
+| `content` | TEXT | System instruction block |
+| `is_default` | INTEGER | 1 if system-provided, 0 if custom |
+| `is_modified` | INTEGER | 1 if default skill has been edited |
+| `enabled` | INTEGER | Toggle for injection |
+
 ## Environment Variables
 
 | Variable | Used By | Description |

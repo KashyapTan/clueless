@@ -39,6 +39,7 @@ The Electron layer manages the desktop application shell:
 | `main.ts` | Window creation, IPC handlers, Python server lifecycle |
 | `preload.ts` | Secure bridge exposing `electronAPI` to the renderer |
 | `pythonApi.ts` | Python process management (start, stop, port discovery, cleanup) |
+| `pcResources.ts` | Resource path resolution for production builds |
 | `utils.ts` | Environment detection (`isDev()`) |
 
 **Window Configuration:**
@@ -69,6 +70,7 @@ src/ui/
     App.tsx                   # Main chat interface
     ChatHistory.tsx           # Conversation browser with search
     Settings.tsx              # Tabbed settings interface
+    MeetingAlbum.tsx          # Screenshot gallery view
   components/
     Layout.tsx                # App shell with mini mode transitions
     TitleBar.tsx              # Custom draggable title bar
@@ -79,10 +81,13 @@ src/ui/
       ToolCallsDisplay.tsx    # MCP tool execution cards
       CodeBlock.tsx           # Syntax-highlighted code blocks
       ResponseArea.tsx        # Chat history display area
+      SlashCommandMenu.tsx    # Contextual skills menu
+      LoadingDots.tsx         # Typing indicator
     input/
       QueryInput.tsx          # User input with attachments
       ModeSelector.tsx        # Screenshot mode selector
       ScreenshotChips.tsx     # Screenshot thumbnail chips
+      SlashCommandChips.tsx   # Active skill indicators
       TokenUsagePopup.tsx     # Context window usage indicator
     settings/
       SettingsModels.tsx      # Model toggle UI
@@ -90,6 +95,12 @@ src/ui/
       SettingsConnections.tsx # Google OAuth connection card
       SettingsTools.tsx       # Semantic tool retrieval configuration
       SettingsSystemPrompt.tsx# Custom system prompt configuration
+      SettingsSkills.tsx       # Skill editor and manager
+    terminal/
+      TerminalPanel.tsx       # Integrated xterm.js terminal
+      TerminalCard.tsx        # Inline command execution view
+      ApprovalCard.tsx        # Security approval prompts
+      SessionBanner.tsx       # Autonomous mode status
   hooks/
     useChatState.ts           # Chat history, streaming, status
     useScreenshots.ts         # Screenshot context management
@@ -133,6 +144,7 @@ source/
     websocket.py              # /ws endpoint, message routing
     http.py                   # /api/* REST endpoints
     handlers.py               # WebSocket message handler logic
+    terminal.py               # Terminal-specific WebSocket handlers
   core/
     state.py                  # Global mutable state (AppState)
     request_context.py        # Request lifecycle (RequestContext class)
@@ -145,6 +157,7 @@ source/
     transcription.py          # Voice-to-text (faster-whisper)
     google_auth.py            # Google OAuth 2.0 flow manager
     terminal.py               # Terminal approval flow, PTY, notice tracking
+    approval_history.py       # Persistence for "remember" approvals
   llm/
     router.py                 # Routes requests to Ollama or Cloud providers
     ollama_provider.py        # Ollama streaming bridge with tool support
@@ -156,6 +169,8 @@ source/
     retriever.py              # Semantic tool retrieval (Top-K selection)
     handlers.py               # Tool call routing loop (up to 30 rounds)
     cloud_tool_handlers.py    # Tool calling for cloud providers
+    skill_injector.py         # Dynamic skill injection based on category
+    default_skills.py         # Hardcoded system instructions for tools
     terminal_executor.py      # Unified terminal tool execution logic
 ```
 
@@ -166,6 +181,7 @@ source/
 - `find_available_port()` probes ports 8000-8009 to avoid conflicts
 - Thread-safe SQLite with `check_same_thread=False`
 - **Hybrid LLM Support**: Routes requests between local Ollama and cloud APIs (Anthropic, OpenAI, Gemini) dynamically based on the selected model.
+- **Skills and Slash Commands**: Dynamic behavioral guidance injected into the system prompt.
 - **Unified Terminal Executor**: Centralizes all terminal tool logic (approval, PTY, notice tracking, DB) in a single module.
 - **Ghost Process Prevention**: Terminal tools are registered inline; no background process is spawned.
 

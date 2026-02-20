@@ -16,9 +16,9 @@ Electron + React + Python desktop app for AI chat with screenshot and voice capa
 - MCP (Model Context Protocol) tool integration (demo, filesystem, websearch, gmail, calendar, terminal)
 - **Integrated Terminal**: LLM-driven command execution with 4-layer security (blocklist, PATH protection, hard timeout, approval prompts)
 - Web search and page reading via DuckDuckGo + crawl4ai
-- Always-on-top frameless window with mini mode (52x52)
 - Stop streaming support for interrupting AI responses
 - **Customizable System Prompt**: User-editable system prompt with dynamic variable interpolation
+- **Skills and Slash Commands**: Dynamic behavioral guidance injected into the system prompt based on active tools or manual slash commands (e.g., `/fs`)
 
 ## Architecture
 
@@ -55,9 +55,9 @@ src/
   ui/
     pages/                 # App.tsx, ChatHistory.tsx, Settings.tsx
     components/            # Layout.tsx, TitleBar.tsx, WebSocketContext.tsx
-      chat/                # ChatMessage, ThinkingSection, ToolCallsDisplay, CodeBlock
-      input/               # QueryInput, ModeSelector, ScreenshotChips, TokenUsagePopup
-      settings/            # SettingsModels.tsx, SettingsApiKey.tsx, SettingsConnections.tsx, SettingsTools.tsx, SettingsSystemPrompt.tsx
+      chat/                # ChatMessage, ThinkingSection, ToolCallsDisplay, CodeBlock, SlashCommandMenu, LoadingDots
+      input/               # QueryInput, ModeSelector, ScreenshotChips, TokenUsagePopup, SlashCommandChips
+      settings/            # SettingsModels.tsx, SettingsApiKey.tsx, SettingsConnections.tsx, SettingsTools.tsx, SettingsSystemPrompt.tsx, SettingsSkills.tsx
       terminal/            # TerminalPanel, ApprovalCard, SessionBanner, TerminalCard
     hooks/                 # useChatState, useScreenshots, useTokenUsage
     services/              # api.ts (REST + WS command factory)
@@ -97,6 +97,8 @@ source/                    # Python backend
     retriever.py           # Semantic tool retriever (Top-K selection)
     handlers.py            # Tool call routing loop (up to 30 rounds)
     cloud_tool_handlers.py # Tool calling logic for cloud providers
+    skill_injector.py      # Dynamic skill injection based on tool category
+    default_skills.py      # Hardcoded system instructions for default skills
     terminal_executor.py   # Unified terminal tool executor (shared by all providers)
 mcp_servers/
   client/                  # ollama_bridge.py (standalone bridge for testing)
@@ -157,9 +159,9 @@ user_data/                 # Persistent app data (DB, screenshots)
 
 ### `source/api/handlers.py` (156 lines)
 **Message Handler Logic**
-- `MessageHandler` class: processes each WebSocket message type
-- `_handle_submit_query`: Updates `app_state.selected_model`, launches `ConversationService.submit_query` as background task
+- `_handle_submit_query`: Extracts slash commands, updates `app_state.selected_model`, launches `ConversationService.submit_query`
 - `_handle_stop_recording`: Uses `asyncio.to_thread` for transcription
+- `_handle_get_skills`, `_handle_upsert_skill`, `_handle_delete_skill`, `_handle_reset_skill`: CRUD operations for user skills
 - All handlers use `ConnectionManager.broadcast_json()` for responses
 
 ### `source/api/http.py` (528 lines)
@@ -175,6 +177,10 @@ user_data/                 # Persistent app data (DB, screenshots)
 - `POST /api/google/connect`: Initiates OAuth flow
 - `GET /api/settings/system-prompt`: Fetches custom system prompt template
 - `PUT /api/settings/system-prompt`: Updates custom system prompt template
+- `GET /api/skills`: Lists all skills (default + custom)
+- `POST /api/skills`: Creates/updates a skill
+- `DELETE /api/skills/{skill_name}`: Deletes a custom skill
+- `POST /api/skills/{skill_name}/reset`: Resets default skill content
 
 ### `source/database.py` (367 lines)
 **SQLite Operations with Thread Safety**
@@ -189,6 +195,7 @@ Tables:
 - `conversations`: id (UUID), title, created_at, updated_at, total_input_tokens, total_output_tokens
 - `messages`: num_messages (PK), conversation_id (FK), role, content, images (JSON), model, created_at
 - `settings`: key (PK), value
+- `skills`: skill_name (PK), display_name, slash_command, content, is_default, is_modified, enabled, created_at, updated_at
 
 Key functions:
 - `start_new_conversation(title)`, `add_message(...)`, `get_recent_conversations(limit, offset)`
@@ -245,7 +252,7 @@ Components:
 
 ### `source/services/conversations.py` (190 lines)
 **Conversation Logic**
-- `submit_query`: Handles user input, image processing, auto-screenshot (fullscreen mode), Ollama streaming, persistence, token tracking
+- `submit_query`: Handles user input, image processing, auto-screenshot, Ollama streaming, persistence, token tracking. **Now incorporates skill injection** via `skill_injector`.
 - Creates a `RequestContext` for lifecycle management; auto-expires terminal session mode in `finally`
 - `resume_conversation`: Reconstructs chat state from DB, regenerates thumbnails, restores token counts
 - `clear_context`: Resets state for new chat, clears screenshots
@@ -719,4 +726,4 @@ Both `handlers.py` (Ollama) and `cloud_tool_handlers.py` (cloud providers) need 
 
 ---
 
-*Last updated: February 19 2026 | Version: 0.2.0*
+*Last updated: February 20 2026 | Version: 0.3.0*

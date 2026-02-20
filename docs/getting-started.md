@@ -50,6 +50,8 @@ Or download from the [Releases](https://github.com/KashyapTan/clueless/releases)
 | **Google Integration** | Go to Settings > Connections to link your Google account |
 | Model selection | Toggle models in Settings > Models |
 | Stop streaming | Click stop while the AI is responding |
+| **Slash Commands** | Type `/` followed by a command (e.g., `/fs`) to force-inject a skill |
+| **Skills** | Custom instructions auto-injected based on tool usage or slash commands |
 | Web search | Ask questions that trigger web search tools |
 
 ---

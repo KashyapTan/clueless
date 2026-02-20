@@ -229,6 +229,40 @@ Content-Type: application/json
 }
 ```
 
+### System Prompt Settings
+
+#### Get System Prompt
+
+```
+GET /api/settings/system-prompt
+```
+
+Returns the current custom system prompt template, or the default if none is saved.
+
+**Response:**
+```json
+{
+    "template": "You are Clueless...",
+    "is_custom": false
+}
+```
+
+#### Update System Prompt
+
+```
+PUT /api/settings/system-prompt
+Content-Type: application/json
+```
+
+Updates the custom system prompt template. Send an empty string to reset to the default.
+
+**Request Body:**
+```json
+{
+    "template": "Your new custom prompt here"
+}
+```
+
 ---
 
 ## WebSocket Protocol

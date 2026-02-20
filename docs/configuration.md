@@ -151,6 +151,9 @@ Application settings are stored as key-value pairs in the `settings` table:
 | `api_key_openai` | Encrypted string | OpenAI API key |
 | `api_key_gemini` | Encrypted string | Google Gemini API key |
 | `encryption_salt` | Hex string | Salt for Fernet encryption |
+| `tool_always_on` | JSON array | Tools always included in context |
+| `tool_retriever_top_k` | String/Number | Number of semantic tool matches |
+| `system_prompt_template` | String | Custom system prompt template |
 
 ## Environment Variables
 

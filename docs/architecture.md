@@ -89,6 +89,7 @@ src/ui/
       SettingsApiKey.tsx      # API key management (Anthropic/OpenAI/Gemini)
       SettingsConnections.tsx # Google OAuth connection card
       SettingsTools.tsx       # Semantic tool retrieval configuration
+      SettingsSystemPrompt.tsx# Custom system prompt configuration
   hooks/
     useChatState.ts           # Chat history, streaming, status
     useScreenshots.ts         # Screenshot context management
@@ -149,6 +150,7 @@ source/
     ollama_provider.py        # Ollama streaming bridge with tool support
     cloud_provider.py         # Anthropic/OpenAI/Gemini streaming
     key_manager.py            # Encrypted API key storage
+    prompt.py                 # System prompt builder with variable interpolation
   mcp_integration/
     manager.py                # MCP server process management + inline tools
     retriever.py              # Semantic tool retrieval (Top-K selection)
@@ -349,6 +351,7 @@ CREATE TABLE settings (
 - `encryption_salt`: Per-install salt for key encryption
 - `tool_always_on`: List of tool names to always include in context
 - `tool_retriever_top_k`: Number of semantic matches for tool retrieval
+- `system_prompt_template`: Custom system prompt template string
 
 ## Technology Stack
 

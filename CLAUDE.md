@@ -18,6 +18,7 @@ Electron + React + Python desktop app for AI chat with screenshot and voice capa
 - Web search and page reading via DuckDuckGo + crawl4ai
 - Always-on-top frameless window with mini mode (52x52)
 - Stop streaming support for interrupting AI responses
+- **Customizable System Prompt**: User-editable system prompt with dynamic variable interpolation
 
 ## Architecture
 
@@ -56,7 +57,7 @@ src/
     components/            # Layout.tsx, TitleBar.tsx, WebSocketContext.tsx
       chat/                # ChatMessage, ThinkingSection, ToolCallsDisplay, CodeBlock
       input/               # QueryInput, ModeSelector, ScreenshotChips, TokenUsagePopup
-      settings/            # SettingsModels.tsx, SettingsApiKey.tsx, SettingsConnections.tsx, SettingsTools.tsx
+      settings/            # SettingsModels.tsx, SettingsApiKey.tsx, SettingsConnections.tsx, SettingsTools.tsx, SettingsSystemPrompt.tsx
       terminal/            # TerminalPanel, ApprovalCard, SessionBanner, TerminalCard
     hooks/                 # useChatState, useScreenshots, useTokenUsage
     services/              # api.ts (REST + WS command factory)
@@ -87,9 +88,10 @@ source/                    # Python backend
     approval_history.py    # Persistent approval memory (exec-approvals.json)
   llm/
     router.py              # Routes requests to Ollama or Cloud providers
-    ollama_provider.py     # Ollama streaming bridge (thinking extraction, tool fallback)
+    ollama_provider.py     # Ollama streaming bridge
     cloud_provider.py      # Anthropic/OpenAI/Gemini streaming
     key_manager.py         # Encrypted API key storage
+    prompt.py              # Builds the dynamic system prompt with variable interpolation
   mcp_integration/
     manager.py             # MCP server process management + inline tool registration
     retriever.py           # Semantic tool retriever (Top-K selection)
@@ -171,6 +173,8 @@ user_data/                 # Persistent app data (DB, screenshots)
 - `PUT /api/keys/{provider}`: Saves encrypted API key
 - `GET /api/google/status`: Checks OAuth connection
 - `POST /api/google/connect`: Initiates OAuth flow
+- `GET /api/settings/system-prompt`: Fetches custom system prompt template
+- `PUT /api/settings/system-prompt`: Updates custom system prompt template
 
 ### `source/database.py` (367 lines)
 **SQLite Operations with Thread Safety**
@@ -190,6 +194,7 @@ Key functions:
 - `start_new_conversation(title)`, `add_message(...)`, `get_recent_conversations(limit, offset)`
 - `get_full_conversation(id)`, `add_token_usage(...)`, `get_token_usage(...)`
 - `get_enabled_models()`, `set_enabled_models(...)`
+- `get_system_prompt_template()`, `set_system_prompt_template(...)`
 
 ### `source/core/state.py` (90 lines)
 **Global Mutable State**
@@ -259,6 +264,10 @@ Components:
 - Fallback: if stream is empty (tool-calling edge case), performs non-streamed `chat` call
 - Handles "unexpected" tool calls that appear mid-text-stream
 - Broadcasts `thinking_chunk`, `response_chunk`, and completion messages
+
+### `source/llm/prompt.py`
+**System Prompt Builder**
+- `build_system_prompt(...)`: Assembles the LLM system prompt with dynamic interpolations (time, os, user custom template)
 
 ### `source/mcp_integration/manager.py` (192 lines)
 **MCP Server Manager**
@@ -353,7 +362,7 @@ IPC handlers:
 
 ### `src/ui/pages/Settings.tsx` (85 lines)
 **Tabbed Settings Interface**
-- Currently implements "Models" tab
+- Implements Models, Connections, Tools, and Prompt tabs
 - Extensible for future settings categories
 
 ### `src/ui/components/settings/SettingsModels.tsx` (166 lines)
@@ -380,6 +389,12 @@ IPC handlers:
 - Toggle "Always On" tools for MCP servers
 - Communicates with `GET/PUT /api/settings/tools`
 
+### `src/ui/components/settings/SettingsSystemPrompt.tsx`
+**System Prompt UI**
+- Allows user to set a custom system prompt template
+- Provides variables to interpolate (`{{current_datetime}}`, etc.)
+- Communicates with `GET/PUT /api/settings/system-prompt`
+
 ### `src/ui/hooks/`
 - **`useChatState.ts`**: Core chat logic. Manages `chatHistory` array, streaming buffers (thinking, response), `toolCalls`, status, and refs.
 - **`useScreenshots.ts`**: Manages screenshot carousel, `captureMode`, and `screenshotsRef`.
@@ -387,7 +402,7 @@ IPC handlers:
 
 ### `src/ui/services/api.ts` (191 lines)
 **API Client**
-- Singleton `api` object with REST fetch wrappers (`getOllamaModels`, `getEnabledModels`, `setEnabledModels`)
+- Singleton `api` object with REST fetch wrappers (`getOllamaModels`, `getEnabledModels`, `setEnabledModels`, `getSystemPrompt`, `setSystemPrompt`)
 - `createApiService()`: Factory for WS-based commands (`submitQuery`, `clearContext`, etc.)
 
 ### `src/ui/types/index.ts` (134 lines)

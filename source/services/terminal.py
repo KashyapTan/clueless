@@ -36,7 +36,6 @@ from typing import Optional
 
 from ..core.connection import manager
 from .approval_history import is_command_approved, remember_approval
-from ..database import db
 
 # Import security checks from MCP terminal blocklist
 from mcp_servers.servers.terminal.blocklist import check_blocklist

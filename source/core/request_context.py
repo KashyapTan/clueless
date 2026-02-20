@@ -40,6 +40,7 @@ class RequestContext:
         self._cancelled = False
         self._cancel_callbacks: List[Callable[[], None]] = []
         self._done_event = asyncio.Event()
+        self.forced_skills: list[dict] = []  # Skills from slash commands
 
     # ── Read-only state ────────────────────────────────────────────
 

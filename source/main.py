@@ -182,7 +182,7 @@ def main():
     print(f"WebSocket endpoint: ws://localhost:{port}/ws")
     print()
     print("Hotkeys:")
-    print("  Ctrl+Shift+Alt+S - Take screenshot")
+    print("  Alt + . - Take region screenshot")
     print()
     print("Press Ctrl+C to stop")
     print("=" * 50)

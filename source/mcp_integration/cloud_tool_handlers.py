@@ -10,7 +10,6 @@ from typing import List, Dict, Any, Optional
 
 from .manager import mcp_manager
 from .retriever import retriever
-from ..database import db
 from ..core.connection import broadcast_message
 from ..core.thread_pool import run_in_thread
 from ..config import MAX_MCP_TOOL_ROUNDS
@@ -56,6 +55,7 @@ async def handle_cloud_tool_calls(
             break
 
     # Get settings
+    from ..database import db
     always_on_json = db.get_setting("tool_always_on")
     always_on = []
     if always_on_json:

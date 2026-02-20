@@ -195,8 +195,8 @@ class ScreenshotService:
                     return
                 if self.capturing:
                     return
-                # Debounce: ignore triggers within 500ms of the last one
-                if current_time - self._last_trigger_time < 0.5:
+                # Debounce: ignore triggers within 1.5s of the last one
+                if current_time - self._last_trigger_time < 1.5:
                     return
                 self.capturing = True
                 self._last_trigger_time = current_time
@@ -208,23 +208,9 @@ class ScreenshotService:
                 
             threading.Thread(target=self._do_capture, args=(save_folder,), daemon=True).start()
 
-        hotkey = keyboard.HotKey(
-            keyboard.HotKey.parse('<alt>+.'),
-            on_activate
-        )
-
-        def on_press(key):
-            if self.listener and self.running:
-                hotkey.press(self.listener.canonical(key))
-        
-        def on_release(key):
-            if self.listener and self.running:
-                hotkey.release(self.listener.canonical(key))
-
-        self.listener = keyboard.Listener(
-            on_press=on_press,
-            on_release=on_release
-        )
+        self.listener = keyboard.GlobalHotKeys({
+            '<alt>+.': on_activate
+        })
         self.listener.start()
         try:
             while self.running:

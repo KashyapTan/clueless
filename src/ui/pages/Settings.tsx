@@ -6,6 +6,7 @@ import SettingsTools from '../components/settings/SettingsTools';
 import SettingsApiKey from '../components/settings/SettingsApiKey';
 import SettingsConnections from '../components/settings/SettingsConnections';
 import SettingsSystemPrompt from '../components/settings/SettingsSystemPrompt';
+import SettingsSkills from '../components/settings/SettingsSkills';
 import '../CSS/Settings.css';
 import modelsIcon from '../assets/models.svg';
 import connectionsIcon from '../assets/mcp.svg';
@@ -49,6 +50,7 @@ const Settings: React.FC = () => {
     { id: 'models', label: 'Models', icon: modelsIcon, className: 'settings-models', component: <SettingsModels /> },
     { id: 'connections', label: 'Connections', icon: connectionsIcon, className: 'settings-mcp-connections', component: <SettingsConnections /> },
     { id: 'tools', label: 'Tools', icon: toolsIcon, className: 'settings-tools', component: <SettingsTools /> },
+    { id: 'skills', label: 'Skills', icon: settingsIcon, className: 'settings-skills-tab', component: <SettingsSkills /> },
     { id: 'system-prompt', label: 'Prompt', icon: settingsIcon, className: 'settings-system-prompt-tab', component: <SettingsSystemPrompt /> },
     { id: 'ollama', label: 'Ollama', icon: ollamaIcon, className: 'settings-ollama-model', component: <Placeholder title="Ollama Settings" /> },
     { id: 'anthropic', label: 'Anthropic', icon: anthropicIcon, className: 'settings-anthropic-api-key', component: <SettingsApiKey provider="anthropic" /> },

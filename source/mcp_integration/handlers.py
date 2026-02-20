@@ -14,7 +14,6 @@ from ollama import chat
 from .manager import mcp_manager
 from .retriever import retriever
 from .terminal_executor import is_terminal_tool, execute_terminal_tool
-from ..database import db
 from ..core.connection import broadcast_message
 from ..core.state import app_state
 from ..core.thread_pool import run_in_thread
@@ -93,6 +92,7 @@ async def handle_mcp_tool_calls(
             break
 
     # Get settings
+    from ..database import db
     always_on_json = db.get_setting("tool_always_on")
     always_on = []
     if always_on_json:

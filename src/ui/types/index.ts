@@ -64,6 +64,23 @@ export interface WebSocketMessage {
   content: string | Record<string, unknown>;
 }
 
+// ==========================================
+// Skills Feature Types
+// ==========================================
+
+export interface Skill {
+  id: number;
+  skill_name: string;
+  display_name: string;
+  slash_command: string;
+  content: string;
+  is_default: boolean;
+  is_modified: boolean;
+  enabled: boolean;
+  created_at: number;
+  updated_at: number;
+}
+
 // ============================================
 // Terminal Types
 // ============================================
@@ -179,4 +196,4 @@ declare global {
   }
 }
 
-export {};
+export { };

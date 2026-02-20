@@ -11,14 +11,13 @@ from typing import List, Dict, Any, Optional
 from ..core.state import app_state
 from ..core.request_context import RequestContext
 from ..core.connection import broadcast_message
-from ..database import DatabaseManager
 from ..llm.router import route_chat
 from ..config import SCREENSHOT_FOLDER, CaptureMode
 from .screenshots import ScreenshotHandler
+from ..database import db
 
 
-# Database manager for persistence
-db = DatabaseManager()
+# Conversations service logic
 
 
 class ConversationService:
@@ -44,6 +43,8 @@ class ConversationService:
     @staticmethod
     async def resume_conversation(conversation_id: str):
         """Resume a previously saved conversation."""
+        from .terminal import terminal_service
+        from ..database import db
         from ..ss import create_thumbnail
 
         # Clear current state
@@ -94,13 +95,20 @@ class ConversationService:
         )
 
     @staticmethod
-    async def submit_query(user_query: str, capture_mode: str = "none"):
+    async def submit_query(
+        user_query: str,
+        capture_mode: str = "none",
+        forced_skills: list[dict] | None = None,
+        llm_query: str | None = None,
+    ):
         """
         Handle query submission from a client.
 
         Args:
-            user_query: The user's question
+            user_query: The user's original question (with slash commands, for display/save)
             capture_mode: 'fullscreen', 'precision', or 'none'
+            forced_skills: Skills forced via slash commands (e.g. /terminal)
+            llm_query: Cleaned query without slash commands (for the LLM). Uses user_query if None.
         """
         from ..ss import take_fullscreen_screenshot, create_thumbnail
 
@@ -118,6 +126,7 @@ class ConversationService:
                 await broadcast_message("error", "Already streaming. Please wait.")
                 return
             ctx = RequestContext()
+            ctx.forced_skills = forced_skills or []
             app_state.current_request = ctx
             # Legacy sync
             app_state.is_streaming = True
@@ -141,12 +150,18 @@ class ConversationService:
             # Reset stop flag (use the context now)
             app_state.stop_streaming = False
 
-            # Stream the response (routes to Ollama or cloud provider based on model prefix)
+            # Stream the response — use cleaned query (without slash commands) for the LLM
+            query_for_llm = llm_query if llm_query else user_query
             response_text, token_stats, tool_calls = await route_chat(
-                current_model, user_query, image_paths, app_state.chat_history.copy()
+                current_model,
+                query_for_llm,
+                image_paths,
+                app_state.chat_history.copy(),
+                forced_skills=ctx.forced_skills,
             )
 
-            # Create conversation on first message
+            # 1. Create conversation entry if it doesn't exist
+            from ..database import db
             if app_state.conversation_id is None:
                 title = user_query[:50] + ("..." if len(user_query) > 50 else "")
                 app_state.conversation_id = db.start_new_conversation(title)
@@ -154,7 +169,7 @@ class ConversationService:
 
                 # Flush any terminal events that were queued before conversation existed
                 from .terminal import terminal_service
-
+                from ..database import db
                 terminal_service.flush_pending_events(app_state.conversation_id)
 
             # Persist token usage
@@ -206,6 +221,7 @@ class ConversationService:
                 )
 
             # Persist to database
+            from ..database import db
             db.add_message(
                 app_state.conversation_id,
                 "user",

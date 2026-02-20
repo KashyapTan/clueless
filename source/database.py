@@ -130,6 +130,54 @@ class DatabaseManager:
             )
         """)
 
+        # --- TABLE 5: SKILLS ---
+        # Behavioral guidance injected into the system prompt based on
+        # active MCP tool categories. Each skill maps to one MCP server.
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS skills (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                skill_name TEXT UNIQUE NOT NULL,
+                display_name TEXT NOT NULL,
+                slash_command TEXT UNIQUE NOT NULL,
+                content TEXT NOT NULL,
+                is_default INTEGER DEFAULT 1,
+                is_modified INTEGER DEFAULT 0,
+                enabled INTEGER DEFAULT 1,
+                created_at REAL,
+                updated_at REAL
+            )
+        """)
+
+        connection.commit()
+        connection.close()
+
+        # Seed default skills (safe — uses INSERT OR IGNORE)
+        self._seed_default_skills()
+
+    def _seed_default_skills(self):
+        """Insert default skills if they don't already exist."""
+        from .mcp_integration.default_skills import DEFAULT_SKILLS
+
+        connection = self._get_connection()
+        cursor = connection.cursor()
+        now = time.time()
+
+        for skill in DEFAULT_SKILLS:
+            cursor.execute(
+                """INSERT OR IGNORE INTO skills
+                   (skill_name, display_name, slash_command, content,
+                    is_default, is_modified, enabled, created_at, updated_at)
+                   VALUES (?, ?, ?, ?, 1, 0, 1, ?, ?)""",
+                (
+                    skill["skill_name"],
+                    skill["display_name"],
+                    skill["slash_command"],
+                    skill["content"],
+                    now,
+                    now,
+                ),
+            )
+
         connection.commit()
         connection.close()
 
@@ -551,6 +599,181 @@ class DatabaseManager:
             }
             for r in rows
         ]
+
+    # ---------------------------------------------------------
+    # SKILL OPERATIONS
+    # ---------------------------------------------------------
+
+    def get_all_skills(self) -> List[Dict]:
+        """Returns all skill rows."""
+        connection = self._get_connection()
+        cursor = connection.cursor()
+        cursor.execute(
+            """SELECT id, skill_name, display_name, slash_command, content,
+                      is_default, is_modified, enabled, created_at, updated_at
+               FROM skills ORDER BY id ASC"""
+        )
+        rows = cursor.fetchall()
+        connection.close()
+        return [
+            {
+                "id": r[0],
+                "skill_name": r[1],
+                "display_name": r[2],
+                "slash_command": r[3],
+                "content": r[4],
+                "is_default": bool(r[5]),
+                "is_modified": bool(r[6]),
+                "enabled": bool(r[7]),
+                "created_at": r[8],
+                "updated_at": r[9],
+            }
+            for r in rows
+        ]
+
+    def get_skill_by_name(self, skill_name: str) -> Dict | None:
+        """Returns a single skill by name, or None."""
+        connection = self._get_connection()
+        cursor = connection.cursor()
+        cursor.execute(
+            """SELECT id, skill_name, display_name, slash_command, content,
+                      is_default, is_modified, enabled, created_at, updated_at
+               FROM skills WHERE skill_name = ?""",
+            (skill_name,),
+        )
+        r = cursor.fetchone()
+        connection.close()
+        if not r:
+            return None
+        return {
+            "id": r[0],
+            "skill_name": r[1],
+            "display_name": r[2],
+            "slash_command": r[3],
+            "content": r[4],
+            "is_default": bool(r[5]),
+            "is_modified": bool(r[6]),
+            "enabled": bool(r[7]),
+            "created_at": r[8],
+            "updated_at": r[9],
+        }
+
+    def get_skill_by_slash_command(self, command: str) -> Dict | None:
+        """Returns a single skill by its slash command, or None."""
+        connection = self._get_connection()
+        cursor = connection.cursor()
+        cursor.execute(
+            """SELECT id, skill_name, display_name, slash_command, content,
+                      is_default, is_modified, enabled, created_at, updated_at
+               FROM skills WHERE slash_command = ?""",
+            (command,),
+        )
+        r = cursor.fetchone()
+        connection.close()
+        if not r:
+            return None
+        return {
+            "id": r[0],
+            "skill_name": r[1],
+            "display_name": r[2],
+            "slash_command": r[3],
+            "content": r[4],
+            "is_default": bool(r[5]),
+            "is_modified": bool(r[6]),
+            "enabled": bool(r[7]),
+            "created_at": r[8],
+            "updated_at": r[9],
+        }
+
+    def upsert_skill(
+        self,
+        skill_name: str,
+        display_name: str,
+        slash_command: str,
+        content: str,
+        is_default: bool = False,
+        enabled: bool = True,
+    ) -> None:
+        """Insert or update a skill."""
+        connection = self._get_connection()
+        cursor = connection.cursor()
+        now = time.time()
+        cursor.execute(
+            """INSERT INTO skills
+               (skill_name, display_name, slash_command, content,
+                is_default, is_modified, enabled, created_at, updated_at)
+               VALUES (?, ?, ?, ?, ?, 0, ?, ?, ?)
+               ON CONFLICT(skill_name) DO UPDATE SET
+                 display_name = excluded.display_name,
+                 slash_command = excluded.slash_command,
+                 content = excluded.content,
+                 enabled = excluded.enabled,
+                 updated_at = excluded.updated_at""",
+            (
+                skill_name,
+                display_name,
+                slash_command,
+                content,
+                1 if is_default else 0,
+                1 if enabled else 0,
+                now,
+                now,
+            ),
+        )
+        connection.commit()
+        connection.close()
+
+    def update_skill_content(self, skill_name: str, content: str) -> None:
+        """Update skill content and mark as modified."""
+        connection = self._get_connection()
+        cursor = connection.cursor()
+        cursor.execute(
+            """UPDATE skills SET content = ?, is_modified = 1, updated_at = ?
+               WHERE skill_name = ?""",
+            (content, time.time(), skill_name),
+        )
+        connection.commit()
+        connection.close()
+
+    def reset_skill_to_default(self, skill_name: str) -> None:
+        """Restore a default skill to its original content."""
+        from .mcp_integration.default_skills import DEFAULT_SKILLS
+
+        for default in DEFAULT_SKILLS:
+            if default["skill_name"] == skill_name:
+                connection = self._get_connection()
+                cursor = connection.cursor()
+                cursor.execute(
+                    """UPDATE skills SET content = ?, is_modified = 0, updated_at = ?
+                       WHERE skill_name = ?""",
+                    (default["content"], time.time(), skill_name),
+                )
+                connection.commit()
+                connection.close()
+                return
+
+    def delete_skill(self, skill_name: str) -> bool:
+        """Delete a user-created skill. Returns False if it's a default."""
+        skill = self.get_skill_by_name(skill_name)
+        if not skill or skill["is_default"]:
+            return False
+        connection = self._get_connection()
+        cursor = connection.cursor()
+        cursor.execute("DELETE FROM skills WHERE skill_name = ?", (skill_name,))
+        connection.commit()
+        connection.close()
+        return True
+
+    def toggle_skill(self, skill_name: str, enabled: bool) -> None:
+        """Enable or disable a skill."""
+        connection = self._get_connection()
+        cursor = connection.cursor()
+        cursor.execute(
+            "UPDATE skills SET enabled = ?, updated_at = ? WHERE skill_name = ?",
+            (1 if enabled else 0, time.time(), skill_name),
+        )
+        connection.commit()
+        connection.close()
 
 
 # Global singleton instance so all modules share the same DB connection logic

@@ -18,7 +18,6 @@ from typing import Optional
 
 from ..core.connection import broadcast_message
 from ..core.state import app_state
-from ..database import db
 from ..services.terminal import terminal_service
 
 
@@ -313,6 +312,7 @@ def _save_terminal_event(**kwargs) -> None:
         **kwargs,
     )
     if app_state.conversation_id:
+        from ..database import db
         db.save_terminal_event(
             conversation_id=app_state.conversation_id,
             **event_data,

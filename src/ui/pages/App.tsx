@@ -30,8 +30,8 @@ import { ScreenshotChips } from '../components/input/ScreenshotChips';
 import { TerminalPanel } from '../components/terminal/TerminalPanel';
 
 // Types
-import type { 
-  WebSocketMessage, 
+import type {
+  WebSocketMessage,
   ScreenshotAddedContent,
   ScreenshotRemovedContent,
   ConversationSavedContent,
@@ -131,7 +131,7 @@ function App() {
         chatState.setStatus(String(data.content) || 'Ready to chat.');
         chatState.setCanSubmit(true);
         chatState.setError('');
-        
+
         // Handle pending operations
         if (pendingConversationRef.current) {
           wsRef.current?.send(JSON.stringify({
@@ -158,8 +158,8 @@ function App() {
         break;
 
       case 'screenshot_added': {
-        const ssData = (typeof data.content === 'string' 
-          ? JSON.parse(data.content) 
+        const ssData = (typeof data.content === 'string'
+          ? JSON.parse(data.content)
           : data.content) as unknown as ScreenshotAddedContent;
         screenshotState.addScreenshot(ssData);
         chatState.setStatus('Screenshot added to context.');
@@ -199,7 +199,7 @@ function App() {
         const tc = (typeof data.content === 'string'
           ? JSON.parse(data.content)
           : data.content) as unknown as ToolCallContent;
-        
+
         if (tc.status === 'calling') {
           chatState.setStatus(`Calling tool: ${tc.name}...`);
           chatState.addToolCall({
@@ -210,11 +210,11 @@ function App() {
           });
         } else if (tc.status === 'complete' && tc.result) {
           chatState.updateToolCall({
-             name: tc.name,
-             args: tc.args,
-             result: tc.result,
-             server: tc.server,
-             status: 'complete'
+            name: tc.name,
+            args: tc.args,
+            result: tc.result,
+            server: tc.server,
+            status: 'complete'
           });
           chatState.setStatus('Tool call complete.');
         }
@@ -270,17 +270,17 @@ function App() {
         const resumeData = (typeof data.content === 'string'
           ? JSON.parse(data.content)
           : data.content) as unknown as ConversationResumedContent;
-        
+
         const msgs: ChatMessage[] = resumeData.messages.map((m) => ({
           role: m.role as 'user' | 'assistant',
           content: m.content,
           images: m.images && m.images.length > 0 ? m.images : undefined,
           model: m.model,
         }));
-        
+
         chatState.loadConversation(resumeData.conversation_id, msgs);
         screenshotState.clearScreenshots();
-        
+
         if (resumeData.token_usage) {
           tokenState.setTokenUsage({
             total: resumeData.token_usage.total || 0,
@@ -421,7 +421,7 @@ function App() {
   // ============================================
   useEffect(() => {
     const state = location.state as { conversationId?: string; newChat?: boolean } | null;
-    
+
     if (state?.conversationId) {
       if (wsRef.current?.readyState === WebSocket.OPEN) {
         wsRef.current.send(JSON.stringify({
@@ -489,7 +489,7 @@ function App() {
 
     chatState.setQuery('');
     setTimeout(scrollToBottom, 50);
-    
+
     generatingModelRef.current = selectedModel;
 
     wsRef.current.send(JSON.stringify({
@@ -536,16 +536,16 @@ function App() {
 
   const getPlaceholder = () => {
     if (chatState.chatHistory.length > 0) {
-      return screenshotState.screenshots.length > 0 
-        ? "Ask a follow-up about the screenshot(s)..." 
+      return screenshotState.screenshots.length > 0
+        ? "Ask a follow-up about the screenshot(s)..."
         : "Ask a follow-up question...";
     }
     if (screenshotState.captureMode === 'fullscreen') {
       return "Ask Clueless anything on your screen...";
     }
     if (screenshotState.captureMode === 'precision') {
-      return screenshotState.screenshots.length > 0 
-        ? "Ask about the screenshot(s)..." 
+      return screenshotState.screenshots.length > 0
+        ? "Ask about the screenshot(s)..."
         : "Ask Clueless about a region on your screen (Alt+.)";
     }
     return "Ask Clueless anything...";
@@ -553,7 +553,7 @@ function App() {
 
   const handleMicClick = () => {
     if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) return;
-    
+
     if (isRecording) {
       // Stop recording
       wsRef.current.send(JSON.stringify({ type: 'stop_recording' }));
@@ -629,7 +629,7 @@ function App() {
   return (
     <div className="content-container" style={{ width: '100%', height: '100%', position: 'relative' }}>
       <TitleBar onClearContext={handleClearContext} setMini={setMini} />
-      
+
       <ResponseArea
         chatHistory={chatState.chatHistory}
         currentQuery={chatState.currentQuery}
@@ -678,7 +678,7 @@ function App() {
           />
 
           <div className="input-options-section">
-            <div 
+            <div
               className="chips-container-wrapper"
               onWheel={(e) => {
                 if (e.deltaY !== 0) {
@@ -719,7 +719,7 @@ function App() {
                 contextWindowIcon={contextWindowInsightsIcon}
               />
 
-              <div 
+              <div
                 className={`mic-input-section ${isRecording ? 'recording' : ''}`}
                 onClick={handleMicClick}
                 title={isRecording ? "Stop recording" : "Start voice input"}

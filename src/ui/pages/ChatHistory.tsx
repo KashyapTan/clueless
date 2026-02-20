@@ -27,16 +27,19 @@ const ChatHistory: React.FC = () => {
       wsRef.current = ws;
 
       ws.onopen = () => {
+        console.log('ChatHistory WS connected');
         // Request conversations list on connect
         ws?.send(JSON.stringify({ type: 'get_conversations', limit: 50, offset: 0 }));
       };
 
       ws.onmessage = (event) => {
+        console.log('ChatHistory received message:', event.data);
         try {
           const data = JSON.parse(event.data);
           switch (data.type) {
             case 'conversations_list': {
               const convos = JSON.parse(data.content) as Conversation[];
+              console.log('Parsed conversations:', convos);
               setConversations(convos);
               setLoading(false);
               break;
@@ -46,9 +49,14 @@ const ChatHistory: React.FC = () => {
               setConversations(prev => prev.filter(c => c.id !== deleteData.conversation_id));
               break;
             }
+            case 'error': {
+              console.error('ChatHistory received error from backend:', data.content);
+              setLoading(false);
+              break;
+            }
           }
         } catch (e) {
-          console.error('ChatHistory WS error:', e);
+          console.error('ChatHistory WS parsing error:', e);
         }
       };
 
@@ -102,44 +110,44 @@ const ChatHistory: React.FC = () => {
   const getRelativeDateGroup = (timestamp: number): string => {
     const date = new Date(timestamp * 1000);
     const now = new Date();
-    
+
     // Normalize to midnight for accurate comparison
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     const yesterday = new Date(today);
     yesterday.setDate(yesterday.getDate() - 1);
-    
+
     const convoDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
-    
+
     if (convoDate.getTime() === today.getTime()) {
       return 'Today';
     } else if (convoDate.getTime() === yesterday.getTime()) {
       return 'Yesterday';
     } else {
-      return date.toLocaleDateString(undefined, { 
-        year: 'numeric', 
-        month: 'long', 
-        day: 'numeric' 
+      return date.toLocaleDateString(undefined, {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
       });
     }
   };
 
   const formatTime = (timestamp: number): string => {
     const date = new Date(timestamp * 1000);
-    return date.toLocaleTimeString(undefined, { 
-      hour: '2-digit', 
+    return date.toLocaleTimeString(undefined, {
+      hour: '2-digit',
       minute: '2-digit',
-      hour12: true 
+      hour12: true
     });
   };
 
   const renderConversations = () => {
     let lastGroup = '';
-    
+
     return conversations.map((convo) => {
       const currentGroup = getRelativeDateGroup(convo.date);
       const showHeader = currentGroup !== lastGroup;
       lastGroup = currentGroup;
-      
+
       return (
         <React.Fragment key={convo.id}>
           {showHeader && (
@@ -147,22 +155,22 @@ const ChatHistory: React.FC = () => {
               <span>{currentGroup}</span>
             </div>
           )}
-          <div 
+          <div
             className="chat-history-list-item"
             onClick={() => handleConversationClick(convo.id)}
           >
-              <div className="chat-history-list-item-description">{convo.title}</div>
-              <div className="chat-history-list-item-date-section">
-                
-                <button 
-                  className="chat-history-delete-btn"
-                  onClick={(e) => handleDeleteConversation(e, convo.id)}
-                  title="Delete conversation"
-                >
-                  ×
-                </button>
-                <span className="chat-history-list-item-time">{formatTime(convo.date)}</span>
-              </div>
+            <div className="chat-history-list-item-description">{convo.title}</div>
+            <div className="chat-history-list-item-date-section">
+
+              <button
+                className="chat-history-delete-btn"
+                onClick={(e) => handleDeleteConversation(e, convo.id)}
+                title="Delete conversation"
+              >
+                ×
+              </button>
+              <span className="chat-history-list-item-time">{formatTime(convo.date)}</span>
+            </div>
           </div>
         </React.Fragment>
       );
@@ -171,29 +179,29 @@ const ChatHistory: React.FC = () => {
 
   return (
     <>
-      <TitleBar onClearContext={() => {}} setMini={setMini} />
-          <div className="chat-history-container">
-              <div className="chat-history-search-box-container">
-                  <form className='chat-history-search-box-form' onSubmit={(e) => e.preventDefault()}>
-                        <input 
-                          type="text" 
-                          placeholder="Search chat history..." 
-                          className="chat-history-search-box-input"
-                          value={searchQuery}
-                          onChange={(e) => handleSearchChange(e.target.value)}
-                        />
-                  </form>
-              </div>
-              <div className="chat-history-list-container">
-                {loading ? (
-                  <div className="chat-history-empty-state">Loading conversations...</div>
-                ) : conversations.length === 0 ? (
-                  <div className="chat-history-empty-state">
-                    {searchQuery ? 'No conversations match your search.' : 'No conversations yet. Start chatting!'}
-                  </div>
-                ) : renderConversations()}
-              </div>
-          </div>
+      <TitleBar onClearContext={() => { }} setMini={setMini} />
+      <div className="chat-history-container">
+        <div className="chat-history-search-box-container">
+          <form className='chat-history-search-box-form' onSubmit={(e) => e.preventDefault()}>
+            <input
+              type="text"
+              placeholder="Search chat history..."
+              className="chat-history-search-box-input"
+              value={searchQuery}
+              onChange={(e) => handleSearchChange(e.target.value)}
+            />
+          </form>
+        </div>
+        <div className="chat-history-list-container">
+          {loading ? (
+            <div className="chat-history-empty-state">Loading conversations...</div>
+          ) : conversations.length === 0 ? (
+            <div className="chat-history-empty-state">
+              {searchQuery ? 'No conversations match your search.' : 'No conversations yet. Start chatting!'}
+            </div>
+          ) : renderConversations()}
+        </div>
+      </div>
     </>
   );
 };

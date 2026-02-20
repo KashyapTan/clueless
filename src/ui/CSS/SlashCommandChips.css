@@ -1,0 +1,52 @@
+.slash-command-chips-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 8px;
+    padding: 0 4px;
+}
+
+.slash-command-chip {
+    display: inline-flex;
+    align-items: center;
+    background-color: rgba(59, 130, 246, 0.2);
+    border: 1px solid rgba(59, 130, 246, 0.4);
+    border-radius: 12px;
+    padding: 4px 8px 4px 10px;
+    font-size: 0.8rem;
+    color: #93c5fd;
+    transition: all 0.2s ease;
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+}
+
+.slash-command-chip:hover {
+    background-color: rgba(59, 130, 246, 0.3);
+    border-color: rgba(59, 130, 246, 0.6);
+}
+
+.chip-text {
+    font-family: 'Fira Code', monospace;
+    font-weight: 500;
+    margin-right: 6px;
+}
+
+.chip-remove-btn {
+    background: none;
+    border: none;
+    padding: 2px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #93c5fd;
+    cursor: pointer;
+    border-radius: 50%;
+    transition: all 0.2s ease;
+    opacity: 0.7;
+}
+
+.chip-remove-btn:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+    color: #fff;
+    opacity: 1;
+}

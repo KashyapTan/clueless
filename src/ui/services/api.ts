@@ -373,4 +373,54 @@ export const api = {
     });
     if (!res.ok) throw new Error('Failed to save system prompt');
   },
+
+  // ============================================
+  // Skills API
+  // ============================================
+
+  skillsApi: {
+    async getAll(): Promise<any[]> {
+      const res = await fetch(`${HTTP_BASE_URL}/api/skills`);
+      if (!res.ok) throw new Error('Failed to fetch skills');
+      return res.json();
+    },
+
+    async create(skill: { skill_name: string; display_name: string; slash_command: string; content: string; enabled: boolean }): Promise<void> {
+      const res = await fetch(`${HTTP_BASE_URL}/api/skills`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(skill),
+      });
+      if (!res.ok) {
+        const error = await res.json().catch(() => ({ detail: 'Failed to create skill' }));
+        throw new Error(error.detail || 'Failed to create skill');
+      }
+    },
+
+    async update(skillName: string, update: { display_name: string; slash_command: string; content: string; enabled: boolean }): Promise<void> {
+      const res = await fetch(`${HTTP_BASE_URL}/api/skills/${skillName}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(update),
+      });
+      if (!res.ok) {
+        const error = await res.json().catch(() => ({ detail: 'Failed to update skill' }));
+        throw new Error(error.detail || 'Failed to update skill');
+      }
+    },
+
+    async delete(skillName: string): Promise<void> {
+      const res = await fetch(`${HTTP_BASE_URL}/api/skills/${skillName}`, {
+        method: 'DELETE',
+      });
+      if (!res.ok) throw new Error('Failed to delete skill');
+    },
+
+    async reset(skillName: string): Promise<void> {
+      const res = await fetch(`${HTTP_BASE_URL}/api/skills/${skillName}/reset`, {
+        method: 'POST',
+      });
+      if (!res.ok) throw new Error('Failed to reset skill');
+    },
+  }
 };

@@ -624,3 +624,115 @@ async def update_system_prompt(body: SystemPromptUpdate):
     db.set_system_prompt_template(template if template else None)
     return {"ok": True}
 
+
+# ============================================
+# Skills API
+# ============================================
+
+
+class SkillCreate(BaseModel):
+    skill_name: str
+    display_name: str
+    slash_command: str
+    content: str
+    enabled: bool = True
+
+
+class SkillUpdate(BaseModel):
+    display_name: str
+    slash_command: str
+    content: str
+    enabled: bool
+
+
+@router.get("/skills")
+async def get_skills():
+    """Get all skills from the database."""
+    from ..database import db
+    return db.get_all_skills()
+
+
+@router.post("/skills")
+async def create_skill(body: SkillCreate):
+    """Create a new user-defined skill."""
+    from ..database import db
+    
+    # Validation
+    if not body.skill_name or not body.slash_command:
+        raise HTTPException(status_code=400, detail="Name and slash command are required")
+        
+    if db.get_skill_by_name(body.skill_name):
+        raise HTTPException(status_code=400, detail=f"Skill name '{body.skill_name}' already exists")
+        
+    if db.get_skill_by_slash_command(body.slash_command):
+        raise HTTPException(status_code=400, detail=f"Slash command '{body.slash_command}' already exists")
+
+    db.upsert_skill(
+        skill_name=body.skill_name,
+        display_name=body.display_name,
+        slash_command=body.slash_command,
+        content=body.content,
+        is_default=False,
+        enabled=body.enabled,
+    )
+    return {"status": "created", "skill_name": body.skill_name}
+
+
+@router.put("/skills/{skill_name}")
+async def update_skill(skill_name: str, body: SkillUpdate):
+    """Update an existing skill."""
+    from ..database import db
+    
+    skill = db.get_skill_by_name(skill_name)
+    if not skill:
+        raise HTTPException(status_code=404, detail="Skill not found")
+
+    # Check command uniqueness if changed
+    if body.slash_command != skill["slash_command"]:
+        existing = db.get_skill_by_slash_command(body.slash_command)
+        if existing and existing["skill_name"] != skill_name:
+             raise HTTPException(status_code=400, detail=f"Slash command '{body.slash_command}' already in use")
+
+    db.upsert_skill(
+        skill_name=skill_name,
+        display_name=body.display_name,
+        slash_command=body.slash_command,
+        content=body.content,
+        is_default=skill["is_default"],
+        enabled=body.enabled,
+    )
+    
+    # If content changed from original on a default skill, mark it updated via explicit method
+    if skill["is_default"] and body.content != skill["content"]:
+        db.update_skill_content(skill_name, body.content)
+        
+    return {"status": "updated"}
+
+
+@router.delete("/skills/{skill_name}")
+async def delete_skill(skill_name: str):
+    """Delete a user-created skill."""
+    from ..database import db
+    
+    success = db.delete_skill(skill_name)
+    if not success:
+        raise HTTPException(status_code=400, detail="Cannot delete default skill or skill not found")
+        
+    return {"status": "deleted"}
+
+
+@router.post("/skills/{skill_name}/reset")
+async def reset_skill(skill_name: str):
+    """Reset a default skill to its original content."""
+    from ..database import db
+    
+    skill = db.get_skill_by_name(skill_name)
+    if not skill:
+        raise HTTPException(status_code=404, detail="Skill not found")
+        
+    if not skill["is_default"]:
+         raise HTTPException(status_code=400, detail="Only default skills can be reset")
+         
+    db.reset_skill_to_default(skill_name)
+    return {"status": "reset"}
+

@@ -31,6 +31,7 @@ async def route_chat(
     user_query: str,
     image_paths: List[str],
     chat_history: List[Dict[str, Any]],
+    forced_skills: List[Dict[str, Any]] | None = None,
 ) -> tuple[str, Dict[str, int], List[Dict[str, Any]]]:
     """
     Route a chat request to the correct LLM provider.
@@ -45,9 +46,26 @@ async def route_chat(
 
     from ..database import db
     from .prompt import build_system_prompt
+    from ..mcp_integration.skill_injector import get_skills_to_inject, build_skills_prompt_block
+    from ..mcp_integration.manager import mcp_manager
+
+    # Build skills block for system prompt
+    # For now, pass empty retrieved_tools — auto-detection happens based on
+    # whatever tools the retriever selects. We'll pass the actual filtered
+    # tools once available, but forced_skills from slash commands work immediately.
+    skills_to_inject = get_skills_to_inject(
+        retrieved_tools=[],
+        forced_skills=forced_skills or [],
+        db=db,
+        mcp_manager=mcp_manager,
+    )
+    skills_block = build_skills_prompt_block(skills_to_inject)
+
+    if skills_to_inject:
+        print(f"[Skills] Injecting {len(skills_to_inject)} skill(s): {[s['skill_name'] for s in skills_to_inject]}")
 
     custom_template = db.get_setting("system_prompt_template")
-    system_prompt = build_system_prompt(template=custom_template)
+    system_prompt = build_system_prompt(skills_block=skills_block, template=custom_template)
 
     if provider == "ollama":
         # Use existing Ollama pipeline (MCP tool handling is built-in)

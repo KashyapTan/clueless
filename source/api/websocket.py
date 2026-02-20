@@ -79,7 +79,19 @@ async def websocket_endpoint(websocket: WebSocket):
             except Exception:
                 continue  # Ignore malformed messages
             
-            await handler.handle(data)
+            try:
+                await handler.handle(data)
+            except Exception as e:
+                print(f"[WS] Error handling message type '{data.get('type')}': {e}")
+                import traceback
+                traceback.print_exc()
+                try:
+                    await websocket.send_text(json.dumps({
+                        "type": "error",
+                        "content": f"Internal error: {str(e)[:200]}"
+                    }))
+                except Exception:
+                    pass
             
     except WebSocketDisconnect:
         manager.disconnect(websocket)

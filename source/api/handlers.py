@@ -12,6 +12,40 @@ from ..core.state import app_state
 from ..services.conversations import ConversationService
 from ..services.screenshots import ScreenshotHandler
 from ..services.terminal import terminal_service
+from ..database import db
+
+
+def extract_skill_slash_commands(message: str) -> tuple[list[dict], str]:
+    """
+    Extract slash commands from a user message and match to skills.
+
+    Returns (matched_skills, cleaned_message).
+    Removes matched slash commands from the message text.
+    If a slash command is recognized but the skill is disabled, strip it
+    from the message silently and skip injection.
+    """
+    all_skills = db.get_all_skills()
+    slash_map = {s["slash_command"]: s for s in all_skills}
+
+    tokens = message.split()
+    matched_skills = []
+    remaining_tokens = []
+
+    for token in tokens:
+        if token.startswith("/"):
+            cmd = token[1:].lower()
+            if cmd in slash_map:
+                skill = slash_map[cmd]
+                if skill["enabled"]:
+                    matched_skills.append(skill)
+                # disabled skill: strip from message, skip injection silently
+            else:
+                remaining_tokens.append(token)  # unknown slash command, leave it
+        else:
+            remaining_tokens.append(token)
+
+    cleaned_message = " ".join(remaining_tokens)
+    return matched_skills, cleaned_message
 
 
 class MessageHandler:
@@ -51,8 +85,21 @@ class MessageHandler:
             )
             return
 
-        # Run as background task
-        asyncio.create_task(ConversationService.submit_query(query_text, capture_mode))
+        # Parse slash commands from the query text
+        forced_skills, cleaned_query = extract_skill_slash_commands(query_text)
+
+        if forced_skills:
+            print(f"[Skills] Slash commands matched: {[s['skill_name'] for s in forced_skills]}")
+
+        # Use cleaned query (slash commands stripped) for the LLM only
+        llm_query = cleaned_query.strip() if cleaned_query.strip() else query_text
+
+        # Run as background task — pass original text for display/save, cleaned for LLM
+        asyncio.create_task(
+            ConversationService.submit_query(
+                query_text, capture_mode, forced_skills, llm_query=llm_query
+            )
+        )
 
     async def _handle_clear_context(self, data: Dict[str, Any]):
         """Handle context clearing."""

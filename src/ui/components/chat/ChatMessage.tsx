@@ -3,7 +3,6 @@
  * 
  * Renders a single chat message (user or assistant).
  */
-import React from 'react';
 import ReactMarkdown from 'react-markdown';
 import { CodeBlock } from './CodeBlock';
 import { ToolCallsDisplay } from './ToolCallsDisplay';
@@ -15,31 +14,36 @@ interface ChatMessageProps {
 }
 
 export function ChatMessage({ message, selectedModel }: ChatMessageProps) {
-  if (message.role === 'user') {
-    return (
-      <div className="chat-user">
-        <div className="query">
-          <p>{message.content}</p>
-          {message.images && message.images.length > 0 && (
-            <MessageImages images={message.images} />
+  return (
+    <div className={message.role === 'user' ? 'chat-user' : 'chat-assistant'}>
+      <div className={message.role === 'user' ? 'query' : 'response'}>
+        {message.role === 'assistant' && (
+          <div className="assistant-header">Clueless • {message.model || selectedModel}</div>
+        )}
+        {message.toolCalls && <ToolCallsDisplay toolCalls={message.toolCalls} />}
+        <div className="message-content">
+          {message.role === 'user' ? (
+            <div className="user-text">
+              {message.content.split(/(\/\w+)/g).map((part, i) => {
+                if (part.startsWith('/') && part.match(/^\/\w+$/)) {
+                  return <code key={i} className="slash-command-history">{part}</code>;
+                }
+                return part;
+              })}
+            </div>
+          ) : (
+            <ReactMarkdown
+              components={{
+                code: CodeBlock as any,
+              }}
+            >
+              {message.content}
+            </ReactMarkdown>
           )}
         </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="chat-assistant">
-      <div className="response">
-        <div className="assistant-header">Clueless • {message.model || selectedModel}</div>
-        {message.toolCalls && <ToolCallsDisplay toolCalls={message.toolCalls} />}
-        <ReactMarkdown
-          components={{
-            code: CodeBlock as React.ComponentType<React.ComponentPropsWithRef<'code'>>,
-          }}
-        >
-          {message.content}
-        </ReactMarkdown>
+        {message.images && message.images.length > 0 && (
+          <MessageImages images={message.images as any} />
+        )}
       </div>
     </div>
   );

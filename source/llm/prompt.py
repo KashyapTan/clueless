@@ -42,14 +42,10 @@ def _get_datetime() -> str:
     now = datetime.now().astimezone()
     # Cross-platform: build format manually to avoid %-d issues on Windows
     day = str(now.day)       # no zero-padding
-    hour = now.hour % 12 or 12
-    minute = now.strftime("%M")
-    ampm = "AM" if now.hour < 12 else "PM"
-    tz = now.strftime("%Z")
     weekday = now.strftime("%A")
     month = now.strftime("%B")
     year = now.strftime("%Y")
-    return f"{weekday}, {month} {day} {year}, {hour}:{minute} {ampm} {tz}"
+    return f"{weekday}, {month} {day} {year}"
 
 
 def _get_os_info() -> str:

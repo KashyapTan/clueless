@@ -186,6 +186,10 @@ const SettingsModels: React.FC = () => {
   // --------------------------------------------------
   return (
     <div className="settings-models-section">
+      <div className="settings-models-header">
+        <h2>Models</h2>
+        <p>Enable or disable models for your workspace.</p>
+      </div>
       <div className="settings-models-ollama-section">
         {/* ====== OLLAMA SECTION ====== */}
         <div className="settings-models-ollama-header">Ollama</div>

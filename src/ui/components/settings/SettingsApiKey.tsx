@@ -102,7 +102,10 @@ const SettingsApiKey: React.FC<SettingsApiKeyProps> = ({ provider }) => {
 
   return (
     <div className="settings-apikey-section">
-      <div className="settings-apikey-header">{providerLabel} API Key</div>
+      <div className="settings-apikey-header">
+        <h2>{providerLabel} API Key</h2>
+        <p>Manage your {providerLabel} API key connection.</p>
+      </div>
 
       <div className="settings-apikey-content">
         {hasKey ? (

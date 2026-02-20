@@ -25,7 +25,7 @@
     margin-top: 10px;
 }
 .settings-models, .settings-mcp-connections, .settings-ollama-model,
-.settings-anthropic-api-key, .settings-gemini-api-key, .settings-openai-api-key, .settings-tools{
+.settings-anthropic-api-key, .settings-gemini-api-key, .settings-openai-api-key, .settings-tools, .settings-system-prompt-tab{
     width: 130px;
     height: 30px;
     /* background-color: lightcoral; */
@@ -37,7 +37,7 @@
     gap: 5px;
 }
 .settings-models:hover, .settings-mcp-connections:hover, .settings-ollama-model:hover,
-.settings-anthropic-api-key:hover, .settings-gemini-api-key:hover, .settings-openai-api-key:hover, .settings-tools:hover{
+.settings-anthropic-api-key:hover, .settings-gemini-api-key:hover, .settings-openai-api-key:hover, .settings-tools:hover, .settings-system-prompt-tab:hover{
     cursor: pointer;
     transition: background-color 0.2s ease-in-out;
     background-color: rgba(255, 255, 255, 0.1);

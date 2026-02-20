@@ -1,0 +1,97 @@
+"""
+source/llm/prompt.py
+Builds the Clueless system prompt before each LLM call.
+Interpolated at request time — never hardcoded or cached.
+"""
+
+import platform
+from datetime import datetime
+from pathlib import Path
+
+
+_BASE_TEMPLATE = """\
+You are Clueless, a powerful desktop AI assistant and task automation tool.
+You make your users more productive and efficient.
+You help users do their work and tasks faster and better.
+Today is {{current_datetime}}. The user is on {{os_info}}.
+
+<capabilities>
+You can see the user's screen via screenshots, hear their voice,
+browse the web, read/write files, run terminal commands,
+and access Gmail and Google Calendar.
+</capabilities>
+
+<tool_philosophy>
+Dont overthink or over-engineer solutions.
+Always try to read more than less before writing.
+Always explain terminal commands before running them.
+Ask for confirmation before any destructive or irreversible action.
+</tool_philosophy>
+
+<behavior>
+Be conversational with the user, understand their intent and dont be afraid to add your own insights and suggestions.
+If unsure what the user wants, ask clarifying questions.
+Admit uncertainty rather than guessing.
+Prefer showing work inline over long preambles.
+</behavior>
+{{skills_block}}\
+"""
+
+
+def _get_datetime() -> str:
+    now = datetime.now().astimezone()
+    # Cross-platform: build format manually to avoid %-d issues on Windows
+    day = str(now.day)       # no zero-padding
+    hour = now.hour % 12 or 12
+    minute = now.strftime("%M")
+    ampm = "AM" if now.hour < 12 else "PM"
+    tz = now.strftime("%Z")
+    weekday = now.strftime("%A")
+    month = now.strftime("%B")
+    year = now.strftime("%Y")
+    return f"{weekday}, {month} {day} {year}, {hour}:{minute} {ampm} {tz}"
+
+
+def _get_os_info() -> str:
+    system = platform.system()
+    machine = platform.machine()
+    try:
+        home = str(Path.home())
+    except Exception:
+        home = "unknown"
+
+    if system == "Windows":
+        # platform.release() gives build number on Windows; version() is cleaner
+        version = platform.version()
+        return f"Windows {version} ({machine}), home: {home}"
+    elif system == "Darwin":
+        release = platform.mac_ver()[0]
+        return f"macOS {release} ({machine}), home: {home}"
+    else:
+        release = platform.release()
+        return f"Linux {release} ({machine}), home: {home}"
+
+
+def build_system_prompt(skills_block: str = "", template: str | None = None) -> str:
+    """
+    Assemble the Clueless system prompt, interpolated fresh at each call.
+
+    Args:
+        skills_block: Dynamic behavioral guidance from the skills system.
+                      Pass empty string (default) until that feature is built.
+                      If non-empty, must begin with a newline character so it
+                      appends cleanly after the last <behavior> section.
+        template:     Optional custom template string loaded from the database.
+                      If None or empty, falls back to _BASE_TEMPLATE.
+                      Must contain {{current_datetime}}, {{os_info}}, and
+                      {{skills_block}} placeholders to behave correctly.
+
+    Returns:
+        Fully interpolated system prompt string ready to pass to any provider.
+    """
+    base = template if template and template.strip() else _BASE_TEMPLATE
+    prompt = base
+    prompt = prompt.replace("{{current_datetime}}", _get_datetime())
+    prompt = prompt.replace("{{os_info}}", _get_os_info())
+    prompt = prompt.replace("{{skills_block}}", skills_block)
+    return prompt

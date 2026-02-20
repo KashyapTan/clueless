@@ -431,6 +431,23 @@ class DatabaseManager:
         connection.commit()
         connection.close()
 
+    def get_system_prompt_template(self) -> str | None:
+        """
+        Returns the user-saved system prompt template, or None if not set.
+        Caller should fall back to the hardcoded default when None is returned.
+        """
+        return self.get_setting("system_prompt_template")
+
+    def set_system_prompt_template(self, template: str | None) -> None:
+        """
+        Saves a custom system prompt template. Pass None or empty string to
+        clear the custom value and restore the hardcoded default.
+        """
+        if not template or not template.strip():
+            self.delete_setting("system_prompt_template")
+        else:
+            self.set_setting("system_prompt_template", template)
+
     # ---------------------------------------------------------
     # TERMINAL EVENT OPERATIONS
     # ---------------------------------------------------------

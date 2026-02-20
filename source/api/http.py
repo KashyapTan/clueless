@@ -588,3 +588,39 @@ async def set_tools_settings(body: ToolsSettingsUpdate):
     db.set_setting("tool_retriever_top_k", str(body.top_k))
 
     return {"status": "updated", "settings": body.dict()}
+
+
+# ============================================
+# System Prompt API
+# ============================================
+
+
+class SystemPromptUpdate(BaseModel):
+    template: str
+
+
+@router.get("/settings/system-prompt")
+async def get_system_prompt():
+    """Returns the current custom template, or the default if none is saved."""
+    from ..database import db
+    from ..llm.prompt import _BASE_TEMPLATE
+
+    custom = db.get_system_prompt_template()
+    return {
+        "template": custom if custom else _BASE_TEMPLATE,
+        "is_custom": custom is not None,
+    }
+
+
+@router.put("/settings/system-prompt")
+async def update_system_prompt(body: SystemPromptUpdate):
+    """
+    Saves a custom template. Expects: {"template": "..."}
+    Send an empty string or omit the key to reset to the default.
+    """
+    from ..database import db
+
+    template = body.template.strip()
+    db.set_system_prompt_template(template if template else None)
+    return {"ok": True}
+

@@ -46,7 +46,7 @@ def _build_messages(
 
 
 async def stream_ollama_chat(
-    user_query: str, image_paths: List[str], chat_history: List[Dict[str, Any]]
+    user_query: str, image_paths: List[str], chat_history: List[Dict[str, Any]], system_prompt: str = ""
 ) -> tuple[str, Dict[str, int], List[Dict[str, Any]]]:
     """
     Stream Ollama response without blocking the event loop.
@@ -67,6 +67,8 @@ async def stream_ollama_chat(
 
     # Build messages
     messages = _build_messages(chat_history, user_query, image_paths)
+    if system_prompt:
+        messages.insert(0, {"role": "system", "content": system_prompt})
 
     # ── MCP Tool Calling Phase (runs on the event loop, not in producer thread) ──
     tool_calls_list: List[Dict[str, Any]] = []

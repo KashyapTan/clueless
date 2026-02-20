@@ -117,6 +117,7 @@ async def _stream_anthropic(
     image_paths: List[str],
     chat_history: List[Dict[str, Any]],
     tools: Optional[List[Dict]] = None,
+    system_prompt: str = "",
 ) -> tuple[str, Dict[str, int], List[Dict[str, Any]]]:
     """Stream a response from Anthropic's Claude API using native async streaming."""
     import anthropic
@@ -135,6 +136,8 @@ async def _stream_anthropic(
             "max_tokens": 16384,
             "messages": messages,
         }
+        if system_prompt:
+            create_kwargs["system"] = system_prompt
 
         # Add thinking support for extended-thinking capable models
         is_thinking_model = any(kw in model for kw in ("opus", "sonnet"))
@@ -263,11 +266,14 @@ async def _stream_openai(
     image_paths: List[str],
     chat_history: List[Dict[str, Any]],
     tools: Optional[List[Dict]] = None,
+    system_prompt: str = "",
 ) -> tuple[str, Dict[str, int], List[Dict[str, Any]]]:
     """Stream a response from OpenAI's API using native async streaming."""
     from openai import AsyncOpenAI
 
     messages = _build_openai_messages(chat_history, user_query, image_paths)
+    if system_prompt:
+        messages.insert(0, {"role": "system", "content": system_prompt})
     tool_calls_list: List[Dict[str, Any]] = []
     accumulated: list[str] = []
     thinking_tokens: list[str] = []
@@ -413,6 +419,7 @@ async def _stream_gemini(
     image_paths: List[str],
     chat_history: List[Dict[str, Any]],
     tools: Optional[List[Dict]] = None,
+    system_prompt: str = "",
 ) -> tuple[str, Dict[str, int], List[Dict[str, Any]]]:
     """Stream a response from Google's Gemini API using native async streaming."""
     from google import genai
@@ -428,6 +435,8 @@ async def _stream_gemini(
         client = genai.Client(api_key=api_key)
 
         config_kwargs: Dict[str, Any] = {}
+        if system_prompt:
+            config_kwargs["system_instruction"] = system_prompt
 
         # Enable thinking for capable models
         is_thinking_model = "thinking" in model or "2.5" in model
@@ -517,6 +526,7 @@ async def stream_cloud_chat(
     image_paths: List[str],
     chat_history: List[Dict[str, Any]],
     tools: Optional[List[Dict]] = None,
+    system_prompt: str = "",
 ) -> tuple[str, Dict[str, int], List[Dict[str, Any]]]:
     """
     Stream a response from a cloud LLM provider.
@@ -528,15 +538,15 @@ async def stream_cloud_chat(
     """
     if provider == "anthropic":
         return await _stream_anthropic(
-            api_key, model, user_query, image_paths, chat_history, tools
+            api_key, model, user_query, image_paths, chat_history, tools, system_prompt
         )
     elif provider == "openai":
         return await _stream_openai(
-            api_key, model, user_query, image_paths, chat_history, tools
+            api_key, model, user_query, image_paths, chat_history, tools, system_prompt
         )
     elif provider == "gemini":
         return await _stream_gemini(
-            api_key, model, user_query, image_paths, chat_history, tools
+            api_key, model, user_query, image_paths, chat_history, tools, system_prompt
         )
     else:
         raise ValueError(f"Unknown cloud provider: {provider}")

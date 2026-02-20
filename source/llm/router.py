@@ -43,11 +43,17 @@ async def route_chat(
     """
     provider, model = parse_provider(model_name)
 
+    from ..database import db
+    from .prompt import build_system_prompt
+
+    custom_template = db.get_setting("system_prompt_template")
+    system_prompt = build_system_prompt(template=custom_template)
+
     if provider == "ollama":
         # Use existing Ollama pipeline (MCP tool handling is built-in)
         from .ollama_provider import stream_ollama_chat
 
-        return await stream_ollama_chat(user_query, image_paths, chat_history)
+        return await stream_ollama_chat(user_query, image_paths, chat_history, system_prompt)
 
     # Cloud provider path
     from .key_manager import key_manager
@@ -108,6 +114,7 @@ async def route_chat(
             f"Based on the tool results above, answer the original query: {user_query}",
             image_paths,
             updated_history,
+            system_prompt=system_prompt,
         )
     else:
         # No tools needed — straight streaming
@@ -118,6 +125,7 @@ async def route_chat(
             user_query,
             image_paths,
             chat_history,
+            system_prompt=system_prompt,
         )
 
     return response_text, token_stats, tool_calls_list

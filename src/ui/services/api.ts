@@ -60,7 +60,7 @@ export interface ApiService {
   searchConversations: (query: string) => void;
   resumeConversation: (conversationId: string) => void;
   deleteConversation: (conversationId: string) => void;
-  
+
   // HTTP methods (examples for future use)
   // getModels: () => Promise<string[]>;
   // getHealth: () => Promise<{ status: string }>;
@@ -123,59 +123,14 @@ export function createApiService(send: (message: Record<string, unknown>) => voi
     //   if (!response.ok) throw new Error('Health check failed');
     //   return response.json();
     // },
-  // ============================================
-  // MCP Tools
-  // ============================================
-
-  /**
-   * Get connected MCP servers and their tools.
-   */
-  async getMcpServers(): Promise<{ server: string; tools: string[] }[]> {
-    try {
-      const response = await fetch(`${HTTP_BASE_URL}/api/mcp/servers`);
-      if (!response.ok) throw new Error('Failed to fetch MCP servers');
-      return response.json();
-    } catch {
-      return [];
-    }
-  },
-
-  /**
-   * Get tool retrieval settings (always_on, top_k).
-   */
-  async getToolsSettings(): Promise<{ always_on: string[]; top_k: number }> {
-    try {
-      const response = await fetch(`${HTTP_BASE_URL}/api/settings/tools`);
-      if (!response.ok) throw new Error('Failed to fetch tool settings');
-      return response.json();
-    } catch {
-      return { always_on: [], top_k: 5 };
-    }
-  },
-
-  /**
-   * Update tool retrieval settings.
-   */
-  async setToolsSettings(alwaysOn: string[], topK: number): Promise<void> {
-    try {
-      await fetch(`${HTTP_BASE_URL}/api/settings/tools`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ always_on: alwaysOn, top_k: topK }),
-      });
-    } catch {
-      console.error('Failed to save tool settings');
-    }
-  },
-};
-
+  };
 }
 
 // Singleton for direct imports (when WebSocket context is not needed)
 export const api = {
   HTTP_BASE_URL,
   WS_BASE_URL,
-  
+
   /**
    * Fetch all Ollama models installed on the user's machine.
    * Calls GET /api/models/ollama on the Python backend,
@@ -392,5 +347,30 @@ export const api = {
     } catch {
       console.error('Failed to save tool settings');
     }
+  },
+
+  // ============================================
+  // System Prompt
+  // ============================================
+
+  /**
+   * Get the custom system prompt template.
+   */
+  async getSystemPrompt(): Promise<{ template: string; is_custom: boolean }> {
+    const res = await fetch(`${HTTP_BASE_URL}/api/settings/system-prompt`);
+    if (!res.ok) throw new Error('Failed to fetch system prompt');
+    return res.json();
+  },
+
+  /**
+   * Save a custom system prompt template.
+   */
+  async setSystemPrompt(template: string): Promise<void> {
+    const res = await fetch(`${HTTP_BASE_URL}/api/settings/system-prompt`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ template }),
+    });
+    if (!res.ok) throw new Error('Failed to save system prompt');
   },
 };

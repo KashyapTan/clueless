@@ -1,14 +1,14 @@
-# Contributing to Clueless
+# Contributing to Xpdite
 
-Thank you for your interest in contributing to Clueless. This document outlines the process for contributing and our expectations.
+Thank you for your interest in contributing to Xpdite. This document outlines the process for contributing and our expectations.
 
 ## Getting Started
 
 1. Fork the repository on GitHub
 2. Clone your fork locally:
    ```bash
-   git clone https://github.com/your-username/clueless.git
-   cd clueless
+   git clone https://github.com/your-username/xpdite.git
+   cd xpdite
    ```
 3. Install dependencies:
    ```bash

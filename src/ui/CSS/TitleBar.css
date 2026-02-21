@@ -39,7 +39,7 @@
   user-select: none;
 }
 
-.clueless-logo-holder {
+.xpdite-logo-holder {
   width: 30px;
   height: 100%;
   display: flex;
@@ -50,7 +50,7 @@
   user-select: none;
 }
 
-.clueless-logo {
+.xpdite-logo {
   height: 22px;
   width: auto;
   -webkit-user-select: none;

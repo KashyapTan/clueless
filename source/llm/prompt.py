@@ -1,6 +1,6 @@
 """
 source/llm/prompt.py
-Builds the Clueless system prompt before each LLM call.
+Builds the Xpdite system prompt before each LLM call.
 Interpolated at request time — never hardcoded or cached.
 """
 
@@ -10,7 +10,7 @@ from pathlib import Path
 
 
 _BASE_TEMPLATE = """\
-You are Clueless, a powerful desktop AI assistant and task automation tool.
+You are Xpdite, a powerful desktop AI assistant and task automation tool.
 You make your users more productive and efficient.
 You help users do their work and tasks faster and better.
 Today is {{current_datetime}}. The user is on {{os_info}}.
@@ -70,7 +70,7 @@ def _get_os_info() -> str:
 
 def build_system_prompt(skills_block: str = "", template: str | None = None) -> str:
     """
-    Assemble the Clueless system prompt, interpolated fresh at each call.
+    Assemble the Xpdite system prompt, interpolated fresh at each call.
 
     Args:
         skills_block: Dynamic behavioral guidance from the skills system.

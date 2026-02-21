@@ -1,5 +1,5 @@
 """
-Clueless Application Entry Point.
+Xpdite Application Entry Point.
 
 This is the main entry point for the Python backend server.
 It initializes all services and starts the FastAPI server.
@@ -149,7 +149,7 @@ def main():
     register_signal_handlers()
 
     print("=" * 50)
-    print("  CLUELESS - AI Desktop Assistant")
+    print("  XPDITE - AI Desktop Assistant")
     print("=" * 50)
     print()
     print("Starting services...")

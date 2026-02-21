@@ -91,7 +91,7 @@ const SettingsTools: React.FC = () => {
     <div className="settings-tools-container">
       <div className="settings-tools-header">
         <h2>Tool Retrieval</h2>
-        <p>Configure how tools are selected for Clueless to use.</p>
+        <p>Configure how tools are selected for Xpdite to use.</p>
       </div>
 
       <div className="settings-tools-section">

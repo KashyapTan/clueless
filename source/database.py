@@ -7,7 +7,7 @@ import os
 
 
 class DatabaseManager:
-    def __init__(self, database_path="user_data/clueless_app.db"):
+    def __init__(self, database_path="user_data/xpdite_app.db"):
         """
         Initialize the database manager.
         We use a specific file path so the data persists between app restarts.

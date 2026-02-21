@@ -1,5 +1,5 @@
 [project]
-name = "clueless"
+name = "xpdite"
 version = "0.1.0"
 description = "AI-powered desktop assistant with Electron, React, and Python"
 readme = "README.md"

@@ -1,5 +1,5 @@
 /**
- * Type definitions for the Clueless application.
+ * Type definitions for the Xpdite application.
  */
 
 // ============================================

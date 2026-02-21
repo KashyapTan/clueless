@@ -1,14 +1,14 @@
 <div align="center">
-  <a href="https://github.com/KashyapTan/clueless">
-    <img alt="clueless" width="240" src="./assets/clueless-logo-github-color.png">
+  <a href="https://github.com/KashyapTan/xpdite">
+    <img alt="xpdite" width="240" src="./assets/xpdite-logo-github-color.png">
   </a>
 </div>
-<h3 align="center">Answers for anything on your screen with Clueless.</h3>
+<h3 align="center">Answers for anything on your screen with Xpdite.</h3>
 <h4 align="center">| Free | Easy | Fast | Private |</h4>
 
 ---
 
-# Clueless
+# Xpdite
 
 A free, private, AI-powered desktop assistant that sees your screen. Take screenshots of anything, ask questions in natural language, and get instant answers -- all running locally on your machine with Ollama.
 
@@ -39,18 +39,18 @@ A free, private, AI-powered desktop assistant that sees your screen. Take screen
 ### Quick Install
 
 <div>
-  <a href="https://github.com/KashyapTan/clueless/releases/latest/download/CluelessSetup.exe">
-    <img src="https://img.shields.io/badge/Download Clueless-blue?style=for-the-badge&logo=windows&logoColor=white" alt="Download Clueless Setup">
+  <a href="https://github.com/KashyapTan/xpdite/releases/latest/download/XpditeSetup.exe">
+    <img src="https://img.shields.io/badge/Download Xpdite-blue?style=for-the-badge&logo=windows&logoColor=white" alt="Download Xpdite Setup">
   </a>
 </div>
 
-**Alternative:** Download from the [Releases](https://github.com/KashyapTan/clueless/releases) page
+**Alternative:** Download from the [Releases](https://github.com/KashyapTan/xpdite/releases) page
 
 > **Windows Security Notice:** You may see a SmartScreen warning because the app is not yet code-signed. Click "More info" then "Run anyway".
 
 ### Usage
 
-1. Launch Clueless
+1. Launch Xpdite
 2. Take a screenshot with `Alt + .` (period)
 3. Type a question or just press Enter
 4. Get streaming AI responses in real-time
@@ -60,7 +60,7 @@ A free, private, AI-powered desktop assistant that sees your screen. Take screen
 ### Video Demo
 
 <div align="center">
-  <img src="./assets/clueless-demo.gif" alt="Clueless Demo - Animated Preview" width="720">
+  <img src="./assets/xpdite-demo.gif" alt="Xpdite Demo - Animated Preview" width="720">
 </div>
 
 <div>
@@ -104,7 +104,7 @@ Electron (Desktop Shell)
 
 ## MCP Tools
 
-Clueless uses the [Model Context Protocol](https://modelcontextprotocol.io/) to give the AI access to external tools:
+Xpdite uses the [Model Context Protocol](https://modelcontextprotocol.io/) to give the AI access to external tools:
 
 | Server | Tools | Status |
 |--------|-------|--------|
@@ -122,8 +122,8 @@ Adding new tools is straightforward -- see the [MCP Guide](./docs/mcp-guide.md).
 
 ```bash
 # Clone and install
-git clone https://github.com/KashyapTan/clueless.git
-cd clueless
+git clone https://github.com/KashyapTan/xpdite.git
+cd xpdite
 npm install
 uv sync --group dev
 
@@ -166,7 +166,7 @@ docs/                 # Documentation
 
 ## What's Changed (v0.1.0)
 
-Since the initial release, Clueless has been significantly refactored:
+Since the initial release, Xpdite has been significantly refactored:
 
 - **Complete backend refactor** -- Modular architecture with separated concerns (api/, core/, services/, llm/, mcp_integration/)
 - **Model selection** -- Switch between any installed Ollama model from the Settings UI

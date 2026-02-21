@@ -138,7 +138,7 @@ const SettingsSkills: React.FC = () => {
             <div className="settings-skills-header">
                 <div>
                     <h2>Skills</h2>
-                    <p>Behavioral rules injected into Clueless's prompt when certain tools are used or slash commands are typed.</p>
+                    <p>Behavioral rules injected into Xpdite's prompt when certain tools are used or slash commands are typed.</p>
                 </div>
                 {(!isCreating && !editingSkill) && (
                     <button className="create-skill-btn" onClick={() => startEdit(null)}>

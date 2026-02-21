@@ -1,4 +1,4 @@
-# Connecting MCP Tools to Your Clueless Chat App
+# Connecting MCP Tools to Your Xpdite Chat App
 
 ## How it Works (Quick Summary)
 

@@ -541,14 +541,14 @@ function App() {
         : "Ask a follow-up question...";
     }
     if (screenshotState.captureMode === 'fullscreen') {
-      return "Ask Clueless anything on your screen...";
+      return "Ask Xpdite anything on your screen...";
     }
     if (screenshotState.captureMode === 'precision') {
       return screenshotState.screenshots.length > 0
         ? "Ask about the screenshot(s)..."
-        : "Ask Clueless about a region on your screen (Alt+.)";
+        : "Ask Xpdite about a region on your screen (Alt+.)";
     }
-    return "Ask Clueless anything...";
+    return "Ask Xpdite anything...";
   };
 
   const handleMicClick = () => {

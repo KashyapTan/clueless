@@ -18,7 +18,7 @@ export function ChatMessage({ message, selectedModel }: ChatMessageProps) {
     <div className={message.role === 'user' ? 'chat-user' : 'chat-assistant'}>
       <div className={message.role === 'user' ? 'query' : 'response'}>
         {message.role === 'assistant' && (
-          <div className="assistant-header">Clueless • {message.model || selectedModel}</div>
+          <div className="assistant-header">Xpdite • {message.model || selectedModel}</div>
         )}
         {message.toolCalls && <ToolCallsDisplay toolCalls={message.toolCalls} />}
         <div className="message-content">

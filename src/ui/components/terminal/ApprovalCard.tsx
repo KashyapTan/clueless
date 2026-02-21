@@ -23,7 +23,7 @@ export function ApprovalCard({
   return (
     <div className="terminal-approval-card">
       <div className="approval-header">
-        🖥 Clueless wants to run a command
+        🖥 Xpdite wants to run a command
       </div>
       <div className="approval-command">
         <code>$ {command}</code>

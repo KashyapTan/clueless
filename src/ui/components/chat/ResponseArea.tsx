@@ -74,7 +74,7 @@ export function ResponseArea({
         {/* Loading animation while waiting for response start */}
         {!error && !canSubmit && !thinking && !response && (!toolCalls || toolCalls.length === 0) && (
            <div className="response">
-             <div className="assistant-header">Clueless • {generatingModel}</div>
+             <div className="assistant-header">Xpdite • {generatingModel}</div>
              <LoadingDots />
            </div>
         )}
@@ -82,7 +82,7 @@ export function ResponseArea({
         {/* Live Tool Calls */}
         {!error && toolCalls && toolCalls.length > 0 && (
           <div className="response">
-             {!response && <div className="assistant-header">Clueless • {generatingModel}</div>}
+             {!response && <div className="assistant-header">Xpdite • {generatingModel}</div>}
              <ToolCallsDisplay toolCalls={toolCalls} />
           </div>
         )}
@@ -100,7 +100,7 @@ export function ResponseArea({
         {/* Current response being streamed */}
         {!error && response && (
           <div className="response">
-            <div className="assistant-header">Clueless • {generatingModel}</div>
+            <div className="assistant-header">Xpdite • {generatingModel}</div>
             <ReactMarkdown
               components={{
                 code: CodeBlock as React.ComponentType<React.ComponentPropsWithRef<'code'>>,

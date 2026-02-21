@@ -105,7 +105,7 @@ textarea,
   visibility: visible;
 }
 
-.clueless-logo {
+.xpdite-logo {
   height: 22px;
   width: auto;
   -webkit-user-select: none;
@@ -1083,7 +1083,7 @@ textarea,
   position: absolute;
 }
 
-.mini-container .clueless-logo {
+.mini-container .xpdite-logo {
   -webkit-app-region: no-drag;
   pointer-events: auto;
   cursor: pointer;
@@ -1093,7 +1093,7 @@ textarea,
 
 }
 
-.mini-container .clueless-logo:hover {
+.mini-container .xpdite-logo:hover {
   opacity: 1;
 }
 

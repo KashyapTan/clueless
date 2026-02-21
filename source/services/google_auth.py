@@ -142,7 +142,7 @@ class GoogleAuthService:
             creds = flow.run_local_server(
                 port=0,
                 prompt="consent",
-                success_message="Authentication successful! You can close this tab and return to Clueless.",
+                success_message="Authentication successful! You can close this tab and return to Xpdite.",
             )
 
             # Save the credentials

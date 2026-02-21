@@ -41,7 +41,7 @@ function findPythonExecutable(): string {
     } else {
         // In production, use the PyInstaller-generated executable
         const resourcesPath = process.resourcesPath;
-        const serverExecutable = path.join(resourcesPath, 'python-server', 'clueless-server.exe');
+        const serverExecutable = path.join(resourcesPath, 'python-server', 'xpdite-server.exe');
         
         if (fs.existsSync(serverExecutable)) {
             return serverExecutable;
@@ -49,7 +49,7 @@ function findPythonExecutable(): string {
         
         // Fallback: try in app directory
         const appPath = path.dirname(process.execPath);
-        const fallbackExecutable = path.join(appPath, 'resources', 'python-server', 'clueless-server.exe');
+        const fallbackExecutable = path.join(appPath, 'resources', 'python-server', 'xpdite-server.exe');
         
         if (fs.existsSync(fallbackExecutable)) {
             return fallbackExecutable;
@@ -98,7 +98,7 @@ async function killProcessesOnPorts(ports: number[]): Promise<void> {
                                 
                                 // Kill if it's Python, our app, or related processes
                                 if (processName.includes('python') || 
-                                    processName.includes('clueless') ||
+                                    processName.includes('xpdite') ||
                                     processName.includes('uvicorn') ||
                                     processName.includes('fastapi')) {
                                     console.log(`Terminating process ${processName} (PID: ${pid}) on port ${port}`);
@@ -139,7 +139,7 @@ async function killProcessesOnPorts(ports: number[]): Promise<void> {
                     try {
                         // Check command line to see if it's our server
                         const { stdout: cmdLine } = await execAsync(`wmic process where "ProcessId=${pid}" get CommandLine /value`);
-                        if (cmdLine.includes('clueless-server') || 
+                        if (cmdLine.includes('xpdite-server') || 
                             cmdLine.includes('source.main') || 
                             cmdLine.includes('uvicorn') ||
                             cmdLine.includes('fastapi')) {

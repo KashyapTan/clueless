@@ -50,7 +50,7 @@ exe = EXE(
     a.binaries,
     a.datas,
     [],
-    name='clueless-server',
+    name='xpdite-server',
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,

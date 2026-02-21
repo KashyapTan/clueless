@@ -87,7 +87,7 @@ const SettingsConnections: React.FC = () => {
     <div className="settings-connections-section">
       <div className="settings-connections-header">
         <h2>Connections</h2>
-        <p>Connect external services to give Clueless more tools!</p>
+        <p>Connect external services to give Xpdite more tools!</p>
       </div>
 
       {error && <div className="settings-connections-error">{error}</div>}

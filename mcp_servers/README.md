@@ -1,4 +1,4 @@
-# MCP Servers for Clueless
+# MCP Servers for Xpdite
 
 This directory contains your custom **Model Context Protocol (MCP)** servers — modular tool packs that give your LLM (Ollama, Claude, GPT, Gemini) the ability to interact with the real world (files, email, calendar, Discord, etc.).
 
@@ -77,7 +77,7 @@ ollama pull qwen3:8b    # or llama3.1, mistral, etc.
 ### 3. Run the demo test
 
 ```bash
-cd c:\Users\Kashyap Tanuku\Desktop\Github\clueless
+cd c:\Users\Kashyap Tanuku\Desktop\Github\xpdite
 python -m mcp_servers.test_demo
 ```
 

@@ -417,7 +417,7 @@ wheels = [
 ]
 
 [[package]]
-name = "clueless"
+name = "xpdite"
 version = "0.1.0"
 source = { virtual = "." }
 dependencies = [

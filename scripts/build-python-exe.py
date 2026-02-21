@@ -40,10 +40,10 @@ def build_python_server():
     try:
         result = subprocess.run(cmd, check=True, capture_output=True, text=True)
         print("✅ Python server built successfully!")
-        print(f"Executable created at: {dist_dir / 'clueless-server.exe'}")
+        print(f"Executable created at: {dist_dir / 'xpdite-server.exe'}")
         
         # Verify the executable was created
-        exe_path = dist_dir / "clueless-server.exe"
+        exe_path = dist_dir / "xpdite-server.exe"
         if exe_path.exists():
             size_mb = exe_path.stat().st_size / (1024 * 1024)
             print(f"Executable size: {size_mb:.1f} MB")

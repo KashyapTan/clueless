@@ -1,6 +1,6 @@
 {
-    "appId": "com.kashyap-tanuku.clueless",
-    "productName": "Clueless",
+    "appId": "com.kashyap-tanuku.xpdite",
+    "productName": "Xpdite",
     "copyright": "Copyright © 2025 Kashyap Tanuku",
     "files": [
         "dist-electron", 
@@ -15,7 +15,7 @@
             ]
         }
     ],
-    "icon": "./assets/clueless-logo.jpg",
+    "icon": "./assets/xpdite-logo.jpg",
     "mac": {
         "target": "dmg"
     },
@@ -34,7 +34,7 @@
                 "arch": ["x64"]
             }
         ],
-        "icon": "./assets/clueless-logo.jpg"
+        "icon": "./assets/xpdite-logo.jpg"
     },
     "nsis": {
         "oneClick": false,

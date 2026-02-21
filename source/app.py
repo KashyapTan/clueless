@@ -19,7 +19,7 @@ def create_app() -> FastAPI:
         Configured FastAPI instance
     """
     app = FastAPI(
-        title="Clueless API",
+        title="Xpdite API",
         description="AI Chat Assistant with Screenshot Capabilities",
         version="0.1.0"
     )

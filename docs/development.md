@@ -1,6 +1,6 @@
 # Development Guide
 
-This guide covers common development tasks, code patterns, and conventions used in Clueless.
+This guide covers common development tasks, code patterns, and conventions used in Xpdite.
 
 ## Development Commands
 

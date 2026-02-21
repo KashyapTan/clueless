@@ -1,13 +1,13 @@
 # MCP Integration Guide
 
-This guide covers the Model Context Protocol (MCP) integration in Clueless, how to use existing tools, and how to build new ones.
+This guide covers the Model Context Protocol (MCP) integration in Xpdite, how to use existing tools, and how to build new ones.
 
 ## What is MCP?
 
 The Model Context Protocol is a standardized way to give LLMs access to external tools. Think of it as a "USB port for AI" -- any tool that implements the MCP interface can be plugged into any MCP-compatible LLM application.
 
 **Key concepts:**
-- **Transport**: Clueless uses `stdio` (standard input/output) to communicate with MCP servers
+- **Transport**: Xpdite uses `stdio` (standard input/output) to communicate with MCP servers
 - **Protocol**: JSON-RPC 2.0 over the transport layer
 - **Tool Discovery**: Servers declare their available tools with JSON Schema definitions
 - **Isolation**: Each MCP server runs as an independent child process
@@ -31,7 +31,7 @@ The Model Context Protocol is a standardized way to give LLMs access to external
 
 ## Inline Tool Registration (Ghost Process Prevention)
 
-For tools that require deep integration with the core application (like terminal execution or system settings), Clueless uses **Inline Tool Registration**.
+For tools that require deep integration with the core application (like terminal execution or system settings), Xpdite uses **Inline Tool Registration**.
 
 Instead of spawning a standalone MCP server as a child process, these tools are registered directly in the `McpToolManager`. This avoids the overhead of "ghost processes" -- servers that exist purely to provide schemas but whose execution is intercepted by the backend.
 
@@ -41,11 +41,11 @@ Instead of spawning a standalone MCP server as a child process, these tools are 
 
 ## Tool Retrieval and Selection
 
-As the number of available tools grows, sending all tool definitions to the LLM can exceed context limits or confuse the model. Clueless implements a **Semantic Tool Retriever** to dynamically select the most relevant tools for each query.
+As the number of available tools grows, sending all tool definitions to the LLM can exceed context limits or confuse the model. Xpdite implements a **Semantic Tool Retriever** to dynamically select the most relevant tools for each query.
 
 ### How Retrieval Works
 
-1. **Embedding**: On startup, Clueless generates semantic embeddings for all available tool names and descriptions.
+1. **Embedding**: On startup, Xpdite generates semantic embeddings for all available tool names and descriptions.
 2. **Query Vectorization**: When a user sends a query, it is converted into a vector using an embedding model (e.g., `nomic-embed-text` via Ollama).
 3. **Similarity Search**: The retriever calculates cosine similarity between the query vector and all tool vectors.
 4. **Filtering**:

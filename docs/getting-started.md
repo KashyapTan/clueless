@@ -1,6 +1,6 @@
 # Getting Started
 
-This guide covers installing and running Clueless for both end users and developers.
+This guide covers installing and running Xpdite for both end users and developers.
 
 ## End User Installation
 
@@ -24,15 +24,15 @@ This guide covers installing and running Clueless for both end users and develop
 
 Download the latest installer:
 
-[![Download Clueless](https://img.shields.io/badge/Download_Clueless-blue?style=for-the-badge&logo=windows&logoColor=white)](https://github.com/KashyapTan/clueless/releases/latest/download/CluelessSetup.exe)
+[![Download Xpdite](https://img.shields.io/badge/Download_Xpdite-blue?style=for-the-badge&logo=windows&logoColor=white)](https://github.com/KashyapTan/xpdite/releases/latest/download/XpditeSetup.exe)
 
-Or download from the [Releases](https://github.com/KashyapTan/clueless/releases) page.
+Or download from the [Releases](https://github.com/KashyapTan/xpdite/releases) page.
 
 > **Windows Security Notice:** You may see a SmartScreen warning because the app is not yet code-signed. Click "More info" then "Run anyway". The app is safe to install.
 
 ### Basic Usage
 
-1. Launch Clueless -- a small floating window appears
+1. Launch Xpdite -- a small floating window appears
 2. Take a screenshot with `Alt + .` (period)
 3. Type a question or press Enter to ask about your screenshot
 4. The AI responds in real-time with streaming text
@@ -45,7 +45,7 @@ Or download from the [Releases](https://github.com/KashyapTan/clueless/releases)
 | Chat without image | Just type and press Enter |
 | New conversation | Click the "New Chat" button in the title bar |
 | Browse history | Navigate to the History page |
-| Mini mode | Click the Clueless logo to minimize to 52x52 |
+| Mini mode | Click the Xpdite logo to minimize to 52x52 |
 | **Cloud Models** | Go to Settings > Models to add API keys for Claude, GPT, or Gemini |
 | **Google Integration** | Go to Settings > Connections to link your Google account |
 | Model selection | Toggle models in Settings > Models |
@@ -70,8 +70,8 @@ Or download from the [Releases](https://github.com/KashyapTan/clueless/releases)
 
 ```bash
 # Clone the repository
-git clone https://github.com/KashyapTan/clueless.git
-cd clueless
+git clone https://github.com/KashyapTan/xpdite.git
+cd xpdite
 
 # Install Node.js dependencies
 npm install
@@ -121,7 +121,7 @@ The build process:
 ### Project Structure
 
 ```
-clueless/
+xpdite/
   src/
     electron/         # Electron main process
     ui/               # React frontend
@@ -149,7 +149,7 @@ clueless/
 
 1. Ensure Ollama is running: `ollama list` should show installed models
 2. Start the dev server: `npm run dev`
-3. The Clueless window should appear and show "ready" in the console
+3. The Xpdite window should appear and show "ready" in the console
 4. Take a screenshot with `Alt + .` and ask a question
 
 ### Troubleshooting

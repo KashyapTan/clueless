@@ -281,7 +281,7 @@ export function TerminalPanel({
       {/* Session request */}
       {sessionRequest && (
         <div className="terminal-session-request">
-          <div className="session-request-header">&#9889; Clueless wants autonomous mode</div>
+          <div className="session-request-header">&#9889; Xpdite wants autonomous mode</div>
           <div className="session-request-reason">{sessionRequest.reason}</div>
           <div className="session-request-actions">
             <button className="btn-deny" onClick={() => onSessionResponse(false)}>

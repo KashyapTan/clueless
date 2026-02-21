@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Outlet } from 'react-router-dom';
-import cluelessLogo from '../assets/transparent-clueless-logo.png';
+import xpditeLogo from '../assets/transparent-xpdite-logo.png';
 import '../CSS/App.css';
 
 const Layout: React.FC = () => {
@@ -20,13 +20,13 @@ const Layout: React.FC = () => {
     <div className={`app-wrapper ${mini ? 'mini-mode' : 'normal-mode'}`}>
       <div
         className="mini-container"
-        title="Restore Clueless"
+        title="Restore Xpdite"
         onClick={() => toggleMini(false)}
       >
         <img
-          src={cluelessLogo}
-          alt="Clueless Logo"
-          className="clueless-logo"
+          src={xpditeLogo}
+          alt="Xpdite Logo"
+          className="xpdite-logo"
         />
       </div>
 

@@ -6,7 +6,7 @@ import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import '../CSS/App.css';
 import TitleBar from '../components/TitleBar';
-import cluelessLogo from '../assets/transparent-clueless-logo.png';
+import xpditeLogo from '../assets/transparent-xpdite-logo.png';
 // import plusSignSvg from '../assets/plus-icon.svg';
 import micSignSvg from '../assets/mic-icon.svg';
 import fullscreenSSIcon from '../assets/entire-screen-shot-icon.svg';
@@ -505,12 +505,12 @@ function App() {
       return screenshots.length > 0 ? "Ask a follow-up about the screenshot(s)..." : "Ask a follow-up question...";
     }
     if (captureMode === 'fullscreen') {
-      return "Ask Clueless anything on your screen...";
+      return "Ask Xpdite anything on your screen...";
     }
     if (captureMode === 'precision') {
-      return screenshots.length > 0 ? "Ask about the screenshot(s)..." : "Ask Clueless about a region on your screen (Alt+.)";
+      return screenshots.length > 0 ? "Ask about the screenshot(s)..." : "Ask Xpdite about a region on your screen (Alt+.)";
     }
-    return "Ask Clueless anything...";
+    return "Ask Xpdite anything...";
   };
   
   const sendCaptureMode = (mode: 'fullscreen' | 'precision' | 'none') => {
@@ -585,7 +585,7 @@ function App() {
                 </div>
               ) : (
                 <div className="response">
-                  <div className="assistant-header">Clueless • {selectedModel}</div>
+                  <div className="assistant-header">Xpdite • {selectedModel}</div>
                   {/* Tool calls display */}
                   {msg.toolCalls && msg.toolCalls.length > 0 && (
                     <div className="tool-calls-section">
@@ -675,7 +675,7 @@ function App() {
           {/* Current response being streamed */}
           {!error && response && (
             <div className="response">
-              <div className="assistant-header">Clueless • {selectedModel}</div>
+              <div className="assistant-header">Xpdite • {selectedModel}</div>
               <ReactMarkdown
                 components={{
                   // eslint-disable-next-line @typescript-eslint/no-explicit-any

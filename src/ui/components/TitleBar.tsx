@@ -1,7 +1,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import '../CSS/TitleBar.css';
-import cluelessLogo from '../assets/transparent-clueless-logo.png';
+import xpditeLogo from '../assets/transparent-xpdite-logo.png';
 import settingsIcon from '../assets/settings-icon.svg';
 import chatHistoryIcon from '../assets/chat-history-icon.svg';
 import recordedMeetingsAlbumIcon from '../assets/recorded-meetings-album-icon.svg';
@@ -33,11 +33,11 @@ const TitleBar: React.FC<TitleBarProps> = ({ onClearContext, setMini }) => {
         <div className="newChatButton" onClick={() => { onClearContext(); navigate('/', { state: { newChat: true } }); }} title="Start new chat">
           <img src={newChatIcon} alt="New Chat" className='new-chat-icon'/>
         </div>
-        <div className="clueless-logo-holder">
+        <div className="xpdite-logo-holder">
           <img
-            src={cluelessLogo}
-            alt="Clueless Logo"
-            className='clueless-logo'
+            src={xpditeLogo}
+            alt="Xpdite Logo"
+            className='xpdite-logo'
             onClick={() => {
               console.log('Logo clicked, entering mini mode');
               setMini(true);

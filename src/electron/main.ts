@@ -34,7 +34,7 @@ app.on('ready', async ()=>{
         height: 450,
         minWidth: 30,
         minHeight: 20,
-        title: 'Clueless',
+        title: 'Xpdite',
         frame: false,
         transparent: true,
         resizable: true,

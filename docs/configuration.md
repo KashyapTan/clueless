@@ -1,6 +1,6 @@
 # Configuration Reference
 
-This document covers all configurable aspects of Clueless.
+This document covers all configurable aspects of Xpdite.
 
 ## Python Backend Configuration
 
@@ -120,8 +120,8 @@ Uses `createHashRouter` (required for Electron, which uses `file://` protocol):
 
 | Setting | Value |
 |---------|-------|
-| App ID | `com.kashyap-tanuku.clueless` |
-| Product Name | `Clueless` |
+| App ID | `com.kashyap-tanuku.xpdite` |
+| Product Name | `Xpdite` |
 | Windows targets | `nsis` (installer), `portable` |
 | Architecture | `x64` |
 | Extra resources | `dist-python` -> `python-server` |
@@ -137,7 +137,7 @@ Bundles the Python backend into a single executable at `dist-python/main.exe`. I
 | Setting | Value | Reason |
 |---------|-------|--------|
 | `check_same_thread` | `False` | FastAPI uses thread pools |
-| Location | `user_data/clueless_app.db` | Persistent across sessions |
+| Location | `user_data/xpdite_app.db` | Persistent across sessions |
 | WAL mode | Not enabled | Single-writer is sufficient |
 
 ### Settings Table

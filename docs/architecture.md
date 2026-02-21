@@ -1,10 +1,10 @@
 # Architecture
 
-This document provides a detailed overview of the Clueless system architecture, covering the three main layers (Electron, React, Python) and how they communicate.
+This document provides a detailed overview of the Xpdite system architecture, covering the three main layers (Electron, React, Python) and how they communicate.
 
 ## High-Level Overview
 
-Clueless is a desktop application built on three independent layers that communicate through well-defined interfaces:
+Xpdite is a desktop application built on three independent layers that communicate through well-defined interfaces:
 
 ```
 +---------------------------+

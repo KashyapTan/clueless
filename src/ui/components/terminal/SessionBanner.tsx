@@ -13,7 +13,7 @@ export function SessionBanner({ onStop }: SessionBannerProps) {
   return (
     <div className="terminal-session-banner">
       <span className="session-banner-text">
-        ⚡ Session Mode Active — Clueless is running autonomously
+        ⚡ Session Mode Active — Xpdite is running autonomously
       </span>
       <button className="btn-stop-session" onClick={onStop}>
         Stop

@@ -1,6 +1,6 @@
 # API Reference
 
-Clueless uses two communication protocols between the frontend and backend:
+Xpdite uses two communication protocols between the frontend and backend:
 - **WebSocket** (`ws://localhost:8000/ws`) for real-time bidirectional messaging
 - **REST API** (`http://localhost:8000/api/*`) for configuration and metadata
 
@@ -242,7 +242,7 @@ Returns the current custom system prompt template, or the default if none is sav
 **Response:**
 ```json
 {
-    "template": "You are Clueless...",
+    "template": "You are Xpdite...",
     "is_custom": false
 }
 ```

@@ -4,9 +4,8 @@ Searches the user's Gmail inbox using Gmail's powerful query syntax and returns 
 
 Use this tool to:
 1. Find specific emails by sender, subject, keyword, or date range.
-2. Check for unread messages or messages with specific labels.
-3. Look up recent communications with a particular person or about a topic.
-4. Find emails with attachments or in specific folders.
+2. Look up recent communications with a particular person or about a topic.
+3. Find emails with attachments or in specific folders.
 
 QUERY EXAMPLES:
 - "is:unread" — all unread emails

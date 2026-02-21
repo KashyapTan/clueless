@@ -99,19 +99,6 @@ async def _handle_run_command(fn_name: str, fn_args: dict, server_name: str) -> 
         )
         return "Command denied by user"
 
-    # Approved — broadcast "calling" status
-    await broadcast_message(
-        "tool_call",
-        json.dumps(
-            {
-                "name": fn_name,
-                "args": fn_args,
-                "server": server_name,
-                "status": "calling",
-            }
-        ),
-    )
-
     # Track for running notice
     terminal_service.track_running_command(request_id, command)
 

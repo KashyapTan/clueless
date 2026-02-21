@@ -169,14 +169,11 @@ class ToolRetriever:
         Returns:
             Filtered list of tool definitions
         """
-        if self._embedding_model_type == "none" or not query.strip():
-            return all_tools
-
         # 1. Identify always-on tools
         selected_tool_names = set(always_on)
 
         # 2. Semantic retrieval
-        if top_k > 0 and self._tool_embeddings:
+        if top_k > 0 and self._embedding_model_type != "none" and query.strip() and self._tool_embeddings:
             query_embedding = self._get_embedding(query)
 
             scores = []

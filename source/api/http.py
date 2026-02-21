@@ -544,18 +544,16 @@ async def get_mcp_servers():
     """Get connected MCP servers and their tools."""
     from ..mcp_integration.manager import mcp_manager
 
-    servers = []
-    # iterate over connections to get server names
-    for server_name in mcp_manager._connections.keys():
-        # find tools for this server
-        tools = []
-        for tool_name, entry in mcp_manager._tool_registry.items():
-            if entry["server_name"] == server_name:
-                tools.append(tool_name)
+    servers = {}
+    # Iterate over tool_registry to get all servers (including inline ones like terminal)
+    for tool_name, entry in mcp_manager._tool_registry.items():
+        server_name = entry["server_name"]
+        if server_name not in servers:
+            servers[server_name] = []
+        servers[server_name].append(tool_name)
 
-        servers.append({"server": server_name, "tools": sorted(tools)})
-
-    return sorted(servers, key=lambda x: x["server"])
+    result = [{"server": name, "tools": sorted(tools)} for name, tools in servers.items()]
+    return sorted(result, key=lambda x: x["server"])
 
 
 @router.get("/settings/tools")

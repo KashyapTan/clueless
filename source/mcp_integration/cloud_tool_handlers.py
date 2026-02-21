@@ -81,6 +81,9 @@ async def handle_cloud_tool_calls(
             f"[MCP] Retriever selected {len(filtered_ollama_tools)}/{len(all_ollama_tools)} tools for query: '{user_query[:30]}...'"
         )
 
+    if not allowed_tool_names:
+        return messages, tool_calls_made, None
+
     if provider == "anthropic":
         return await _handle_anthropic_tools(
             model, api_key, messages, tool_calls_made, allowed_tool_names
@@ -167,22 +170,22 @@ async def _handle_anthropic_tools(
                 f"[MCP/Anthropic] Tool call: {fn_name}({fn_args}) from '{server_name}'"
             )
 
+            await broadcast_message(
+                "tool_call",
+                json.dumps(
+                    {
+                        "name": fn_name,
+                        "args": fn_args,
+                        "server": server_name,
+                        "status": "calling",
+                    }
+                ),
+            )
+
             # Terminal tool interception — same approval/PTY/streaming as Ollama
             if is_terminal_tool(fn_name, server_name):
                 result = await execute_terminal_tool(fn_name, fn_args, server_name)
             else:
-                await broadcast_message(
-                    "tool_call",
-                    json.dumps(
-                        {
-                            "name": fn_name,
-                            "args": fn_args,
-                            "server": server_name,
-                            "status": "calling",
-                        }
-                    ),
-                )
-
                 try:
                     result = await mcp_manager.call_tool(fn_name, dict(fn_args))
                 except Exception as e:
@@ -190,19 +193,18 @@ async def _handle_anthropic_tools(
 
             result_str = _truncate_result(result)
 
-            if not is_terminal_tool(fn_name, server_name):
-                await broadcast_message(
-                    "tool_call",
-                    json.dumps(
-                        {
-                            "name": fn_name,
-                            "args": fn_args,
-                            "result": result_str,
-                            "server": server_name,
-                            "status": "complete",
-                        }
-                    ),
-                )
+            await broadcast_message(
+                "tool_call",
+                json.dumps(
+                    {
+                        "name": fn_name,
+                        "args": fn_args,
+                        "result": result_str,
+                        "server": server_name,
+                        "status": "complete",
+                    }
+                ),
+            )
 
             tool_calls_made.append(
                 {
@@ -322,22 +324,22 @@ async def _handle_openai_tools(
 
             print(f"[MCP/OpenAI] Tool call: {fn_name}({fn_args}) from '{server_name}'")
 
+            await broadcast_message(
+                "tool_call",
+                json.dumps(
+                    {
+                        "name": fn_name,
+                        "args": fn_args,
+                        "server": server_name,
+                        "status": "calling",
+                    }
+                ),
+            )
+
             # Terminal tool interception
             if is_terminal_tool(fn_name, server_name):
                 result = await execute_terminal_tool(fn_name, fn_args, server_name)
             else:
-                await broadcast_message(
-                    "tool_call",
-                    json.dumps(
-                        {
-                            "name": fn_name,
-                            "args": fn_args,
-                            "server": server_name,
-                            "status": "calling",
-                        }
-                    ),
-                )
-
                 try:
                     result = await mcp_manager.call_tool(fn_name, dict(fn_args))
                 except Exception as e:
@@ -345,19 +347,18 @@ async def _handle_openai_tools(
 
             result_str = _truncate_result(result)
 
-            if not is_terminal_tool(fn_name, server_name):
-                await broadcast_message(
-                    "tool_call",
-                    json.dumps(
-                        {
-                            "name": fn_name,
-                            "args": fn_args,
-                            "result": result_str,
-                            "server": server_name,
-                            "status": "complete",
-                        }
-                    ),
-                )
+            await broadcast_message(
+                "tool_call",
+                json.dumps(
+                    {
+                        "name": fn_name,
+                        "args": fn_args,
+                        "result": result_str,
+                        "server": server_name,
+                        "status": "complete",
+                    }
+                ),
+            )
 
             tool_calls_made.append(
                 {
@@ -480,22 +481,22 @@ async def _handle_gemini_tools(
 
             print(f"[MCP/Gemini] Tool call: {fn_name}({fn_args}) from '{server_name}'")
 
+            await broadcast_message(
+                "tool_call",
+                json.dumps(
+                    {
+                        "name": fn_name,
+                        "args": fn_args,
+                        "server": server_name,
+                        "status": "calling",
+                    }
+                ),
+            )
+
             # Terminal tool interception
             if is_terminal_tool(fn_name, server_name):
                 result = await execute_terminal_tool(fn_name, fn_args, server_name)
             else:
-                await broadcast_message(
-                    "tool_call",
-                    json.dumps(
-                        {
-                            "name": fn_name,
-                            "args": fn_args,
-                            "server": server_name,
-                            "status": "calling",
-                        }
-                    ),
-                )
-
                 try:
                     result = await mcp_manager.call_tool(fn_name, dict(fn_args))
                 except Exception as e:
@@ -503,19 +504,18 @@ async def _handle_gemini_tools(
 
             result_str = _truncate_result(result)
 
-            if not is_terminal_tool(fn_name, server_name):
-                await broadcast_message(
-                    "tool_call",
-                    json.dumps(
-                        {
-                            "name": fn_name,
-                            "args": fn_args,
-                            "result": result_str,
-                            "server": server_name,
-                            "status": "complete",
-                        }
-                    ),
-                )
+            await broadcast_message(
+                "tool_call",
+                json.dumps(
+                    {
+                        "name": fn_name,
+                        "args": fn_args,
+                        "result": result_str,
+                        "server": server_name,
+                        "status": "complete",
+                    }
+                ),
+            )
 
             tool_calls_made.append(
                 {

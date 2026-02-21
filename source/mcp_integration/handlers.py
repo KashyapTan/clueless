@@ -116,6 +116,9 @@ async def handle_mcp_tool_calls(
             f"[MCP] Retriever selected {len(filtered_tools)}/{len(all_tools)} tools for query: '{user_query[:30]}...'"
         )
 
+    if not filtered_tools:
+        return messages, tool_calls_made, None
+
     # Non-streamed call to detect tool requests
     # think=False works around Ollama bug #10976 (think+tools=empty output)
     # Use run_in_thread to avoid blocking the event loop (critical for thinking models)
@@ -184,6 +187,19 @@ async def handle_mcp_tool_calls(
                 print("[MCP] Stop requested — skipping tool call")
                 break
 
+            # Broadcast to UI so users see the tool being called (for both terminal and standard tools)
+            await broadcast_message(
+                "tool_call",
+                json.dumps(
+                    {
+                        "name": fn_name,
+                        "args": fn_args,
+                        "server": server_name,
+                        "status": "calling",
+                    }
+                ),
+            )
+
             # ── Terminal tool interception ──────────────────────────────
             # Handle terminal tools with approval/session logic directly
             # (no MCP subprocess needed).
@@ -191,20 +207,6 @@ async def handle_mcp_tool_calls(
                 result = await execute_terminal_tool(fn_name, fn_args, server_name)
             else:
                 # ── Standard tool execution ─────────────────────────────
-
-                # Broadcast to UI so users see the tool being called
-                await broadcast_message(
-                    "tool_call",
-                    json.dumps(
-                        {
-                            "name": fn_name,
-                            "args": fn_args,
-                            "server": server_name,
-                            "status": "calling",
-                        }
-                    ),
-                )
-
                 # Execute the tool via MCP
                 try:
                     result = await mcp_manager.call_tool(fn_name, dict(fn_args))

@@ -58,6 +58,10 @@
     border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
+.settings-models-gemini-content {
+    margin-bottom: 20px;
+}
+
 .settings-models-ollama-model,
 .settings-models-anthropic-model,
 .settings-models-gemini-model,
@@ -100,6 +104,10 @@
     border-bottom-left-radius: 8px;
     border-bottom-right-radius: 8px;
 }
+
+/* .settings-model-gemini-model{
+    margin-bottom: 50px;
+} */
 
 /* ====== Toggle switch ====== */
 .settings-model-toggle {

@@ -119,6 +119,9 @@ async def handle_mcp_tool_calls(
     if not filtered_tools:
         return messages, tool_calls_made, None
 
+    if app_state.stop_streaming:
+        return messages, tool_calls_made, None
+
     # Non-streamed call to detect tool requests
     # think=False works around Ollama bug #10976 (think+tools=empty output)
     # Use run_in_thread to avoid blocking the event loop (critical for thinking models)
@@ -264,6 +267,10 @@ async def handle_mcp_tool_calls(
 
         # Ask Ollama again with tool results
         # think=False works around Ollama bug #10976 (think+tools=empty output)
+        
+        if app_state.stop_streaming:
+            break
+
         try:
             response = await run_in_thread(
                 chat,

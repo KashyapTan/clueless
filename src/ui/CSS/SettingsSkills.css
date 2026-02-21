@@ -33,9 +33,9 @@
     border: none;
     padding: 8px 16px;
     border-radius: 6px;
-    font-weight: 500;
     cursor: pointer;
     transition: background-color 0.2s;
+    font-family: montserrat, 'sans-serif';
 }
 
 .create-skill-btn:hover {
@@ -165,6 +165,7 @@
     font-size: 0.8rem;
     cursor: pointer;
     transition: all 0.2s;
+    font-family: 'Montserrat', sans-serif;
 }
 
 .action-btn:hover {
@@ -174,6 +175,7 @@
 .delete-btn {
     border-color: rgba(239, 68, 68, 0.5);
     color: #f87171;
+    font-family: 'Montserrat', sans-serif;
 }
 
 .delete-btn:hover {
@@ -184,6 +186,7 @@
 .reset-btn {
     border-color: rgba(245, 158, 11, 0.5);
     color: #fbbf24;
+    font-family: 'Montserrat', sans-serif;
 }
 
 /* Editor */
@@ -210,12 +213,19 @@
 .editor-close-btn {
     background: none;
     border: none;
-    color: rgba(255, 255, 255, 0.5);
+    color: white;
     cursor: pointer;
+    font-family: 'Montserrat', sans-serif;
+    width: fit-content;
+    height: fit-content;
+    background-color: rgba(255, 255, 255, 0.1);
+    padding: 2px 4px;
+    border-radius: 4px;
 }
 
 .editor-close-btn:hover {
     color: white;
+    background-color: rgba(255, 255, 255, 0.2);
 }
 
 .editor-error {
@@ -312,6 +322,7 @@
     font-size: 0.95rem;
     cursor: pointer;
     transition: background-color 0.2s;
+    font-family: 'Montserrat', sans-serif;
 }
 
 .save-btn:hover {

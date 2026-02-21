@@ -12,6 +12,7 @@ from .manager import mcp_manager
 from .retriever import retriever
 from ..core.connection import broadcast_message
 from ..core.thread_pool import run_in_thread
+from ..core.state import app_state
 from ..config import MAX_MCP_TOOL_ROUNDS
 from .terminal_executor import is_terminal_tool, execute_terminal_tool
 
@@ -128,6 +129,9 @@ async def _handle_anthropic_tools(
     # Convert messages to Anthropic format for tool detection
     anthropic_msgs = _to_anthropic_messages(messages)
 
+    if app_state.stop_streaming:
+        return messages, tool_calls_made, None
+
     try:
         response = await run_in_thread(
             client.messages.create,
@@ -150,6 +154,9 @@ async def _handle_anthropic_tools(
     # Tool loop
     rounds = 0
     while has_tool_use and rounds < MAX_MCP_TOOL_ROUNDS:
+        if app_state.stop_streaming:
+            break
+            
         rounds += 1
 
         # Add assistant response to messages
@@ -181,6 +188,9 @@ async def _handle_anthropic_tools(
                     }
                 ),
             )
+
+            if app_state.stop_streaming:
+                break
 
             # Terminal tool interception — same approval/PTY/streaming as Ollama
             if is_terminal_tool(fn_name, server_name):
@@ -225,6 +235,9 @@ async def _handle_anthropic_tools(
 
         # Send tool results back
         anthropic_msgs.append({"role": "user", "content": tool_results})
+
+        if app_state.stop_streaming:
+            break
 
         try:
             response = await run_in_thread(
@@ -289,6 +302,9 @@ async def _handle_openai_tools(
 
     openai_msgs = _to_openai_messages(messages)
 
+    if app_state.stop_streaming:
+        return messages, tool_calls_made, None
+
     try:
         response = await run_in_thread(
             client.chat.completions.create,
@@ -307,6 +323,9 @@ async def _handle_openai_tools(
     # Tool loop
     rounds = 0
     while choice and choice.message.tool_calls and rounds < MAX_MCP_TOOL_ROUNDS:
+        if app_state.stop_streaming:
+            break
+            
         rounds += 1
 
         # Add assistant message with tool calls
@@ -335,6 +354,9 @@ async def _handle_openai_tools(
                     }
                 ),
             )
+
+            if app_state.stop_streaming:
+                break
 
             # Terminal tool interception
             if is_terminal_tool(fn_name, server_name):
@@ -377,6 +399,9 @@ async def _handle_openai_tools(
                     "content": result_str,
                 }
             )
+
+        if app_state.stop_streaming:
+            break
 
         try:
             response = await run_in_thread(
@@ -447,6 +472,9 @@ async def _handle_gemini_tools(
 
     config = types.GenerateContentConfig(tools=tools)
 
+    if app_state.stop_streaming:
+        return messages, tool_calls_made, None
+
     try:
         response = await run_in_thread(
             client.models.generate_content,
@@ -466,6 +494,9 @@ async def _handle_gemini_tools(
     # Tool loop
     rounds = 0
     while fn_calls and rounds < MAX_MCP_TOOL_ROUNDS:
+        if app_state.stop_streaming:
+            break
+            
         rounds += 1
 
         # Add model response to contents
@@ -492,6 +523,9 @@ async def _handle_gemini_tools(
                     }
                 ),
             )
+
+            if app_state.stop_streaming:
+                break
 
             # Terminal tool interception
             if is_terminal_tool(fn_name, server_name):
@@ -535,6 +569,9 @@ async def _handle_gemini_tools(
 
         # Add function response
         contents.append(types.Content(role="user", parts=fn_response_parts))
+
+        if app_state.stop_streaming:
+            break
 
         try:
             response = await run_in_thread(

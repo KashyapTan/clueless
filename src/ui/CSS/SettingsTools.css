@@ -87,6 +87,9 @@
   margin-bottom: 15px;
   color: rgba(255, 255, 255, 0.8);
 }
+.settings-tools-list{
+  margin-bottom: 20px;
+}
 
 .settings-tools-server-card {
   background: rgba(255, 255, 255, 0.03);

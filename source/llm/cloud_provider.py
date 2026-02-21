@@ -131,6 +131,9 @@ async def _stream_anthropic(
     try:
         client = anthropic.AsyncAnthropic(api_key=api_key)
 
+        if app_state.stop_streaming:
+            return "", token_stats, tool_calls_list
+
         create_kwargs: Dict[str, Any] = {
             "model": model,
             "max_tokens": 16384,
@@ -281,6 +284,9 @@ async def _stream_openai(
 
     try:
         client = AsyncOpenAI(api_key=api_key)
+
+        if app_state.stop_streaming:
+            return "", token_stats, tool_calls_list
 
         create_kwargs: Dict[str, Any] = {
             "model": model,
@@ -433,6 +439,9 @@ async def _stream_gemini(
 
     try:
         client = genai.Client(api_key=api_key)
+
+        if app_state.stop_streaming:
+            return "", token_stats, tool_calls_list
 
         config_kwargs: Dict[str, Any] = {}
         if system_prompt:

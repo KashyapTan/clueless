@@ -48,6 +48,7 @@ async def route_chat(
     from .prompt import build_system_prompt
     from ..mcp_integration.skill_injector import get_skills_to_inject, build_skills_prompt_block
     from ..mcp_integration.manager import mcp_manager
+    from ..core.state import app_state
 
     # Build skills block for system prompt
     # For now, pass empty retrieved_tools — auto-detection happens based on
@@ -68,6 +69,9 @@ async def route_chat(
     system_prompt = build_system_prompt(skills_block=skills_block, template=custom_template)
 
     if provider == "ollama":
+        if app_state.stop_streaming:
+            return "", {"prompt_eval_count": 0, "eval_count": 0}, []
+            
         # Use existing Ollama pipeline (MCP tool handling is built-in)
         from .ollama_provider import stream_ollama_chat
 
@@ -95,6 +99,10 @@ async def route_chat(
 
     # MCP tool calling phase (runs before streaming)
     tool_calls_list: List[Dict[str, Any]] = []
+    
+    if app_state.stop_streaming:
+        return "", {"prompt_eval_count": 0, "eval_count": 0}, []
+
     if mcp_manager.has_tools():
         try:
             messages_for_tools = [
@@ -110,6 +118,10 @@ async def route_chat(
 
     # Build updated chat history with tool exchange for context
     updated_history = list(chat_history)
+    
+    if app_state.stop_streaming:
+        return "", {"prompt_eval_count": 0, "eval_count": 0}, tool_calls_list
+
     if tool_calls_list:
         # Add tool results as context so the streaming call knows about them
         tool_summary = "\n".join(

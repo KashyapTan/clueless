@@ -105,10 +105,18 @@ async def route_chat(
 
     if mcp_manager.has_tools():
         try:
-            messages_for_tools = [
-                {"role": m["role"], "content": m["content"]} for m in chat_history
-            ]
-            messages_for_tools.append({"role": "user", "content": user_query})
+            # Preserve images in messages so cloud models can analyze image content
+            # (e.g. extract a URL from a screenshot) when deciding which tools to call
+            messages_for_tools = []
+            for m in chat_history:
+                entry = {"role": m["role"], "content": m["content"]}
+                if m.get("images"):
+                    entry["images"] = m["images"]
+                messages_for_tools.append(entry)
+            user_entry: Dict[str, Any] = {"role": "user", "content": user_query}
+            if image_paths:
+                user_entry["images"] = image_paths
+            messages_for_tools.append(user_entry)
 
             _, tool_calls_list, _ = await handle_cloud_tool_calls(
                 provider, model, api_key, messages_for_tools, image_paths

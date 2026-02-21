@@ -290,7 +290,7 @@ Components:
 - Non-streamed initial call to detect tool requests
 - Executes tools via `McpToolManager`, feeds results back to Ollama
 - Loops up to `MAX_MCP_TOOL_ROUNDS` (30) or until final text response
-- **Skips tool detection when images are present** (vision models struggle with simultaneous tool calling)
+- **Includes images in tool detection calls** so the model can analyze image content (e.g. extract URLs from screenshots) when deciding which tools to call
 - Broadcasts `tool_call` and `tool_result` messages to frontend
 - **Terminal interception**: `run_command` routed through approval flow, `request_session_mode`/`end_session_mode` handled inline
 - Defers terminal event DB saves when `conversation_id` is None (first message); flushed after conversation creation
@@ -498,8 +498,8 @@ uv add <package>           # Add a new Python dependency
 3. Backend routes via `McpToolManager` to correct server subprocess
 4. Server executes tool, returns result via JSON-RPC
 5. Result fed back to Ollama -> loop continues (up to 30 rounds)
-6. Final text response is streamed to user
-7. Tool detection is skipped when images are present
+6. Final text response is streamed to user (with images included)
+7. Images are included in tool detection calls so the model can analyze image content when deciding on tools
 
 ### Adding New MCP Tools (3 Steps)
 
@@ -697,8 +697,8 @@ Ensures always-on-top even above full-screen apps.
 **Why DPI scaling in ss.py?**
 Windows multi-monitor setups require coordinate transformation via ctypes for accurate region selection.
 
-**Why skip tool detection with images?**
-Vision models often struggle with simultaneous tool calling and image analysis; separating concerns improves reliability.
+**Why include images in tool detection calls?**
+The model needs to see image content to make informed tool-calling decisions. For example, if a user sends a screenshot of a URL and asks "read this", the model must see the image to extract the URL and call `read_website`. The non-streamed tool detection call includes images alongside tool definitions, and `think=False` keeps the call fast.
 
 **Why producer-consumer pattern in ollama_provider.py?**
 Ollama's synchronous generator runs in a background thread; the main async thread consumes chunks via an asyncio queue for non-blocking streaming.

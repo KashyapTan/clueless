@@ -78,12 +78,6 @@ async def handle_mcp_tool_calls(
     if not mcp_manager.has_tools():
         return messages, tool_calls_made, None
 
-    # Only do tool detection for text-only queries (no images)
-    # Vision models + tool calling don't always mix well
-    has_images = any(msg.get("images") for msg in messages) or bool(image_paths)
-    if has_images:
-        return messages, tool_calls_made, None
-
     # Retrieve relevant tools
     user_query = ""
     for msg in reversed(messages):
@@ -125,6 +119,8 @@ async def handle_mcp_tool_calls(
     # Non-streamed call to detect tool requests
     # think=False works around Ollama bug #10976 (think+tools=empty output)
     # Use run_in_thread to avoid blocking the event loop (critical for thinking models)
+    # Images are included so the model can analyze image content (e.g. extract a URL
+    # from a screenshot) when deciding which tools to call.
     try:
         response = await run_in_thread(
             chat,

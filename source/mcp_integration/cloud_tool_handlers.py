@@ -43,11 +43,6 @@ async def handle_cloud_tool_calls(
     if not mcp_manager.has_tools():
         return messages, tool_calls_made, None
 
-    # Skip tool detection if images are present (same as Ollama handler)
-    has_images = any(msg.get("images") for msg in messages) or bool(image_paths)
-    if has_images:
-        return messages, tool_calls_made, None
-
     # Retrieve relevant tools logic
     user_query = ""
     for msg in reversed(messages):
@@ -265,13 +260,41 @@ async def _handle_anthropic_tools(
 
 
 def _to_anthropic_messages(messages: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-    """Convert internal chat history format to Anthropic messages."""
+    """Convert internal chat history format to Anthropic messages (with image support)."""
+    import os
+    import base64
+
     result = []
     for msg in messages:
         role = msg.get("role", "user")
         if role == "tool":
             continue
-        result.append({"role": role, "content": msg.get("content", "")})
+        content = msg.get("content", "")
+        images = msg.get("images", [])
+
+        if role == "user" and images:
+            blocks: list = []
+            for img_path in images:
+                if os.path.exists(str(img_path)):
+                    try:
+                        with open(img_path, "rb") as f:
+                            b64 = base64.standard_b64encode(f.read()).decode("utf-8")
+                        ext = os.path.splitext(img_path)[1].lower()
+                        media_type = {
+                            ".png": "image/png", ".jpg": "image/jpeg",
+                            ".jpeg": "image/jpeg", ".gif": "image/gif",
+                            ".webp": "image/webp",
+                        }.get(ext, "image/png")
+                        blocks.append({
+                            "type": "image",
+                            "source": {"type": "base64", "media_type": media_type, "data": b64},
+                        })
+                    except Exception:
+                        pass
+            blocks.append({"type": "text", "text": content})
+            result.append({"role": "user", "content": blocks})
+        else:
+            result.append({"role": role, "content": content})
     return result
 
 
@@ -422,13 +445,41 @@ async def _handle_openai_tools(
 
 
 def _to_openai_messages(messages: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-    """Convert internal chat history format to OpenAI messages."""
+    """Convert internal chat history format to OpenAI messages (with image support)."""
+    import os
+    import base64
+
     result = []
     for msg in messages:
         role = msg.get("role", "user")
         if role == "tool":
             continue
-        result.append({"role": role, "content": msg.get("content", "")})
+        content = msg.get("content", "")
+        images = msg.get("images", [])
+
+        if role == "user" and images:
+            parts: list = []
+            for img_path in images:
+                if os.path.exists(str(img_path)):
+                    try:
+                        with open(img_path, "rb") as f:
+                            b64 = base64.standard_b64encode(f.read()).decode("utf-8")
+                        ext = os.path.splitext(img_path)[1].lower()
+                        media_type = {
+                            ".png": "image/png", ".jpg": "image/jpeg",
+                            ".jpeg": "image/jpeg", ".gif": "image/gif",
+                            ".webp": "image/webp",
+                        }.get(ext, "image/png")
+                        parts.append({
+                            "type": "image_url",
+                            "image_url": {"url": f"data:{media_type};base64,{b64}"},
+                        })
+                    except Exception:
+                        pass
+            parts.append({"type": "text", "text": content})
+            result.append({"role": "user", "content": parts})
+        else:
+            result.append({"role": role, "content": content})
     return result
 
 
@@ -593,7 +644,8 @@ async def _handle_gemini_tools(
 
 
 def _to_gemini_contents(messages: List[Dict[str, Any]]) -> list:
-    """Convert internal chat history format to Gemini contents."""
+    """Convert internal chat history format to Gemini contents (with image support)."""
+    import os
     from google.genai import types
 
     contents = []
@@ -602,11 +654,28 @@ def _to_gemini_contents(messages: List[Dict[str, Any]]) -> list:
         if role == "tool":
             continue
         gemini_role = "model" if role == "assistant" else "user"
+        parts = []
+        images = msg.get("images", [])
+
+        if role == "user" and images:
+            for img_path in images:
+                if os.path.exists(str(img_path)):
+                    try:
+                        with open(img_path, "rb") as f:
+                            img_bytes = f.read()
+                        ext = os.path.splitext(img_path)[1].lower()
+                        media_type = {
+                            ".png": "image/png", ".jpg": "image/jpeg",
+                            ".jpeg": "image/jpeg", ".gif": "image/gif",
+                            ".webp": "image/webp",
+                        }.get(ext, "image/png")
+                        parts.append(types.Part.from_bytes(data=img_bytes, mime_type=media_type))
+                    except Exception:
+                        pass
+
+        parts.append(types.Part.from_text(text=msg.get("content", "")))
         contents.append(
-            types.Content(
-                role=gemini_role,
-                parts=[types.Part.from_text(text=msg.get("content", ""))],
-            )
+            types.Content(role=gemini_role, parts=parts)
         )
     return contents
 

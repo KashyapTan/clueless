@@ -96,7 +96,6 @@ async def stream_ollama_chat(
     # ── Streaming Phase ──────────────────────────────────────────
     # Reached in all normal cases:
     # - No MCP tools configured (tool detection skipped)
-    # - Images present (tool detection skipped)
     # - Tool detection ran but no tools needed (messages unchanged)
     # - Tool calls completed (messages now include tool exchange history)
     # The streaming call produces the final response with proper token-by-token
